@@ -51,17 +51,62 @@ const RECENT_TRANSACTIONS: Transaction[] = [
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Dashboard);
-  const [user, setUser] = useState<User>(INITIAL_USER);
+  const [user, setUser] = useState<User | null>(null);
   const [aiAdvice, setAiAdvice] = useState<string>('');
   const [loadingAi, setLoadingAi] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    fetch('/api/current_user')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data._id) {
+           // Transform backend user to frontend user type if necessary
+           // For now, we'll just use the data and ensure it matches or extend the type
+           // We might need to map _id to id
+           setUser({ ...data, id: data._id });
+        } else {
+            // For demo purposes, if no backend, maybe keep using mock?
+            // But user asked for login functionality.
+            // So we stay logged out.
+        }
+      })
+      .catch(err => console.log(err));
+  }, []);
+
   const handleGetAdvice = async () => {
+    if (!user || !user.websites || user.websites.length === 0) return;
     setLoadingAi(true);
     const advice = await getSEOAdvice(user.websites[0].url, user.websites[0].domainAuthority);
     setAiAdvice(advice);
     setLoadingAi(false);
   };
+
+  if (!user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
+        <div className="text-center p-8 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl">
+          <div className="bg-blue-600 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck size={40} className="text-white" />
+          </div>
+          <h1 className="text-3xl font-bold mb-2">Welcome to LinkAuthority</h1>
+          <p className="text-slate-400 mb-8">The #1 Marketplace for High-Quality Backlinks</p>
+          <a 
+            href="/auth/google" 
+            className="inline-flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-xl font-bold hover:bg-slate-100 transition-all hover:scale-105"
+          >
+            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
+            Sign in with Google
+          </a>
+          <div className="mt-6">
+             <button onClick={() => setUser(INITIAL_USER)} className="text-sm text-slate-500 hover:text-slate-300 underline">
+                Continue as Guest (Demo)
+             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const SidebarItem = ({ tab, icon: Icon, label }: { tab: Tab, icon: any, label: string }) => (
     <button
@@ -101,17 +146,20 @@ const App: React.FC = () => {
         <div className="mt-auto bg-slate-900 rounded-2xl p-4 border border-slate-800">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
-              AS
+              {user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
             </div>
             <div>
               <p className="text-sm font-semibold truncate w-32">{user.name}</p>
               <p className="text-xs text-slate-500 truncate w-32">{user.email}</p>
             </div>
           </div>
-          <div className="flex justify-between items-center text-xs text-slate-400">
+          <div className="flex justify-between items-center text-xs text-slate-400 mb-3">
             <span>Points Balance</span>
             <span className="text-blue-400 font-bold">{user.points} DA</span>
           </div>
+          <a href="/api/logout" className="w-full flex items-center justify-center gap-2 text-xs font-medium bg-slate-800 hover:bg-red-900/30 hover:text-red-400 py-2 rounded-lg transition-colors">
+             Logout
+          </a>
         </div>
       </aside>
 
