@@ -183,6 +183,37 @@ module.exports = app => {
     }
   });
 
+  // Buy Points (Mock Payment Endpoint)
+  app.post('/api/buy-points', requireLogin, async (req, res) => {
+    const { points, amount } = req.body;
+
+    if (!points || !amount) return res.status(400).send({ error: 'Invalid request' });
+
+    try {
+      // In a real app, verify the PayPal payment ID here before crediting points
+      
+      req.user.points += points;
+      
+      // Record the transaction
+      const transaction = new Transaction({
+        type: 'earn', // Treated as earning for now
+        points: points,
+        sourceUrl: 'PayPal Purchase',
+        targetUrl: 'System',
+        user: req.user._id,
+        status: 'completed'
+      });
+
+      await req.user.save();
+      await transaction.save();
+
+      res.send({ user: req.user, message: 'Points purchased successfully' });
+    } catch (err) {
+      res.status(500).send({ error: 'Purchase failed' });
+    }
+  });
+};
+
   // Get User Transactions
   app.get('/api/transactions', requireLogin, async (req, res) => {
     const transactions = await Transaction.find({ user: req.user._id }).sort({ timestamp: -1 });

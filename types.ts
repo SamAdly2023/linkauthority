@@ -32,5 +32,6 @@ export enum Tab {
   Marketplace = 'marketplace',
   MySites = 'mysites',
   History = 'history',
-  AIExpert = 'aiexpert'
+  AIExpert = 'aiexpert',
+  Guide = 'guide'
 }

@@ -19,7 +19,10 @@ import {
   BrainCircuit,
   Settings,
   User as UserIcon,
-  X
+  X,
+  BookOpen,
+  CreditCard,
+  CheckCircle2
 } from 'lucide-react';
 import { Tab, User, Website, Transaction } from './types';
 import { getSEOAdvice } from './services/geminiService';
@@ -401,6 +404,7 @@ const App: React.FC = () => {
           <SidebarItem tab={Tab.MySites} icon={Globe} label="My Websites" />
           <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
           <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
+          <SidebarItem tab={Tab.Guide} icon={BookOpen} label="Guide & Pricing" />
         </nav>
 
         <div className="mt-auto bg-slate-900 rounded-2xl p-4 border border-slate-800">
@@ -751,6 +755,141 @@ const App: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === Tab.Guide && (
+          <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            {/* Guide Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 relative overflow-hidden group hover:border-blue-500/30 transition-all">
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
+                <div className="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mb-6">
+                  <Globe size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">1. Connect Your Site</h3>
+                <p className="text-slate-400 leading-relaxed">
+                  Add your website to the platform. Our AI will analyze your Domain Authority (DA) and assign a point value.
+                </p>
+              </div>
+
+              <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 relative overflow-hidden group hover:border-green-500/30 transition-all">
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/20 transition-all"></div>
+                <div className="w-12 h-12 bg-green-500/20 text-green-400 rounded-2xl flex items-center justify-center mb-6">
+                  <Zap size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">2. Earn Points</h3>
+                <p className="text-slate-400 leading-relaxed">
+                  Accept link requests from other users. Place their link on your site, verify it, and earn points equal to your DA.
+                </p>
+              </div>
+
+              <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 relative overflow-hidden group hover:border-purple-500/30 transition-all">
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all"></div>
+                <div className="w-12 h-12 bg-purple-500/20 text-purple-400 rounded-2xl flex items-center justify-center mb-6">
+                  <ArrowUpRight size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">3. Boost SEO</h3>
+                <p className="text-slate-400 leading-relaxed">
+                  Use your points to buy high-quality backlinks from other verified sites in your niche. Watch your rankings climb!
+                </p>
+              </div>
+            </div>
+
+            {/* Pricing Section */}
+            <div>
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-bold text-white mb-4">Fast Track Your Growth</h2>
+                <p className="text-slate-400 max-w-2xl mx-auto">
+                  Don't want to wait to earn points? Purchase points directly or subscribe for monthly benefits.
+                  Secure payment via PayPal.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { name: 'Starter Pack', points: 50, price: 49, popular: false },
+                  { name: 'Growth Pack', points: 100, price: 89, popular: true },
+                  { name: 'Pro Pack', points: 250, price: 199, popular: false },
+                  { name: 'Agency Pack', points: 1000, price: 699, popular: false },
+                ].map((plan, i) => (
+                  <div key={i} className={`bg-slate-900 p-8 rounded-3xl border ${plan.popular ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-800'} relative flex flex-col`}>
+                    {plan.popular && (
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        Most Popular
+                      </div>
+                    )}
+                    <h3 className="text-lg font-bold text-white mb-2">{plan.name}</h3>
+                    <div className="flex items-baseline gap-1 mb-6">
+                      <span className="text-3xl font-bold text-white">${plan.price}</span>
+                      <span className="text-slate-500 text-sm">USD</span>
+                    </div>
+                    
+                    <ul className="space-y-3 mb-8 flex-1">
+                      <li className="flex items-center gap-3 text-sm text-slate-300">
+                        <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                        <span>{plan.points} Authority Points</span>
+                      </li>
+                      <li className="flex items-center gap-3 text-sm text-slate-300">
+                        <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                        <span>Instant Credit</span>
+                      </li>
+                      <li className="flex items-center gap-3 text-sm text-slate-300">
+                        <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                        <span>No Expiration</span>
+                      </li>
+                    </ul>
+
+                    <button 
+                      onClick={() => {
+                        if(confirm(`Proceed to PayPal to pay $${plan.price}? (Demo Mode)`)) {
+                           // Mock Payment
+                           fetch('/api/buy-points', {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({ points: plan.points, amount: plan.price })
+                           })
+                           .then(res => res.json())
+                           .then(() => {
+                             setMessageModal({ isOpen: true, title: 'Payment Successful', message: `You have purchased ${plan.points} points!`, type: 'success' });
+                             fetchUser();
+                           })
+                           .catch(() => setMessageModal({ isOpen: true, title: 'Error', message: 'Payment failed', type: 'error' }));
+                        }
+                      }}
+                      className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+                        plan.popular 
+                          ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20' 
+                          : 'bg-slate-800 hover:bg-slate-700 text-white'
+                      }`}
+                    >
+                      <CreditCard size={18} />
+                      Buy Now
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Subscription Option */}
+              <div className="mt-12 bg-gradient-to-r from-indigo-900/50 to-blue-900/50 p-8 rounded-3xl border border-indigo-500/30 flex flex-col md:flex-row items-center justify-between gap-8">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-2xl font-bold text-white">Pro Membership</h3>
+                    <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-lg">COMING SOON</span>
+                  </div>
+                  <p className="text-indigo-200 max-w-xl">
+                    Get 30 points every month, priority support, and advanced SEO analytics for a flat monthly fee.
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-3xl font-bold text-white mb-1">$29<span className="text-lg text-indigo-300 font-normal">/mo</span></p>
+                  <button disabled className="bg-indigo-600/50 text-indigo-200 px-8 py-3 rounded-xl font-bold cursor-not-allowed">
+                    Join Waitlist
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>
