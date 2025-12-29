@@ -53,6 +53,7 @@ const App: React.FC = () => {
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, site: Website | null }>({ isOpen: false, site: null });
   const [verifyModal, setVerifyModal] = useState<{ isOpen: boolean, transaction: Transaction | null }>({ isOpen: false, transaction: null });
   const [messageModal, setMessageModal] = useState<{ isOpen: boolean, title: string, message: string, type: 'success' | 'error' }>({ isOpen: false, title: '', message: '', type: 'success' });
+  const [checkoutModal, setCheckoutModal] = useState<{ isOpen: boolean, plan: { name: string, points: number, price: number } | null }>({ isOpen: false, plan: null });
   
   // Input States for Modals
   const [purchaseSourceUrl, setPurchaseSourceUrl] = useState('');
@@ -394,6 +395,59 @@ const App: React.FC = () => {
                 Verify & Claim Points
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Checkout Modal */}
+      {checkoutModal.isOpen && checkoutModal.plan && (
+        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+            <button onClick={() => setCheckoutModal({ isOpen: false, plan: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+            <h3 className="text-2xl font-bold text-white mb-2">Checkout</h3>
+            <p className="text-slate-400 mb-6">You are purchasing <span className="text-white font-bold">{checkoutModal.plan.points} Points</span> for <span className="text-white font-bold">${checkoutModal.plan.price}</span></p>
+            
+            <div id="paypal-button-container" ref={(el) => {
+                if (el && !el.hasChildNodes() && (window as any).paypal) {
+                    (window as any).paypal.Buttons({
+                        createOrder: (data: any, actions: any) => {
+                            return actions.order.create({
+                                purchase_units: [{
+                                    amount: {
+                                        value: checkoutModal.plan?.price.toString()
+                                    }
+                                }]
+                            });
+                        },
+                        onApprove: (data: any, actions: any) => {
+                            return actions.order.capture().then((details: any) => {
+                                // Call backend to credit points
+                                fetch('/api/buy-points', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        points: checkoutModal.plan?.points, 
+                                        amount: checkoutModal.plan?.price,
+                                        orderId: data.orderID
+                                    })
+                                })
+                                .then(res => res.json())
+                                .then(() => {
+                                    setCheckoutModal({ isOpen: false, plan: null });
+                                    setMessageModal({ isOpen: true, title: 'Payment Successful', message: `Transaction completed by ${details.payer.name.given_name}. Points added!`, type: 'success' });
+                                    fetchUser();
+                                });
+                            });
+                        },
+                        onError: (err: any) => {
+                            console.error(err);
+                            setMessageModal({ isOpen: true, title: 'Payment Error', message: 'Something went wrong with PayPal.', type: 'error' });
+                        }
+                    }).render(el);
+                }
+            }}></div>
           </div>
         </div>
       )}
@@ -900,22 +954,7 @@ const App: React.FC = () => {
                     </ul>
 
                     <button 
-                      onClick={() => {
-                        if(confirm(`Proceed to PayPal to pay $${plan.price}? (Demo Mode)`)) {
-                           // Mock Payment
-                           fetch('/api/buy-points', {
-                             method: 'POST',
-                             headers: { 'Content-Type': 'application/json' },
-                             body: JSON.stringify({ points: plan.points, amount: plan.price })
-                           })
-                           .then(res => res.json())
-                           .then(() => {
-                             setMessageModal({ isOpen: true, title: 'Payment Successful', message: `You have purchased ${plan.points} points!`, type: 'success' });
-                             fetchUser();
-                           })
-                           .catch(() => setMessageModal({ isOpen: true, title: 'Error', message: 'Payment failed', type: 'error' }));
-                        }
-                      }}
+                      onClick={() => setCheckoutModal({ isOpen: true, plan })}
                       className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
                         plan.popular 
                           ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20' 
