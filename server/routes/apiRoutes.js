@@ -212,7 +212,6 @@ module.exports = app => {
       res.status(500).send({ error: 'Purchase failed' });
     }
   });
-};
 
   // Get User Transactions
   app.get('/api/transactions', requireLogin, async (req, res) => {
