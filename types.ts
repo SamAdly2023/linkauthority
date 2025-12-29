@@ -33,5 +33,9 @@ export enum Tab {
   MySites = 'mysites',
   History = 'history',
   AIExpert = 'aiexpert',
-  Guide = 'guide'
+  Guide = 'guide',
+  AdminUsers = 'admin_users',
+  AdminWebsites = 'admin_websites',
+  AdminTransactions = 'admin_transactions',
+  AdminSettings = 'admin_settings'
 }

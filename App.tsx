@@ -22,7 +22,11 @@ import {
   X,
   BookOpen,
   CreditCard,
-  CheckCircle2
+  CheckCircle2,
+  Users,
+  Database,
+  FileText,
+  Sliders
 } from 'lucide-react';
 import { Tab, User, Website, Transaction } from './types';
 import { getSEOAdvice } from './services/geminiService';
@@ -38,6 +42,12 @@ const App: React.FC = () => {
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
   const [newSiteUrl, setNewSiteUrl] = useState('');
   const [newSiteCategory, setNewSiteCategory] = useState('');
+
+  // Admin State
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<User[]>([]);
+  const [adminWebsites, setAdminWebsites] = useState<Website[]>([]);
+  const [adminTransactions, setAdminTransactions] = useState<Transaction[]>([]);
 
   // Modal States
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, site: Website | null }>({ isOpen: false, site: null });
@@ -56,8 +66,28 @@ const App: React.FC = () => {
     if (user) {
       fetchMarketplace();
       fetchTransactions();
+      if (user.email === 'samadly728@gmail.com') {
+        // Pre-fetch admin data if admin
+        fetchAdminData();
+      }
     }
   }, [user]);
+
+  const fetchAdminData = async () => {
+    try {
+      const [usersRes, sitesRes, txRes] = await Promise.all([
+        fetch('/api/admin/users'),
+        fetch('/api/admin/websites'),
+        fetch('/api/admin/transactions')
+      ]);
+      
+      if (usersRes.ok) setAdminUsers(await usersRes.json());
+      if (sitesRes.ok) setAdminWebsites(await sitesRes.json());
+      if (txRes.ok) setAdminTransactions(await txRes.json());
+    } catch (err) {
+      console.error("Failed to fetch admin data", err);
+    }
+  };
 
   const fetchUser = () => {
     fetch('/api/current_user')
@@ -398,13 +428,41 @@ const App: React.FC = () => {
           </h1>
         </div>
 
+        {user?.email === 'samadly728@gmail.com' && (
+          <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <button 
+              onClick={() => { setIsAdminMode(false); setActiveTab(Tab.Dashboard); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${!isAdminMode ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              Client
+            </button>
+            <button 
+              onClick={() => { setIsAdminMode(true); setActiveTab(Tab.AdminUsers); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${isAdminMode ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              Admin
+            </button>
+          </div>
+        )}
+
         <nav className="flex flex-col gap-2">
-          <SidebarItem tab={Tab.Dashboard} icon={LayoutDashboard} label="Dashboard" />
-          <SidebarItem tab={Tab.Marketplace} icon={Search} label="Marketplace" />
-          <SidebarItem tab={Tab.MySites} icon={Globe} label="My Websites" />
-          <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
-          <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
-          <SidebarItem tab={Tab.Guide} icon={BookOpen} label="Guide & Pricing" />
+          {!isAdminMode ? (
+            <>
+              <SidebarItem tab={Tab.Dashboard} icon={LayoutDashboard} label="Dashboard" />
+              <SidebarItem tab={Tab.Marketplace} icon={Search} label="Marketplace" />
+              <SidebarItem tab={Tab.MySites} icon={Globe} label="My Websites" />
+              <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
+              <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
+              <SidebarItem tab={Tab.Guide} icon={BookOpen} label="Guide & Pricing" />
+            </>
+          ) : (
+            <>
+              <SidebarItem tab={Tab.AdminUsers} icon={Users} label="All Users" />
+              <SidebarItem tab={Tab.AdminWebsites} icon={Globe} label="All Websites" />
+              <SidebarItem tab={Tab.AdminTransactions} icon={FileText} label="All Transactions" />
+              <SidebarItem tab={Tab.AdminSettings} icon={Sliders} label="Settings" />
+            </>
+          )}
         </nav>
 
         <div className="mt-auto bg-slate-900 rounded-2xl p-4 border border-slate-800">
@@ -887,6 +945,145 @@ const App: React.FC = () => {
                   <button disabled className="bg-indigo-600/50 text-indigo-200 px-8 py-3 rounded-xl font-bold cursor-not-allowed">
                     Join Waitlist
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Tabs */}
+        {activeTab === Tab.AdminUsers && (
+          <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-2xl font-bold text-white mb-6">All Users</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-500 text-sm uppercase tracking-wider">
+                    <th className="pb-4 font-semibold">Name</th>
+                    <th className="pb-4 font-semibold">Email</th>
+                    <th className="pb-4 font-semibold">Points</th>
+                    <th className="pb-4 font-semibold">Websites</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {adminUsers.map((u: any) => (
+                    <tr key={u._id} className="hover:bg-slate-800/30">
+                      <td className="py-4 text-white font-medium">{u.name}</td>
+                      <td className="py-4 text-slate-400">{u.email}</td>
+                      <td className="py-4 text-blue-400 font-bold">{u.points}</td>
+                      <td className="py-4 text-slate-400">{u.websites?.length || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === Tab.AdminWebsites && (
+          <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-2xl font-bold text-white mb-6">All Websites</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-500 text-sm uppercase tracking-wider">
+                    <th className="pb-4 font-semibold">URL</th>
+                    <th className="pb-4 font-semibold">Owner</th>
+                    <th className="pb-4 font-semibold">DA</th>
+                    <th className="pb-4 font-semibold">Category</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {adminWebsites.map((w: any) => (
+                    <tr key={w._id} className="hover:bg-slate-800/30">
+                      <td className="py-4 text-white font-medium">{w.url}</td>
+                      <td className="py-4 text-slate-400">{w.owner?.name || 'Unknown'}</td>
+                      <td className="py-4 text-blue-400 font-bold">{w.domainAuthority}</td>
+                      <td className="py-4 text-slate-400">{w.category}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === Tab.AdminTransactions && (
+          <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-2xl font-bold text-white mb-6">All Transactions</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-500 text-sm uppercase tracking-wider">
+                    <th className="pb-4 font-semibold">Date</th>
+                    <th className="pb-4 font-semibold">User</th>
+                    <th className="pb-4 font-semibold">Type</th>
+                    <th className="pb-4 font-semibold">Points</th>
+                    <th className="pb-4 font-semibold">Status</th>
+                    <th className="pb-4 font-semibold">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {adminTransactions.map((t: any) => (
+                    <tr key={t._id} className="hover:bg-slate-800/30">
+                      <td className="py-4 text-slate-400 text-sm">{new Date(t.timestamp).toLocaleDateString()}</td>
+                      <td className="py-4 text-white font-medium">{t.user?.name || 'Unknown'}</td>
+                      <td className="py-4">
+                        <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${t.type === 'earn' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                          {t.type}
+                        </span>
+                      </td>
+                      <td className="py-4 text-white font-bold">{t.points}</td>
+                      <td className="py-4">
+                         <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${t.status === 'completed' ? 'bg-blue-500/10 text-blue-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
+                          {t.status}
+                        </span>
+                      </td>
+                      <td className="py-4 text-slate-500 text-xs font-mono max-w-xs truncate">
+                        {t.sourceUrl} -&gt; {t.targetUrl}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === Tab.AdminSettings && (
+          <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-2xl font-bold text-white mb-6">Platform Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <h4 className="text-lg font-bold text-slate-300">Pricing Configuration</h4>
+                <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                  <div>
+                    <label className="block text-slate-400 text-sm mb-2">Point Price (USD)</label>
+                    <input type="number" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white" defaultValue="1.00" />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-sm mb-2">Minimum Purchase</label>
+                    <input type="number" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white" defaultValue="50" />
+                  </div>
+                  <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl">Save Changes</button>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h4 className="text-lg font-bold text-slate-300">System Status</h4>
+                <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Maintenance Mode</span>
+                    <div className="w-12 h-6 bg-slate-800 rounded-full relative cursor-pointer">
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-slate-500 rounded-full"></div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Allow New Registrations</span>
+                    <div className="w-12 h-6 bg-green-500/20 rounded-full relative cursor-pointer">
+                      <div className="absolute right-1 top-1 w-4 h-4 bg-green-500 rounded-full"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

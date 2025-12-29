@@ -53,6 +53,7 @@ app.use(passport.session());
 
 require('./routes/authRoutes')(app);
 require('./routes/apiRoutes')(app);
+require('./routes/adminRoutes')(app);
 
 // Global Error Handler to debug 500 errors
 app.use((err, req, res, next) => {
