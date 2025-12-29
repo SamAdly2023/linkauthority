@@ -528,9 +528,9 @@ const App: React.FC = () => {
                            <span className="text-xs px-2 py-0.5 bg-slate-800 rounded text-slate-500 font-bold uppercase">{tx.status}</span>
                          </div>
                          <p className="text-sm text-slate-400 mt-1">
-                           From <span className="text-slate-300 font-mono text-xs">{tx.sourceUrl}</span> 
+                           Link From <span className="text-slate-300 font-mono text-xs">{tx.targetUrl}</span> 
                            <span className="mx-2">→</span> 
-                           To <span className="text-slate-300 font-mono text-xs">{tx.targetUrl}</span>
+                           To <span className="text-slate-300 font-mono text-xs">{tx.sourceUrl}</span>
                          </p>
                        </div>
                      </div>
