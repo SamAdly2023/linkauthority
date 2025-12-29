@@ -4,6 +4,12 @@ const UserSchema = new mongoose.Schema({
   googleId: { type: String, unique: true },
   name: { type: String },
   email: { type: String },
+  phone: { type: String },
+  avatar: { type: String },
+  referralCode: { type: String, unique: true, sparse: true },
+  referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  rating: { type: Number, default: 5.0 },
+  reviewCount: { type: Number, default: 0 },
   points: { type: Number, default: 100 },
   websites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Website' }],
   transactions: [{

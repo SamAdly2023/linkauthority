@@ -27,7 +27,8 @@ import {
   Database,
   FileText,
   Sliders,
-  Menu
+  Menu,
+  MapPin
 } from 'lucide-react';
 import { Tab, User, Website, Transaction } from './types';
 import { getSEOAdvice } from './services/geminiService';
@@ -40,9 +41,18 @@ const App: React.FC = () => {
   const [aiAdvice, setAiAdvice] = useState<string>('');
   const [loadingAi, setLoadingAi] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterServiceType, setFilterServiceType] = useState<'all' | 'local' | 'worldwide'>('all');
+  const [filterCountry, setFilterCountry] = useState('');
+  const [filterState, setFilterState] = useState('');
+  const [filterCity, setFilterCity] = useState('');
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
   const [newSiteUrl, setNewSiteUrl] = useState('');
   const [newSiteCategory, setNewSiteCategory] = useState('');
+  
+  // Profile State
+  const [profileForm, setProfileForm] = useState({ name: '', phone: '', avatar: '' });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isAddingSite, setIsAddingSite] = useState(false);
 
   // Admin State
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -75,6 +85,11 @@ const App: React.FC = () => {
         // Pre-fetch admin data if admin
         fetchAdminData();
       }
+      setProfileForm({
+        name: user.name || '',
+        phone: user.phone || '',
+        avatar: user.avatar || ''
+      });
     }
   }, [user]);
 
@@ -91,6 +106,30 @@ const App: React.FC = () => {
       if (txRes.ok) setAdminTransactions(await txRes.json());
     } catch (err) {
       console.error("Failed to fetch admin data", err);
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    try {
+      const res = await fetch('/api/user', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileForm)
+      });
+      
+      if (res.ok) {
+        const updatedUser = await res.json();
+        setUser(updatedUser);
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Profile updated successfully', type: 'success' });
+      } else {
+        throw new Error('Failed to update profile');
+      }
+    } catch (err) {
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Could not update profile', type: 'error' });
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -121,13 +160,14 @@ const App: React.FC = () => {
 
   const handleAddWebsite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSiteUrl || !newSiteCategory) return;
+    if (!newSiteUrl) return;
 
+    setIsAddingSite(true);
     try {
       const res = await fetch('/api/websites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: newSiteUrl, category: newSiteCategory })
+        body: JSON.stringify({ url: newSiteUrl })
       });
       
       if (res.ok) {
@@ -135,13 +175,16 @@ const App: React.FC = () => {
         setNewSiteUrl('');
         setNewSiteCategory('');
         fetchUser(); // Refresh user to see new site
-        setMessageModal({ isOpen: true, title: 'Success', message: 'Website added successfully!', type: 'success' });
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Website added and analyzed by AI!', type: 'success' });
       } else {
-        setMessageModal({ isOpen: true, title: 'Error', message: 'Failed to add website', type: 'error' });
+        const err = await res.json();
+        setMessageModal({ isOpen: true, title: 'Error', message: err.error || 'Failed to add website', type: 'error' });
       }
     } catch (err) {
       console.error(err);
-      setMessageModal({ isOpen: true, title: 'Error', message: 'An unexpected error occurred', type: 'error' });
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Something went wrong', type: 'error' });
+    } finally {
+      setIsAddingSite(false);
     }
   };
 
@@ -283,27 +326,32 @@ const App: React.FC = () => {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
                   value={newSiteUrl}
                   onChange={e => setNewSiteUrl(e.target.value)}
+                  disabled={isAddingSite}
                 />
               </div>
-              <div>
-                <label className="block text-slate-400 text-sm mb-2">Category</label>
-                <select 
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
-                  value={newSiteCategory}
-                  onChange={e => setNewSiteCategory(e.target.value)}
-                >
-                  <option value="">Select Category</option>
-                  <option value="Technology">Technology</option>
-                  <option value="Finance">Finance</option>
-                  <option value="Health">Health</option>
-                  <option value="Lifestyle">Lifestyle</option>
-                  <option value="Education">Education</option>
-                  <option value="Travel">Travel</option>
-                </select>
+              
+              <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
+                <div className="flex gap-3">
+                  <BrainCircuit className="text-blue-400 shrink-0" size={20} />
+                  <p className="text-sm text-blue-200">
+                    Our AI will automatically analyze your website to determine its category, niche, and service location.
+                  </p>
+                </div>
               </div>
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-600/20">
-                Verify & Add Website
+
+              <button 
+                type="submit" 
+                disabled={isAddingSite}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isAddingSite ? (
+                  <>
+                    <RefreshCw className="animate-spin" size={20} />
+                    Analyzing Website...
+                  </>
+                ) : (
+                  'Verify & Add Website'
+                )}
               </button>
             </form>
           </div>
@@ -534,6 +582,7 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
               <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
               <SidebarItem tab={Tab.Guide} icon={BookOpen} label="Guide & Pricing" />
+              <SidebarItem tab={Tab.Profile} icon={UserIcon} label="My Profile" />
             </>
           ) : (
             <>
@@ -681,22 +730,68 @@ const App: React.FC = () => {
 
         {activeTab === Tab.Marketplace && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="relative max-w-xl">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
-              <input 
-                type="text" 
-                placeholder="Search categories or niches..." 
-                className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-blue-500 outline-none text-slate-100 transition-all"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                <input 
+                  type="text" 
+                  placeholder="Search categories or niches..." 
+                  className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-blue-500 outline-none text-slate-100 transition-all"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              <select 
+                className="bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-4 text-slate-300 outline-none focus:border-blue-500"
+                value={filterServiceType}
+                onChange={(e) => setFilterServiceType(e.target.value as any)}
+              >
+                <option value="all">All Types</option>
+                <option value="worldwide">Worldwide</option>
+                <option value="local">Local Business</option>
+              </select>
+
+              {filterServiceType === 'local' && (
+                <>
+                  <input 
+                    type="text" 
+                    placeholder="Country" 
+                    className="bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-4 text-slate-100 outline-none focus:border-blue-500 w-32"
+                    value={filterCountry}
+                    onChange={(e) => setFilterCountry(e.target.value)}
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="City" 
+                    className="bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-4 text-slate-100 outline-none focus:border-blue-500 w-32"
+                    value={filterCity}
+                    onChange={(e) => setFilterCity(e.target.value)}
+                  />
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {marketplaceSites.filter(s => s.category.toLowerCase().includes(searchQuery.toLowerCase()) || s.url.includes(searchQuery)).map(site => (
+              {marketplaceSites.filter(s => {
+                const matchesSearch = s.category.toLowerCase().includes(searchQuery.toLowerCase()) || s.url.includes(searchQuery);
+                const matchesType = filterServiceType === 'all' || s.serviceType === filterServiceType;
+                const matchesCountry = !filterCountry || s.location?.country?.toLowerCase().includes(filterCountry.toLowerCase());
+                const matchesCity = !filterCity || s.location?.city?.toLowerCase().includes(filterCity.toLowerCase());
+                
+                return matchesSearch && matchesType && matchesCountry && matchesCity;
+              }).map(site => (
                 <div key={site.id} className="bg-slate-900/50 rounded-3xl p-6 border border-slate-800 hover:border-blue-500/30 transition-all group">
                   <div className="flex justify-between items-start mb-4">
-                    <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold uppercase tracking-wider">{site.category}</span>
+                    <div className="flex flex-col gap-1">
+                      <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold uppercase tracking-wider w-fit">{site.category}</span>
+                      {site.serviceType === 'local' && site.location && (
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <MapPin size={12} />
+                          {site.location.city}, {site.location.country}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1 text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded-lg">
                       <Zap size={14} />
                       <span>DA {site.domainAuthority}</span>
@@ -1014,6 +1109,78 @@ const App: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === Tab.Profile && (
+          <div className="max-w-2xl mx-auto bg-slate-900/50 rounded-3xl border border-slate-800 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-indigo-600/20 overflow-hidden">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  user.name ? user.name.substring(0, 2).toUpperCase() : 'U'
+                )}
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white">{user.name}</h3>
+                <p className="text-slate-400">{user.email}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-400">Full Name</label>
+                  <input 
+                    type="text" 
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                    placeholder="Your Name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-400">Phone Number</label>
+                  <input 
+                    type="tel" 
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                    placeholder="+1 (555) 000-0000"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-400">Avatar URL</label>
+                <input 
+                  type="url" 
+                  value={profileForm.avatar}
+                  onChange={(e) => setProfileForm({...profileForm, avatar: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                  placeholder="https://example.com/avatar.jpg"
+                />
+                <p className="text-xs text-slate-500">Link to an image file for your profile picture.</p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800">
+                <button 
+                  type="submit" 
+                  disabled={isSavingProfile}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSavingProfile ? (
+                    <>
+                      <RefreshCw className="animate-spin" size={20} />
+                      Saving Changes...
+                    </>
+                  ) : (
+                    'Save Profile'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         )}
 

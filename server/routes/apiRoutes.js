@@ -3,12 +3,30 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const requireLogin = require('../middlewares/requireLogin');
 const { estimateAuthority } = require('../services/ai');
+const { sendNotification } = require('../services/notification');
+const { analyzeWebsite } = require('../services/gemini');
 
 const Website = mongoose.model('Website');
 const User = mongoose.model('User');
 const Transaction = mongoose.model('Transaction');
 
 module.exports = app => {
+  // Update User Profile
+  app.put('/api/user', requireLogin, async (req, res) => {
+    const { name, phone, avatar } = req.body;
+    
+    try {
+      if (name) req.user.name = name;
+      if (phone) req.user.phone = phone;
+      if (avatar) req.user.avatar = avatar;
+      
+      await req.user.save();
+      res.send(req.user);
+    } catch (err) {
+      res.status(422).send(err);
+    }
+  });
+
   // Get all websites for marketplace (excluding own)
   app.get('/api/marketplace', async (req, res) => {
     // If user is logged in, exclude their sites
@@ -19,7 +37,7 @@ module.exports = app => {
 
   // Add a new website
   app.post('/api/websites', requireLogin, async (req, res) => {
-    const { url, category } = req.body;
+    const { url } = req.body;
 
     // Basic validation
     if (!url) return res.status(400).send({ error: 'URL is required' });
@@ -28,12 +46,17 @@ module.exports = app => {
     const existing = await Website.findOne({ url });
     if (existing) return res.status(400).send({ error: 'Website already exists' });
 
+    // AI Analysis (Category & Location)
+    const aiData = await analyzeWebsite(url);
+
     // AI Domain Authority calculation
     const domainAuthority = await estimateAuthority(url);
 
     const website = new Website({
       url,
-      category,
+      category: aiData.category,
+      serviceType: aiData.serviceType,
+      location: aiData.location,
       domainAuthority,
       owner: req.user._id,
       verified: true, // Auto-verify for now
@@ -99,6 +122,14 @@ module.exports = app => {
       // Save transactions (Seller points are NOT added yet)
       await spendTransaction.save();
       await earnTransaction.save();
+
+      // Notify Seller
+      sendNotification('TRANSACTION_CREATED', seller, {
+        type: 'link_request',
+        buyer: req.user.name,
+        targetUrl: targetUrl,
+        points: cost
+      });
 
       res.send({ user: req.user, transaction: spendTransaction });
     } catch (err) {
@@ -167,12 +198,21 @@ module.exports = app => {
       req.user.points += transaction.points;
       await req.user.save();
 
-      // Update the related buyer transaction
+      // Update the related buyer transaction and notify buyer
       if (transaction.relatedTransactionId) {
-        await Transaction.findByIdAndUpdate(transaction.relatedTransactionId, { 
+        const buyerTransaction = await Transaction.findByIdAndUpdate(transaction.relatedTransactionId, { 
           status: 'completed',
           verificationUrl: verificationUrl
-        });
+        }).populate('user');
+
+        if (buyerTransaction && buyerTransaction.user) {
+          sendNotification('TRANSACTION_VERIFIED', buyerTransaction.user, {
+            type: 'link_verified',
+            seller: req.user.name,
+            verificationUrl: verificationUrl,
+            targetUrl: transaction.sourceUrl
+          });
+        }
       }
 
       res.send({ transaction, user: req.user });

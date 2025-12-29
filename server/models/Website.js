@@ -5,6 +5,12 @@ const WebsiteSchema = new mongoose.Schema({
   domainAuthority: { type: Number, default: 0 },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   category: String,
+  serviceType: { type: String, enum: ['local', 'worldwide'], default: 'worldwide' },
+  location: {
+    country: String,
+    state: String,
+    city: String
+  },
   isVerified: { type: Boolean, default: false },
   lastChecked: Date
 });

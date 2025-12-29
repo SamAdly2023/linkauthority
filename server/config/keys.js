@@ -5,5 +5,6 @@ module.exports = {
   cookieKey: process.env.COOKIE_KEY,
   paypalClientID: process.env.PAYPAL_CLIENT_ID,
   paypalSecret: process.env.PAYPAL_SECRET,
+  ghlWebhookUrl: process.env.GHL_WEBHOOK_URL,
   adminEmail: 'samadly728@gmail.com'
 };
