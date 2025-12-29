@@ -16,9 +16,13 @@ if (!keys.googleClientID || !keys.googleClientSecret) {
   console.error("MISSING GOOGLE AUTH KEYS! Authentication will fail.");
 }
 
-mongoose.connect(keys.mongoURI);
+mongoose.connect(keys.mongoURI)
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => console.error('MongoDB Connection Error:', err));
 
 const app = express();
+
+app.set('trust proxy', 1); // Trust first proxy for Render
 
 app.use(express.json()); // Enable JSON body parsing
 app.use(cors());
