@@ -36,6 +36,15 @@ const App: React.FC = () => {
   const [newSiteUrl, setNewSiteUrl] = useState('');
   const [newSiteCategory, setNewSiteCategory] = useState('');
 
+  // Modal States
+  const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, site: Website | null }>({ isOpen: false, site: null });
+  const [verifyModal, setVerifyModal] = useState<{ isOpen: boolean, transaction: Transaction | null }>({ isOpen: false, transaction: null });
+  const [messageModal, setMessageModal] = useState<{ isOpen: boolean, title: string, message: string, type: 'success' | 'error' }>({ isOpen: false, title: '', message: '', type: 'success' });
+  
+  // Input States for Modals
+  const [purchaseSourceUrl, setPurchaseSourceUrl] = useState('');
+  const [verificationUrl, setVerificationUrl] = useState('');
+
   useEffect(() => {
     fetchUser();
   }, []);
@@ -88,81 +97,88 @@ const App: React.FC = () => {
         setNewSiteUrl('');
         setNewSiteCategory('');
         fetchUser(); // Refresh user to see new site
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Website added successfully!', type: 'success' });
       } else {
-        alert('Failed to add website');
+        setMessageModal({ isOpen: true, title: 'Error', message: 'Failed to add website', type: 'error' });
       }
     } catch (err) {
       console.error(err);
+      setMessageModal({ isOpen: true, title: 'Error', message: 'An unexpected error occurred', type: 'error' });
     }
   };
 
-  const handleVerifyLink = async (tx: Transaction) => {
-    const url = prompt(`Enter the URL where you placed the backlink to ${tx.sourceUrl}:`);
-    if (!url) return;
+  const openVerifyModal = (tx: Transaction) => {
+    setVerifyModal({ isOpen: true, transaction: tx });
+    setVerificationUrl('');
+  };
+
+  const submitVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!verifyModal.transaction || !verificationUrl) return;
 
     try {
       const res = await fetch('/api/transaction/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionId: tx._id || tx.id, verificationUrl: url })
+        body: JSON.stringify({ transactionId: verifyModal.transaction._id || verifyModal.transaction.id, verificationUrl })
       });
 
       if (res.ok) {
-        alert('Verification successful! Points credited.');
+        setVerifyModal({ isOpen: false, transaction: null });
         fetchUser();
         fetchTransactions();
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Verification successful! Points credited.', type: 'success' });
       } else {
         const err = await res.json();
-        alert(err.error || 'Verification failed');
+        setMessageModal({ isOpen: true, title: 'Verification Failed', message: err.error || 'Verification failed', type: 'error' });
       }
     } catch (err) {
       console.error(err);
-      alert('Verification failed');
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Verification failed due to network error', type: 'error' });
     }
   };
 
-  const handleBuyLink = async (site: Website) => {
+  const openPurchaseModal = (site: Website) => {
     if (!user || user.websites.length === 0) {
-      alert("You need to add a website first to be the source of the link (or just to have an account context).");
+      setMessageModal({ 
+        isOpen: true, 
+        title: 'Action Required', 
+        message: "You need to add a website first to be the source of the link (or just to have an account context).", 
+        type: 'error' 
+      });
       return;
     }
-    
-    // For simplicity, we'll use the first user website as the source, 
-    // or we could prompt the user to select which site they want to link FROM.
-    // In a real app, you'd select "I want a link on [Target] pointing to [MySite]".
-    // The API expects sourceUrl (where the link will be placed? No, usually you buy a link ON a target site).
-    // Wait, if I buy a link, I want a link ON `site.url` pointing TO `mySite.url`.
-    // My API `transaction` endpoint expects: targetUrl, sourceUrl.
-    // Let's assume:
-    // targetUrl = The site I am buying a link ON (the seller's site).
-    // sourceUrl = My site that I want to promote.
-    
-    const mySiteUrl = prompt("Enter the URL of your website you want to promote:");
-    if (!mySiteUrl) return;
+    setPurchaseModal({ isOpen: true, site });
+    setPurchaseSourceUrl('');
+  };
 
-    if (confirm(`Purchase a backlink on ${site.url} for ${site.domainAuthority} points?`)) {
-      try {
-        const res = await fetch('/api/transaction', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            targetUrl: site.url, // The seller's site
-            sourceUrl: mySiteUrl, // My site
-            cost: site.domainAuthority
-          })
-        });
+  const submitPurchase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!purchaseModal.site || !purchaseSourceUrl) return;
 
-        if (res.ok) {
-          alert('Transaction successful!');
-          fetchUser();
-          fetchTransactions();
-        } else {
-          const err = await res.json();
-          alert(err.error || 'Transaction failed');
-        }
-      } catch (err) {
-        console.error(err);
+    try {
+      const res = await fetch('/api/transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetUrl: purchaseModal.site.url, // The seller's site
+          sourceUrl: purchaseSourceUrl, // My site
+          cost: purchaseModal.site.domainAuthority
+        })
+      });
+
+      if (res.ok) {
+        setPurchaseModal({ isOpen: false, site: null });
+        fetchUser();
+        fetchTransactions();
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Transaction initiated! Awaiting verification.', type: 'success' });
+      } else {
+        const err = await res.json();
+        setMessageModal({ isOpen: true, title: 'Transaction Failed', message: err.error || 'Transaction failed', type: 'error' });
       }
+    } catch (err) {
+      console.error(err);
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Transaction failed due to network error', type: 'error' });
     }
   };
 
@@ -213,9 +229,9 @@ const App: React.FC = () => {
     <div className="flex h-screen bg-slate-950 overflow-hidden relative">
       {/* Add Site Modal */}
       {showAddSiteModal && (
-        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative">
-            <button onClick={() => setShowAddSiteModal(false)} className="absolute right-4 top-4 text-slate-500 hover:text-white">
+        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+            <button onClick={() => setShowAddSiteModal(false)} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
               <X size={24} />
             </button>
             <h3 className="text-2xl font-bold text-white mb-6">Add New Website</h3>
@@ -226,7 +242,7 @@ const App: React.FC = () => {
                   type="url" 
                   required
                   placeholder="https://example.com"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
                   value={newSiteUrl}
                   onChange={e => setNewSiteUrl(e.target.value)}
                 />
@@ -235,7 +251,7 @@ const App: React.FC = () => {
                 <label className="block text-slate-400 text-sm mb-2">Category</label>
                 <select 
                   required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
                   value={newSiteCategory}
                   onChange={e => setNewSiteCategory(e.target.value)}
                 >
@@ -248,10 +264,122 @@ const App: React.FC = () => {
                   <option value="Travel">Travel</option>
                 </select>
               </div>
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all">
+              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-600/20">
                 Verify & Add Website
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Modal */}
+      {purchaseModal.isOpen && purchaseModal.site && (
+        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+            <button onClick={() => setPurchaseModal({ isOpen: false, site: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-600/20 text-blue-500 rounded-xl">
+                <Zap size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Request Backlink</h3>
+                <p className="text-slate-400 text-sm">From {purchaseModal.site.url}</p>
+              </div>
+            </div>
+            
+            <form onSubmit={submitPurchase} className="space-y-6">
+              <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-800">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-slate-400">Cost</span>
+                  <span className="text-white font-bold">{purchaseModal.site.domainAuthority} Points</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Your Balance</span>
+                  <span className={`${(user?.points || 0) < purchaseModal.site.domainAuthority ? 'text-red-400' : 'text-green-400'} font-bold`}>
+                    {user?.points} Points
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Your Website URL (Source)</label>
+                <input 
+                  type="url" 
+                  required
+                  placeholder="https://my-site.com"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                  value={purchaseSourceUrl}
+                  onChange={e => setPurchaseSourceUrl(e.target.value)}
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  This is the site you want to promote. The seller will place a link to this URL on their site.
+                </p>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={(user?.points || 0) < purchaseModal.site.domainAuthority}
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-600/20"
+              >
+                Confirm Purchase
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Verify Modal */}
+      {verifyModal.isOpen && verifyModal.transaction && (
+        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+            <button onClick={() => setVerifyModal({ isOpen: false, transaction: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+            <h3 className="text-2xl font-bold text-white mb-2">Verify Backlink</h3>
+            <p className="text-slate-400 text-sm mb-6">
+              Submit the URL where you placed the link to <span className="text-white font-mono">{verifyModal.transaction.sourceUrl}</span>
+            </p>
+            
+            <form onSubmit={submitVerification} className="space-y-4">
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Verification URL</label>
+                <input 
+                  type="url" 
+                  required
+                  placeholder={`https://${verifyModal.transaction.targetUrl}/blog/post-1`}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                  value={verificationUrl}
+                  onChange={e => setVerificationUrl(e.target.value)}
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  Our system will scan this page for a dofollow link to the buyer's site.
+                </p>
+              </div>
+              <button type="submit" className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-600/20">
+                Verify & Claim Points
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Message Modal (Alert Replacement) */}
+      {messageModal.isOpen && (
+        <div className="absolute inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-sm relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200 text-center">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${messageModal.type === 'success' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+              {messageModal.type === 'success' ? <ShieldCheck size={32} /> : <X size={32} />}
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">{messageModal.title}</h3>
+            <p className="text-slate-400 mb-6">{messageModal.message}</p>
+            <button 
+              onClick={() => setMessageModal({ ...messageModal, isOpen: false })}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-all"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
@@ -438,7 +566,7 @@ const App: React.FC = () => {
                   </div>
                   <div className="flex gap-3">
                     <button 
-                      onClick={() => handleBuyLink(site)}
+                      onClick={() => openPurchaseModal(site)}
                       className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50" 
                       disabled={user.points < site.domainAuthority}
                     >
@@ -567,7 +695,7 @@ const App: React.FC = () => {
                         
                         {tx.status === 'pending' && tx.type === 'earn' && (
                             <button 
-                                onClick={() => handleVerifyLink(tx)}
+                                onClick={() => openVerifyModal(tx)}
                                 className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-500 transition-colors"
                             >
                                 Verify Link
