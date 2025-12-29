@@ -18,61 +18,128 @@ import {
   ExternalLink,
   BrainCircuit,
   Settings,
-  User as UserIcon
+  User as UserIcon,
+  X
 } from 'lucide-react';
 import { Tab, User, Website, Transaction } from './types';
 import { getSEOAdvice } from './services/geminiService';
 
-// Mock Data
-const INITIAL_USER: User = {
-  id: 'u1',
-  name: 'Alex SEO',
-  email: 'alex@example.com',
-  points: 125,
-  websites: [
-    { id: 'w1', url: 'https://techblog.io', domainAuthority: 42, category: 'Technology', verified: true },
-    { id: 'w2', url: 'https://devtips.com', domainAuthority: 31, category: 'Education', verified: true },
-  ]
-};
-
-const MARKETPLACE_SITES: Website[] = [
-  { id: 'm1', url: 'https://financesage.com', domainAuthority: 55, category: 'Finance', verified: true },
-  { id: 'm2', url: 'https://healthyliving.net', domainAuthority: 38, category: 'Health', verified: true },
-  { id: 'm3', url: 'https://gadgetmaster.xyz', domainAuthority: 45, category: 'Tech', verified: true },
-  { id: 'm4', url: 'https://travelbuddy.org', domainAuthority: 29, category: 'Travel', verified: true },
-  { id: 'm5', url: 'https://fashionforward.it', domainAuthority: 41, category: 'Lifestyle', verified: true },
-];
-
-const RECENT_TRANSACTIONS: Transaction[] = [
-  { id: 't1', type: 'earn', points: 42, sourceUrl: 'https://techblog.io', targetUrl: 'https://other-guy.com', timestamp: '2023-11-20', status: 'completed' },
-  { id: 't2', type: 'spend', points: 30, sourceUrl: 'https://premium-seo.net', targetUrl: 'https://devtips.com', timestamp: '2023-11-19', status: 'completed' },
-  { id: 't3', type: 'earn', points: 31, sourceUrl: 'https://devtips.com', targetUrl: 'https://client-site.io', timestamp: '2023-11-18', status: 'completed' },
-];
-
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Dashboard);
   const [user, setUser] = useState<User | null>(null);
+  const [marketplaceSites, setMarketplaceSites] = useState<Website[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [aiAdvice, setAiAdvice] = useState<string>('');
   const [loadingAi, setLoadingAi] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddSiteModal, setShowAddSiteModal] = useState(false);
+  const [newSiteUrl, setNewSiteUrl] = useState('');
+  const [newSiteCategory, setNewSiteCategory] = useState('');
 
   useEffect(() => {
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchMarketplace();
+      fetchTransactions();
+    }
+  }, [user]);
+
+  const fetchUser = () => {
     fetch('/api/current_user')
       .then(res => res.json())
       .then(data => {
-        if (data && data._id) {
-           // Transform backend user to frontend user type if necessary
-           // For now, we'll just use the data and ensure it matches or extend the type
-           // We might need to map _id to id
+        if (data && (data._id || data.googleId)) {
            setUser({ ...data, id: data._id });
-        } else {
-            // For demo purposes, if no backend, maybe keep using mock?
-            // But user asked for login functionality.
-            // So we stay logged out.
         }
       })
       .catch(err => console.log(err));
-  }, []);
+  };
+
+  const fetchMarketplace = () => {
+    fetch('/api/marketplace')
+      .then(res => res.json())
+      .then(data => setMarketplaceSites(data.map((d: any) => ({ ...d, id: d._id }))))
+      .catch(err => console.log(err));
+  };
+
+  const fetchTransactions = () => {
+    fetch('/api/transactions')
+      .then(res => res.json())
+      .then(data => setTransactions(data.map((d: any) => ({ ...d, id: d._id }))))
+      .catch(err => console.log(err));
+  };
+
+  const handleAddWebsite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSiteUrl || !newSiteCategory) return;
+
+    try {
+      const res = await fetch('/api/websites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: newSiteUrl, category: newSiteCategory })
+      });
+      
+      if (res.ok) {
+        setShowAddSiteModal(false);
+        setNewSiteUrl('');
+        setNewSiteCategory('');
+        fetchUser(); // Refresh user to see new site
+      } else {
+        alert('Failed to add website');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleBuyLink = async (site: Website) => {
+    if (!user || user.websites.length === 0) {
+      alert("You need to add a website first to be the source of the link (or just to have an account context).");
+      return;
+    }
+    
+    // For simplicity, we'll use the first user website as the source, 
+    // or we could prompt the user to select which site they want to link FROM.
+    // In a real app, you'd select "I want a link on [Target] pointing to [MySite]".
+    // The API expects sourceUrl (where the link will be placed? No, usually you buy a link ON a target site).
+    // Wait, if I buy a link, I want a link ON `site.url` pointing TO `mySite.url`.
+    // My API `transaction` endpoint expects: targetUrl, sourceUrl.
+    // Let's assume:
+    // targetUrl = The site I am buying a link ON (the seller's site).
+    // sourceUrl = My site that I want to promote.
+    
+    const mySiteUrl = prompt("Enter the URL of your website you want to promote:");
+    if (!mySiteUrl) return;
+
+    if (confirm(`Purchase a backlink on ${site.url} for ${site.domainAuthority} points?`)) {
+      try {
+        const res = await fetch('/api/transaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetUrl: site.url, // The seller's site
+            sourceUrl: mySiteUrl, // My site
+            cost: site.domainAuthority
+          })
+        });
+
+        if (res.ok) {
+          alert('Transaction successful!');
+          fetchUser();
+          fetchTransactions();
+        } else {
+          const err = await res.json();
+          alert(err.error || 'Transaction failed');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
 
   const handleGetAdvice = async () => {
     if (!user || !user.websites || user.websites.length === 0) return;
@@ -98,11 +165,6 @@ const App: React.FC = () => {
             <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
             Sign in with Google
           </a>
-          <div className="mt-6">
-             <button onClick={() => setUser(INITIAL_USER)} className="text-sm text-slate-500 hover:text-slate-300 underline">
-                Continue as Guest (Demo)
-             </button>
-          </div>
         </div>
       </div>
     );
@@ -123,7 +185,52 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden">
+    <div className="flex h-screen bg-slate-950 overflow-hidden relative">
+      {/* Add Site Modal */}
+      {showAddSiteModal && (
+        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative">
+            <button onClick={() => setShowAddSiteModal(false)} className="absolute right-4 top-4 text-slate-500 hover:text-white">
+              <X size={24} />
+            </button>
+            <h3 className="text-2xl font-bold text-white mb-6">Add New Website</h3>
+            <form onSubmit={handleAddWebsite} className="space-y-4">
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Website URL</label>
+                <input 
+                  type="url" 
+                  required
+                  placeholder="https://example.com"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none"
+                  value={newSiteUrl}
+                  onChange={e => setNewSiteUrl(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Category</label>
+                <select 
+                  required
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none"
+                  value={newSiteCategory}
+                  onChange={e => setNewSiteCategory(e.target.value)}
+                >
+                  <option value="">Select Category</option>
+                  <option value="Technology">Technology</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Health">Health</option>
+                  <option value="Lifestyle">Lifestyle</option>
+                  <option value="Education">Education</option>
+                  <option value="Travel">Travel</option>
+                </select>
+              </div>
+              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all">
+                Verify & Add Website
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside className="w-64 border-r border-slate-800 flex flex-col p-6 gap-8 shrink-0">
         <div className="flex items-center gap-2 px-2">
@@ -177,7 +284,10 @@ const App: React.FC = () => {
                  {user.points} Points Available
                </span>
             </div>
-            <button className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 font-medium">
+            <button 
+              onClick={() => setShowAddSiteModal(true)}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 font-medium"
+            >
               <Plus size={18} />
               Add Website
             </button>
@@ -190,8 +300,8 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { label: 'Active Sites', value: user.websites.length, icon: Globe, color: 'blue' },
-                { label: 'Links Hosted', value: 124, icon: ArrowUpRight, color: 'green' },
-                { label: 'Links Received', value: 86, icon: ArrowDownLeft, color: 'purple' },
+                { label: 'Links Hosted', value: transactions.filter(t => t.type === 'earn').length, icon: ArrowUpRight, color: 'green' },
+                { label: 'Links Received', value: transactions.filter(t => t.type === 'spend').length, icon: ArrowDownLeft, color: 'purple' },
               ].map((stat, i) => (
                 <div key={i} className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800 flex items-center justify-between">
                   <div>
@@ -246,20 +356,21 @@ const App: React.FC = () => {
               <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800">
                 <h3 className="text-xl font-bold mb-6">Recent Activity</h3>
                 <div className="space-y-6">
-                  {RECENT_TRANSACTIONS.map(tx => (
+                  {transactions.slice(0, 3).map(tx => (
                     <div key={tx.id} className="flex gap-4 items-start">
                       <div className={`p-2 rounded-lg shrink-0 ${tx.type === 'earn' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                         {tx.type === 'earn' ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate">{tx.type === 'earn' ? 'Point Credit' : 'Link Purchase'}</p>
-                        <p className="text-xs text-slate-500 truncate">{tx.timestamp}</p>
+                        <p className="text-xs text-slate-500 truncate">{new Date(tx.timestamp).toLocaleDateString()}</p>
                       </div>
                       <div className={`text-sm font-bold ${tx.type === 'earn' ? 'text-green-500' : 'text-red-500'}`}>
                         {tx.type === 'earn' ? '+' : '-'}{tx.points}
                       </div>
                     </div>
                   ))}
+                  {transactions.length === 0 && <p className="text-slate-500 text-sm">No transactions yet.</p>}
                 </div>
                 <button 
                   onClick={() => setActiveTab(Tab.History)}
@@ -286,7 +397,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {MARKETPLACE_SITES.filter(s => s.category.toLowerCase().includes(searchQuery.toLowerCase()) || s.url.includes(searchQuery)).map(site => (
+              {marketplaceSites.filter(s => s.category.toLowerCase().includes(searchQuery.toLowerCase()) || s.url.includes(searchQuery)).map(site => (
                 <div key={site.id} className="bg-slate-900/50 rounded-3xl p-6 border border-slate-800 hover:border-blue-500/30 transition-all group">
                   <div className="flex justify-between items-start mb-4">
                     <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold uppercase tracking-wider">{site.category}</span>
@@ -301,7 +412,11 @@ const App: React.FC = () => {
                     Verified Publisher
                   </div>
                   <div className="flex gap-3">
-                    <button className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50" disabled={user.points < site.domainAuthority}>
+                    <button 
+                      onClick={() => handleBuyLink(site)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50" 
+                      disabled={user.points < site.domainAuthority}
+                    >
                       Request Link ({site.domainAuthority} pts)
                     </button>
                     <button className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all">
@@ -310,6 +425,11 @@ const App: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {marketplaceSites.length === 0 && (
+                <div className="col-span-full text-center py-10 text-slate-500">
+                  No websites available in the marketplace yet. Be the first to add one!
+                </div>
+              )}
             </div>
             
             {user.points < 1 && (
@@ -375,7 +495,10 @@ const App: React.FC = () => {
                    </tbody>
                  </table>
                </div>
-               <button className="w-full mt-6 py-4 border-2 border-dashed border-slate-800 hover:border-blue-500/50 hover:bg-blue-500/5 rounded-2xl flex items-center justify-center gap-2 text-slate-500 hover:text-blue-400 transition-all font-medium">
+               <button 
+                onClick={() => setShowAddSiteModal(true)}
+                className="w-full mt-6 py-4 border-2 border-dashed border-slate-800 hover:border-blue-500/50 hover:bg-blue-500/5 rounded-2xl flex items-center justify-center gap-2 text-slate-500 hover:text-blue-400 transition-all font-medium"
+               >
                  <Plus size={20} />
                  Add Another Website
                </button>
@@ -393,7 +516,7 @@ const App: React.FC = () => {
             </div>
             <div className="p-8">
                <div className="space-y-4">
-                 {RECENT_TRANSACTIONS.map(tx => (
+                 {transactions.map(tx => (
                    <div key={tx.id} className="flex items-center justify-between p-6 bg-slate-800/30 rounded-2xl border border-slate-800/50 hover:bg-slate-800/50 transition-all">
                      <div className="flex items-center gap-4">
                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${tx.type === 'earn' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
@@ -415,10 +538,11 @@ const App: React.FC = () => {
                         <p className={`text-xl font-black ${tx.type === 'earn' ? 'text-green-500' : 'text-red-500'}`}>
                           {tx.type === 'earn' ? '+' : '-'}{tx.points}
                         </p>
-                        <p className="text-xs text-slate-500 font-medium">{tx.timestamp}</p>
+                        <p className="text-xs text-slate-500 font-medium">{new Date(tx.timestamp).toLocaleDateString()}</p>
                      </div>
                    </div>
                  ))}
+                 {transactions.length === 0 && <p className="text-slate-500 text-center">No transactions found.</p>}
                </div>
             </div>
           </div>

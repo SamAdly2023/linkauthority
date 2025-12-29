@@ -7,14 +7,20 @@ require('dotenv').config();
 
 require('./models/User');
 require('./models/Website');
+require('./models/Transaction');
 require('./services/passport');
 
 const keys = require('./config/keys');
+
+if (!keys.googleClientID || !keys.googleClientSecret) {
+  console.error("MISSING GOOGLE AUTH KEYS! Authentication will fail.");
+}
 
 mongoose.connect(keys.mongoURI);
 
 const app = express();
 
+app.use(express.json()); // Enable JSON body parsing
 app.use(cors());
 app.use(
   cookieSession({
@@ -26,6 +32,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 require('./routes/authRoutes')(app);
+require('./routes/apiRoutes')(app);
 
 if (process.env.NODE_ENV === 'production') {
   const path = require('path');
