@@ -38,6 +38,16 @@ app.use(passport.session());
 require('./routes/authRoutes')(app);
 require('./routes/apiRoutes')(app);
 
+// Global Error Handler to debug 500 errors
+app.use((err, req, res, next) => {
+  console.error("Global Error Handler Caught:", err);
+  res.status(500).json({ 
+    error: "Internal Server Error", 
+    message: err.message, 
+    stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack 
+  });
+});
+
 if (process.env.NODE_ENV === 'production') {
   const path = require('path');
   app.use(express.static(path.resolve(__dirname, '../dist')));
