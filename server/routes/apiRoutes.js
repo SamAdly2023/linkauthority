@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const requireLogin = require('../middlewares/requireLogin');
+const { estimateAuthority } = require('../services/ai');
 
 const Website = mongoose.model('Website');
 const User = mongoose.model('User');
@@ -25,8 +26,8 @@ module.exports = app => {
     const existing = await Website.findOne({ url });
     if (existing) return res.status(400).send({ error: 'Website already exists' });
 
-    // Mock Domain Authority calculation (Random 10-60)
-    const domainAuthority = Math.floor(Math.random() * 50) + 10;
+    // AI Domain Authority calculation
+    const domainAuthority = await estimateAuthority(url);
 
     const website = new Website({
       url,
