@@ -16,7 +16,11 @@ module.exports = app => {
     }
   );
 
-  app.get('/api/current_user', (req, res) => {
+  app.get('/api/current_user', async (req, res) => {
+    if (req.user) {
+      // Populate websites to send full objects, not just IDs
+      await req.user.populate('websites');
+    }
     res.send(req.user);
   });
 
