@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const axios = require('axios');
+const cheerio = require('cheerio');
 const requireLogin = require('../middlewares/requireLogin');
 const { estimateAuthority } = require('../services/ai');
 
@@ -65,42 +67,119 @@ module.exports = app => {
 
     const seller = targetSite.owner;
 
-    // Create Transaction Record
-    const transaction = new Transaction({
+    // Create Transaction Record for Buyer (Spend)
+    const spendTransaction = new Transaction({
       type: 'spend',
       points: cost,
       sourceUrl,
       targetUrl,
       user: req.user._id,
-      status: 'completed'
+      status: 'pending'
     });
 
+    // Create Transaction Record for Seller (Earn)
+    const earnTransaction = new Transaction({
+      type: 'earn',
+      points: cost,
+      sourceUrl,
+      targetUrl,
+      user: seller._id,
+      status: 'pending'
+    });
+
+    // Link them
+    spendTransaction.relatedTransactionId = earnTransaction._id;
+    earnTransaction.relatedTransactionId = spendTransaction._id;
+
     try {
-      // Deduct points from buyer
+      // Deduct points from buyer immediately (Escrow)
       req.user.points -= cost;
       await req.user.save();
 
-      // Add points to seller
-      seller.points += cost;
-      await seller.save();
-
-      // Save transaction
-      await transaction.save();
-
-      // Create a mirror transaction for the seller (earn)
-      const earnTransaction = new Transaction({
-        type: 'earn',
-        points: cost,
-        sourceUrl,
-        targetUrl,
-        user: seller._id,
-        status: 'completed'
-      });
+      // Save transactions (Seller points are NOT added yet)
+      await spendTransaction.save();
       await earnTransaction.save();
 
-      res.send({ user: req.user, transaction });
+      res.send({ user: req.user, transaction: spendTransaction });
     } catch (err) {
       res.status(422).send(err);
+    }
+  });
+
+  // Verify Link (New Endpoint)
+  app.post('/api/transaction/verify', requireLogin, async (req, res) => {
+    const { transactionId, verificationUrl } = req.body;
+
+    try {
+      const transaction = await Transaction.findById(transactionId).populate('user');
+      if (!transaction) return res.status(404).send({ error: 'Transaction not found' });
+
+      // Only the seller (who earns) can submit verification
+      if (transaction.user._id.toString() !== req.user._id.toString()) {
+        return res.status(403).send({ error: 'Unauthorized' });
+      }
+
+      if (transaction.type !== 'earn') {
+        return res.status(400).send({ error: 'Only the earner can submit verification' });
+      }
+
+      if (transaction.status === 'completed') {
+        return res.status(400).send({ error: 'Transaction already completed' });
+      }
+
+      // Fetch the verification URL
+      const response = await axios.get(verificationUrl, {
+        headers: { 'User-Agent': 'LinkAuthority-Bot/1.0' },
+        timeout: 10000
+      });
+      
+      const $ = cheerio.load(response.data);
+      
+      // Check for link to sourceUrl (Buyer's site)
+      // transaction.sourceUrl is the Buyer's site
+      const normalize = (url) => url ? url.replace(/\/$/, '').toLowerCase() : '';
+      const targetLink = normalize(transaction.sourceUrl);
+
+      let found = false;
+      $('a').each((i, link) => {
+        const href = $(link).attr('href');
+        const rel = $(link).attr('rel') || '';
+        
+        if (href && normalize(href).includes(targetLink)) {
+          // Check for nofollow
+          if (!rel.toLowerCase().includes('nofollow')) {
+            found = true;
+            return false; // break loop
+          }
+        }
+      });
+
+      if (!found) {
+        return res.status(400).send({ error: `Dofollow backlink to ${transaction.sourceUrl} not found on the page.` });
+      }
+
+      // If found, complete the transaction
+      transaction.status = 'completed';
+      transaction.verificationUrl = verificationUrl;
+      await transaction.save();
+
+      // Credit the seller
+      req.user.points += transaction.points;
+      await req.user.save();
+
+      // Update the related buyer transaction
+      if (transaction.relatedTransactionId) {
+        await Transaction.findByIdAndUpdate(transaction.relatedTransactionId, { 
+          status: 'completed',
+          verificationUrl: verificationUrl
+        });
+      }
+
+      res.send({ transaction, user: req.user });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ error: 'Verification failed. Could not fetch URL or parse content.' });
     }
   });
 

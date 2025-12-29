@@ -96,6 +96,31 @@ const App: React.FC = () => {
     }
   };
 
+  const handleVerifyLink = async (tx: Transaction) => {
+    const url = prompt(`Enter the URL where you placed the backlink to ${tx.sourceUrl}:`);
+    if (!url) return;
+
+    try {
+      const res = await fetch('/api/transaction/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId: tx._id || tx.id, verificationUrl: url })
+      });
+
+      if (res.ok) {
+        alert('Verification successful! Points credited.');
+        fetchUser();
+        fetchTransactions();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Verification failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Verification failed');
+    }
+  };
+
   const handleBuyLink = async (site: Website) => {
     if (!user || user.websites.length === 0) {
       alert("You need to add a website first to be the source of the link (or just to have an account context).");
@@ -534,11 +559,30 @@ const App: React.FC = () => {
                          </p>
                        </div>
                      </div>
-                     <div className="text-right">
+                     <div className="text-right flex flex-col items-end">
                         <p className={`text-xl font-black ${tx.type === 'earn' ? 'text-green-500' : 'text-red-500'}`}>
                           {tx.type === 'earn' ? '+' : '-'}{tx.points}
                         </p>
-                        <p className="text-xs text-slate-500 font-medium">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                        <p className="text-xs text-slate-500 font-medium mb-2">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                        
+                        {tx.status === 'pending' && tx.type === 'earn' && (
+                            <button 
+                                onClick={() => handleVerifyLink(tx)}
+                                className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-500 transition-colors"
+                            >
+                                Verify Link
+                            </button>
+                        )}
+                        {tx.status === 'pending' && tx.type === 'spend' && (
+                            <span className="px-2 py-1 bg-yellow-500/10 text-yellow-500 text-xs font-bold rounded-lg border border-yellow-500/20">
+                                Awaiting Verification
+                            </span>
+                        )}
+                        {tx.status === 'completed' && tx.verificationUrl && (
+                             <a href={tx.verificationUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline">
+                                 View Proof
+                             </a>
+                        )}
                      </div>
                    </div>
                  ))}

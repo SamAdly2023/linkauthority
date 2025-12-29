@@ -17,12 +17,14 @@ export interface Website {
 
 export interface Transaction {
   id: string;
+  _id?: string;
   type: 'earn' | 'spend';
   points: number;
   sourceUrl: string;
   targetUrl: string;
   timestamp: string;
   status: 'pending' | 'completed' | 'failed';
+  verificationUrl?: string;
 }
 
 export enum Tab {
