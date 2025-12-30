@@ -1,5 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
+import { AIReport } from "../types";
 
 let ai: GoogleGenAI;
 try {
@@ -8,21 +9,63 @@ try {
   console.warn("Gemini AI initialization failed:", error);
 }
 
-export const getSEOAdvice = async (siteUrl: string, da: number) => {
-  if (!ai) return "AI service unavailable.";
+export const getSEOAdvice = async (siteUrl: string, da: number): Promise<AIReport | null> => {
+  if (!ai) return null;
   
-  const prompt = `Act as a senior SEO expert. The website "${siteUrl}" has a Domain Authority of ${da}. 
-  Give 3 actionable tips to improve its link profile and suggest what kind of websites it should exchange links with for maximum growth. 
-  Keep it concise and professional.`;
+  const prompt = `Act as a senior SEO expert. Analyze the website "${siteUrl}" (DA: ${da}).
+  Generate a detailed SEO report in JSON format with the following structure:
+  {
+    "seoScore": number (0-100),
+    "performanceScore": number (0-100),
+    "accessibilityScore": number (0-100),
+    "bestPracticesScore": number (0-100),
+    "summary": "Executive summary of the site's SEO status",
+    "technicalSeo": [
+      { "title": "Issue Title", "status": "pass"|"fail"|"warning", "description": "Details" }
+    ],
+    "backlinkStrategy": {
+      "focus": "Main strategy focus",
+      "recommendedAnchors": ["anchor1", "anchor2"],
+      "targetNiches": ["niche1", "niche2"]
+    },
+    "monthlyGrowth": [
+      { "month": "Jan", "traffic": number, "backlinks": number },
+      { "month": "Feb", "traffic": number, "backlinks": number },
+      { "month": "Mar", "traffic": number, "backlinks": number },
+      { "month": "Apr", "traffic": number, "backlinks": number },
+      { "month": "May", "traffic": number, "backlinks": number },
+      { "month": "Jun", "traffic": number, "backlinks": number }
+    ]
+  }
+  Ensure the data is realistic for a site with DA ${da}.
+  Do not include markdown formatting like \`\`\`json. Just return the raw JSON string.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash-exp',
       contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+      }
     });
-    return response.text;
+    
+    let text = '';
+    if (typeof response.text === 'function') {
+        text = response.text();
+    } else {
+        text = (response as any).text;
+    }
+
+    if (!text) throw new Error("Empty response from AI");
+
+    const data = JSON.parse(text);
+    
+    // Add screenshot URL
+    data.screenshotUrl = `https://image.thum.io/get/width/1200/crop/800/noanimate/${siteUrl}`;
+    
+    return data;
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "Could not generate AI advice at this moment.";
+    return null;
   }
 };

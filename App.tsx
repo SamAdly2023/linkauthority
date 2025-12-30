@@ -30,7 +30,7 @@ import {
   Menu,
   MapPin
 } from 'lucide-react';
-import { Tab, User, Website, Transaction } from './types';
+import { Tab, User, Website, Transaction, AIReport } from './types';
 import { getSEOAdvice } from './services/geminiService';
 import TermsOfService from './TermsOfService';
 import PrivacyPolicy from './PrivacyPolicy';
@@ -41,7 +41,10 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [marketplaceSites, setMarketplaceSites] = useState<Website[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [aiAdvice, setAiAdvice] = useState<string>('');
+  const [aiReport, setAiReport] = useState<AIReport | null>(null);
+  const [selectedAiSite, setSelectedAiSite] = useState<string>('');
+  const [aiSearchQuery, setAiSearchQuery] = useState('');
+  const [isAiDropdownOpen, setIsAiDropdownOpen] = useState(false);
   const [loadingAi, setLoadingAi] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterServiceType, setFilterServiceType] = useState<'all' | 'local' | 'worldwide'>('all');
@@ -420,10 +423,13 @@ const App: React.FC = () => {
   };
 
   const handleGetAdvice = async () => {
-    if (!user || !user.websites || user.websites.length === 0) return;
+    if (!selectedAiSite) return;
+    const site = user?.websites.find(w => w.url === selectedAiSite);
+    if (!site) return;
+
     setLoadingAi(true);
-    const advice = await getSEOAdvice(user.websites[0].url, user.websites[0].domainAuthority);
-    setAiAdvice(advice);
+    const report = await getSEOAdvice(site.url, site.domainAuthority);
+    setAiReport(report);
     setLoadingAi(false);
   };
 
@@ -1397,33 +1403,209 @@ const App: React.FC = () => {
         )}
 
         {activeTab === Tab.AIExpert && (
-          <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
                <BrainCircuit size={120} className="absolute -right-10 -bottom-10 opacity-10" />
                <h3 className="text-3xl font-black mb-4">Gemini AI SEO Expert</h3>
                <p className="text-blue-100 text-lg mb-8 max-w-xl opacity-90">
                  Get specialized advice on link placement, domain strategy, and how to maximize your points exchange efficiency using Google's most powerful AI.
                </p>
-               <button 
-                onClick={handleGetAdvice}
-                disabled={loadingAi}
-                className="bg-white text-blue-700 px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-blue-50 transition-all shadow-xl shadow-blue-900/40 disabled:opacity-50"
-               >
-                 {loadingAi ? <RefreshCw className="animate-spin" /> : <BrainCircuit />}
-                 Analyze my Website Profile
-               </button>
+               
+               <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                 <div className="relative w-full max-w-md">
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Select a website..."
+                            value={selectedAiSite || aiSearchQuery}
+                            onChange={(e) => {
+                                setAiSearchQuery(e.target.value);
+                                setSelectedAiSite('');
+                                setIsAiDropdownOpen(true);
+                            }}
+                            onFocus={() => setIsAiDropdownOpen(true)}
+                            className="w-full bg-blue-800/50 border border-blue-400/30 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        {selectedAiSite && (
+                            <button 
+                                onClick={() => { setSelectedAiSite(''); setAiSearchQuery(''); }}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-300 hover:text-white"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
+                        
+                        {isAiDropdownOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setIsAiDropdownOpen(false)}></div>
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
+                                    {user?.websites
+                                        .filter(w => (w.isVerified || w.verified) && w.url.toLowerCase().includes(aiSearchQuery.toLowerCase()))
+                                        .map(site => (
+                                        <button
+                                            key={site.id}
+                                            onClick={() => {
+                                                setSelectedAiSite(site.url);
+                                                setAiSearchQuery('');
+                                                setIsAiDropdownOpen(false);
+                                            }}
+                                            className="w-full text-left px-4 py-3 hover:bg-slate-800 text-white transition-colors flex justify-between items-center border-b border-slate-800 last:border-0"
+                                        >
+                                            <span className="font-medium">{site.url}</span>
+                                            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded font-bold">DA: {site.domainAuthority}</span>
+                                        </button>
+                                    ))}
+                                    {user?.websites.length === 0 && (
+                                        <div className="p-4 text-slate-500 text-center">No websites added yet.</div>
+                                    )}
+                                    {user?.websites.length > 0 && user?.websites.filter(w => (w.isVerified || w.verified) && w.url.toLowerCase().includes(aiSearchQuery.toLowerCase())).length === 0 && (
+                                        <div className="p-4 text-slate-500 text-center">No matching verified websites found.</div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                 </div>
+
+                 <button 
+                    onClick={handleGetAdvice}
+                    disabled={loadingAi || !selectedAiSite}
+                    className="bg-white text-blue-700 px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-blue-50 transition-all shadow-xl shadow-blue-900/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                    {loadingAi ? <RefreshCw className="animate-spin" /> : <BrainCircuit />}
+                    Generate Report
+                 </button>
+               </div>
             </div>
 
-            {aiAdvice && (
-              <div className="bg-slate-900/50 p-10 rounded-[3rem] border border-slate-800 animate-in fade-in zoom-in duration-500">
-                <div className="flex items-center gap-3 mb-6">
-                   <div className="p-3 bg-blue-500/20 text-blue-400 rounded-2xl">
-                     <Zap size={24} />
-                   </div>
-                   <h4 className="text-2xl font-bold">Expert Recommendations</h4>
+            {aiReport && (
+              <div className="space-y-8 animate-in fade-in zoom-in duration-500">
+                {/* Top Section: Screenshot & Score */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60 z-10"></div>
+                        {aiReport.screenshotUrl && (
+                            <img 
+                                src={aiReport.screenshotUrl} 
+                                alt="Website Screenshot" 
+                                className="w-full h-full object-cover absolute inset-0 opacity-50 group-hover:scale-105 transition-transform duration-700"
+                            />
+                        )}
+                        <div className="relative z-20 h-full flex flex-col justify-end">
+                            <h2 className="text-4xl font-black text-white mb-2">{selectedAiSite}</h2>
+                            <p className="text-slate-300 text-lg line-clamp-2">{aiReport.summary}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-blue-500/5 blur-3xl"></div>
+                        <div className="relative z-10">
+                            <div className="w-40 h-40 rounded-full border-8 border-blue-500 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                                <span className="text-6xl font-black text-white">{aiReport.seoScore}</span>
+                            </div>
+                            <h3 className="text-2xl font-bold text-white mb-2">SEO Score</h3>
+                            <div className="flex gap-4 justify-center mt-4">
+                                <div className="text-center">
+                                    <div className="text-green-400 font-bold text-xl">{aiReport.performanceScore}</div>
+                                    <div className="text-xs text-slate-500 uppercase font-bold">Perf</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-yellow-400 font-bold text-xl">{aiReport.accessibilityScore}</div>
+                                    <div className="text-xs text-slate-500 uppercase font-bold">Access</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-purple-400 font-bold text-xl">{aiReport.bestPracticesScore}</div>
+                                    <div className="text-xs text-slate-500 uppercase font-bold">Best</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="prose prose-invert max-w-none text-slate-300 leading-relaxed whitespace-pre-wrap">
-                  {aiAdvice}
+
+                {/* Charts & Technical SEO */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800">
+                        <h4 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                            <ArrowUpRight className="text-green-500" />
+                            Projected Growth
+                        </h4>
+                        <div className="h-64 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={aiReport.monthlyGrowth}>
+                                    <defs>
+                                        <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                                    <XAxis dataKey="month" stroke="#64748b" />
+                                    <YAxis stroke="#64748b" />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff' }}
+                                        itemStyle={{ color: '#fff' }}
+                                    />
+                                    <Area type="monotone" dataKey="traffic" stroke="#3b82f6" fillOpacity={1} fill="url(#colorTraffic)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800">
+                        <h4 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                            <Settings className="text-slate-400" />
+                            Technical Audit
+                        </h4>
+                        <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                            {aiReport.technicalSeo.map((item, i) => (
+                                <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
+                                    <div className={`mt-1 w-3 h-3 rounded-full shrink-0 ${
+                                        item.status === 'pass' ? 'bg-green-500' : 
+                                        item.status === 'fail' ? 'bg-red-500' : 'bg-yellow-500'
+                                    }`} />
+                                    <div>
+                                        <h5 className="font-bold text-white text-sm">{item.title}</h5>
+                                        <p className="text-slate-400 text-xs mt-1">{item.description}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Strategy Section */}
+                <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800">
+                    <h4 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                        <BrainCircuit className="text-purple-500" />
+                        AI Strategy Recommendations
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="p-6 bg-slate-950/50 rounded-3xl border border-slate-800">
+                            <h5 className="text-slate-400 text-sm font-bold uppercase mb-3">Strategic Focus</h5>
+                            <p className="text-white font-medium">{aiReport.backlinkStrategy.focus}</p>
+                        </div>
+                        <div className="p-6 bg-slate-950/50 rounded-3xl border border-slate-800">
+                            <h5 className="text-slate-400 text-sm font-bold uppercase mb-3">Target Niches</h5>
+                            <div className="flex flex-wrap gap-2">
+                                {aiReport.backlinkStrategy.targetNiches.map((niche, i) => (
+                                    <span key={i} className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold">
+                                        {niche}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="p-6 bg-slate-950/50 rounded-3xl border border-slate-800">
+                            <h5 className="text-slate-400 text-sm font-bold uppercase mb-3">Anchor Text</h5>
+                            <div className="flex flex-wrap gap-2">
+                                {aiReport.backlinkStrategy.recommendedAnchors.map((anchor, i) => (
+                                    <span key={i} className="px-3 py-1 bg-purple-500/10 text-purple-400 rounded-lg text-xs font-bold">
+                                        {anchor}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
               </div>
             )}

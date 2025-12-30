@@ -58,3 +58,27 @@ export enum Tab {
   TermsOfService = 'terms_of_service',
   PrivacyPolicy = 'privacy_policy'
 }
+
+export interface AIReport {
+  seoScore: number;
+  performanceScore: number;
+  accessibilityScore: number;
+  bestPracticesScore: number;
+  screenshotUrl?: string;
+  summary: string;
+  technicalSeo: {
+    title: string;
+    status: 'pass' | 'fail' | 'warning';
+    description: string;
+  }[];
+  backlinkStrategy: {
+    focus: string;
+    recommendedAnchors: string[];
+    targetNiches: string[];
+  };
+  monthlyGrowth: {
+    month: string;
+    traffic: number;
+    backlinks: number;
+  }[];
+}
