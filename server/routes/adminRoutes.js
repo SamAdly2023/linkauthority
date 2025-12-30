@@ -82,6 +82,25 @@ module.exports = app => {
     }
   });
 
+  // Verify Website
+  app.post('/api/admin/websites/verify', requireAdmin, async (req, res) => {
+    const { websiteId } = req.body;
+    
+    try {
+      const website = await Website.findById(websiteId);
+      if (!website) return res.status(404).send({ error: 'Website not found' });
+
+      website.isVerified = true;
+      website.verificationMethod = 'admin';
+      website.verificationDate = Date.now();
+      await website.save();
+
+      res.send(website);
+    } catch (err) {
+      res.status(422).send(err);
+    }
+  });
+
   // Get All Transactions
   app.get('/api/admin/transactions', requireAdmin, async (req, res) => {
     try {

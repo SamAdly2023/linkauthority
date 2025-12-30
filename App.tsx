@@ -281,6 +281,28 @@ const App: React.FC = () => {
     }
   };
 
+  const handleVerifyWebsite = async (websiteId: string) => {
+    if (!confirm('Are you sure you want to manually verify this website?')) return;
+
+    try {
+      const res = await fetch('/api/admin/websites/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteId })
+      });
+      
+      if (res.ok) {
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Website verified successfully', type: 'success' });
+        fetchAdminData(); // Refresh list
+      } else {
+        const data = await res.json();
+        setMessageModal({ isOpen: true, title: 'Error', message: data.error || 'Failed to verify website', type: 'error' });
+      }
+    } catch (err) {
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Something went wrong', type: 'error' });
+    }
+  };
+
   const openVerifyModal = (tx: Transaction) => {
     setVerifyModal({ isOpen: true, transaction: tx });
     setVerificationUrl('');
@@ -1505,6 +1527,8 @@ const App: React.FC = () => {
                     <th className="pb-4 font-semibold">DA</th>
                     <th className="pb-4 font-semibold">Category</th>
                     <th className="pb-4 font-semibold">Location</th>
+                    <th className="pb-4 font-semibold">Status</th>
+                    <th className="pb-4 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
@@ -1525,6 +1549,23 @@ const App: React.FC = () => {
                                 <Globe size={14} />
                                 Worldwide
                             </span>
+                        )}
+                      </td>
+                      <td className="py-4">
+                        {w.isVerified ? (
+                            <span className="px-2 py-1 bg-green-500/10 text-green-500 text-xs font-bold rounded uppercase">Verified</span>
+                        ) : (
+                            <span className="px-2 py-1 bg-yellow-500/10 text-yellow-500 text-xs font-bold rounded uppercase">Pending</span>
+                        )}
+                      </td>
+                      <td className="py-4 text-right">
+                        {!w.isVerified && (
+                            <button 
+                                onClick={() => handleVerifyWebsite(w._id)}
+                                className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-lg transition-colors"
+                            >
+                                Verify
+                            </button>
                         )}
                       </td>
                     </tr>
