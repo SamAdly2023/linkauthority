@@ -37,8 +37,8 @@ export const getSEOAdvice = async (siteUrl: string, da: number): Promise<AIRepor
   }
   
   Requirements:
-  1. "technicalSeo" must include at least 8-10 distinct technical checks (e.g., SSL, Mobile Friendliness, Core Web Vitals, Schema Markup, Robots.txt, Sitemap, Canonical Tags, Broken Links).
-  2. "summary" should be dense and informative, not just a single sentence.
+  1. "technicalSeo" must include at least 12-15 distinct technical checks (e.g., SSL, Mobile Friendliness, Core Web Vitals, Schema Markup, Robots.txt, Sitemap, Canonical Tags, Broken Links, Hreflang, Open Graph, Structured Data, Page Speed, Image Optimization, JS Minification).
+  2. "summary" should be dense and informative, providing deep technical insights.
   3. Ensure the data is realistic for a site with DA ${da}.
   4. Do not include markdown formatting like \`\`\`json. Just return the raw JSON string.`;
 

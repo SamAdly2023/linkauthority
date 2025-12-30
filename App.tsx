@@ -1573,16 +1573,16 @@ const App: React.FC = () => {
                             <Settings className="text-slate-400" />
                             Technical Audit
                         </h4>
-                        <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-4">
                             {aiReport.technicalSeo.map((item, i) => (
-                                <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
-                                    <div className={`mt-1 w-3 h-3 rounded-full shrink-0 ${
-                                        item.status === 'pass' ? 'bg-green-500' : 
-                                        item.status === 'fail' ? 'bg-red-500' : 'bg-yellow-500'
+                                <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-950/50 border border-slate-800 hover:border-slate-700 transition-colors">
+                                    <div className={`mt-1.5 w-3 h-3 rounded-full shrink-0 shadow-[0_0_10px] ${
+                                        item.status === 'pass' ? 'bg-green-500 shadow-green-500/50' : 
+                                        item.status === 'fail' ? 'bg-red-500 shadow-red-500/50' : 'bg-yellow-500 shadow-yellow-500/50'
                                     }`} />
                                     <div>
-                                        <h5 className="font-bold text-white text-sm">{item.title}</h5>
-                                        <p className="text-slate-400 text-xs mt-1">{item.description}</p>
+                                        <h5 className="font-bold text-white text-sm mb-1">{item.title}</h5>
+                                        <p className="text-slate-400 text-xs leading-relaxed">{item.description}</p>
                                     </div>
                                 </div>
                             ))}
