@@ -54,6 +54,7 @@ export enum Tab {
   AdminWebsites = 'admin_websites',
   AdminTransactions = 'admin_transactions',
   AdminSettings = 'admin_settings',
+  Citations = 'citations',
   TermsOfService = 'terms_of_service',
   PrivacyPolicy = 'privacy_policy'
 }

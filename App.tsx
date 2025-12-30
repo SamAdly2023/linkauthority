@@ -34,6 +34,7 @@ import { Tab, User, Website, Transaction } from './types';
 import { getSEOAdvice } from './services/geminiService';
 import TermsOfService from './TermsOfService';
 import PrivacyPolicy from './PrivacyPolicy';
+import CitationsPage from './CitationsPage';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Dashboard);
@@ -955,6 +956,7 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.MySites} icon={Globe} label="My Websites" />
               <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
               <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
+              <SidebarItem tab={Tab.Citations} icon={MapPin} label="Citations & AI" />
               <SidebarItem tab={Tab.Guide} icon={BookOpen} label="Guide & Pricing" />
               <SidebarItem tab={Tab.Profile} icon={UserIcon} label="My Profile" />
             </>
@@ -1426,6 +1428,10 @@ const App: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === Tab.Citations && (
+          <CitationsPage />
         )}
 
         {activeTab === Tab.Guide && (
