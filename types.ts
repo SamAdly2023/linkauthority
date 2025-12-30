@@ -76,6 +76,12 @@ export interface AIReport {
     recommendedAnchors: string[];
     targetNiches: string[];
   };
+  keywordOpportunities: {
+    keyword: string;
+    difficulty: 'Easy' | 'Medium' | 'Hard';
+    volume: string;
+    intent: string;
+  }[];
   monthlyGrowth: {
     month: string;
     traffic: number;

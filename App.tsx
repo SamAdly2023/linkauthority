@@ -1541,31 +1541,63 @@ const App: React.FC = () => {
 
                 {/* Charts & Technical SEO */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800">
-                        <h4 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                            <ArrowUpRight className="text-green-500" />
-                            Projected Growth
-                        </h4>
-                        <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={aiReport.monthlyGrowth}>
-                                    <defs>
-                                        <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                                    <XAxis dataKey="month" stroke="#64748b" />
-                                    <YAxis stroke="#64748b" />
-                                    <Tooltip 
-                                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff' }}
-                                        itemStyle={{ color: '#fff' }}
-                                    />
-                                    <Area type="monotone" dataKey="traffic" stroke="#3b82f6" fillOpacity={1} fill="url(#colorTraffic)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                    <div className="space-y-8">
+                        <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800">
+                            <h4 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                                <ArrowUpRight className="text-green-500" />
+                                Projected Growth
+                            </h4>
+                            <div className="h-64 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={aiReport.monthlyGrowth}>
+                                        <defs>
+                                            <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                                        <XAxis dataKey="month" stroke="#64748b" />
+                                        <YAxis stroke="#64748b" />
+                                        <Tooltip 
+                                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff' }}
+                                            itemStyle={{ color: '#fff' }}
+                                        />
+                                        <Area type="monotone" dataKey="traffic" stroke="#3b82f6" fillOpacity={1} fill="url(#colorTraffic)" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
+
+                        {/* Keyword Opportunities */}
+                        {aiReport.keywordOpportunities && (
+                            <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800">
+                                <h4 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                                    <Search className="text-yellow-500" />
+                                    Keyword Opportunities
+                                </h4>
+                                <div className="space-y-3">
+                                    {aiReport.keywordOpportunities.map((k, i) => (
+                                        <div key={i} className="flex items-center justify-between p-4 bg-slate-950/50 rounded-2xl border border-slate-800 hover:border-slate-700 transition-colors">
+                                            <div>
+                                                <p className="text-white font-bold">{k.keyword}</p>
+                                                <p className="text-xs text-slate-500 uppercase font-bold mt-1">{k.intent}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-blue-400 font-mono font-bold">{k.volume}</p>
+                                                <span className={`text-xs px-2 py-0.5 rounded font-bold ${
+                                                    k.difficulty === 'Easy' ? 'bg-green-500/10 text-green-500' :
+                                                    k.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-500' :
+                                                    'bg-red-500/10 text-red-500'
+                                                }`}>
+                                                    {k.difficulty}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800">

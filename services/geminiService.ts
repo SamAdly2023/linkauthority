@@ -30,6 +30,9 @@ export const getSEOAdvice = async (siteUrl: string, da: number): Promise<AIRepor
       "recommendedAnchors": ["anchor1", "anchor2", "anchor3", "anchor4", "anchor5"],
       "targetNiches": ["niche1", "niche2", "niche3", "niche4"]
     },
+    "keywordOpportunities": [
+      { "keyword": "keyword phrase", "difficulty": "Easy"|"Medium"|"Hard", "volume": "e.g. 1.2k", "intent": "Informational"|"Commercial"|"Transactional" }
+    ],
     "monthlyGrowth": [
       { "month": "Month 1", "traffic": number, "backlinks": number },
       ... (6 months projection)
@@ -37,10 +40,11 @@ export const getSEOAdvice = async (siteUrl: string, da: number): Promise<AIRepor
   }
   
   Requirements:
-  1. "technicalSeo" must include at least 12-15 distinct technical checks (e.g., SSL, Mobile Friendliness, Core Web Vitals, Schema Markup, Robots.txt, Sitemap, Canonical Tags, Broken Links, Hreflang, Open Graph, Structured Data, Page Speed, Image Optimization, JS Minification).
-  2. "summary" should be dense and informative, providing deep technical insights.
-  3. Ensure the data is realistic for a site with DA ${da}.
-  4. Do not include markdown formatting like \`\`\`json. Just return the raw JSON string.`;
+  1. "technicalSeo" must include at least 12-15 distinct technical checks.
+  2. "keywordOpportunities" must include 5-8 high-potential keywords relevant to the site's niche.
+  3. "summary" should be dense and informative, providing deep technical insights.
+  4. Ensure the data is realistic for a site with DA ${da}.
+  5. Do not include markdown formatting like \`\`\`json. Just return the raw JSON string.`;
 
   try {
     const response = await ai.models.generateContent({
