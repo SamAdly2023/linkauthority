@@ -48,6 +48,9 @@ const App: React.FC = () => {
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
   const [newSiteUrl, setNewSiteUrl] = useState('');
   const [newSiteCategory, setNewSiteCategory] = useState('');
+  const [newSiteServiceType, setNewSiteServiceType] = useState<'worldwide' | 'local'>('worldwide');
+  const [newSiteCountry, setNewSiteCountry] = useState('');
+  const [newSiteCity, setNewSiteCity] = useState('');
   
   // Profile State
   const [profileForm, setProfileForm] = useState({ name: '', phone: '', avatar: '' });
@@ -188,14 +191,22 @@ const App: React.FC = () => {
 
   const handleAddWebsite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSiteUrl) return;
+    if (!newSiteUrl || !newSiteCategory) return;
 
     setIsAddingSite(true);
     try {
       const res = await fetch('/api/websites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: newSiteUrl })
+        body: JSON.stringify({ 
+            url: newSiteUrl,
+            category: newSiteCategory,
+            serviceType: newSiteServiceType,
+            location: newSiteServiceType === 'local' ? {
+                country: newSiteCountry,
+                city: newSiteCity
+            } : undefined
+        })
       });
       
       if (res.ok) {
@@ -203,10 +214,13 @@ const App: React.FC = () => {
         setShowAddSiteModal(false);
         setNewSiteUrl('');
         setNewSiteCategory('');
+        setNewSiteServiceType('worldwide');
+        setNewSiteCountry('');
+        setNewSiteCity('');
         
         if (website.isVerified) {
             fetchUser(); // Refresh user to see new site
-            setMessageModal({ isOpen: true, title: 'Success', message: 'Website added and analyzed by AI!', type: 'success' });
+            setMessageModal({ isOpen: true, title: 'Success', message: 'Website added successfully!', type: 'success' });
         } else {
             setDomainVerificationModal({ isOpen: true, website });
         }
@@ -408,12 +422,84 @@ const App: React.FC = () => {
                   disabled={isAddingSite}
                 />
               </div>
+
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Niche / Category</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. Technology, Health, Plumbing"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                  value={newSiteCategory}
+                  onChange={e => setNewSiteCategory(e.target.value)}
+                  disabled={isAddingSite}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Service Type</label>
+                <div className="grid grid-cols-2 gap-4">
+                    <button
+                        type="button"
+                        onClick={() => setNewSiteServiceType('worldwide')}
+                        className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${
+                            newSiteServiceType === 'worldwide' 
+                            ? 'bg-blue-600 border-blue-500 text-white' 
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                        }`}
+                    >
+                        <Globe size={24} />
+                        <span className="font-bold text-sm">Worldwide</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setNewSiteServiceType('local')}
+                        className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${
+                            newSiteServiceType === 'local' 
+                            ? 'bg-blue-600 border-blue-500 text-white' 
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                        }`}
+                    >
+                        <MapPin size={24} />
+                        <span className="font-bold text-sm">Local Business</span>
+                    </button>
+                </div>
+              </div>
+
+              {newSiteServiceType === 'local' && (
+                  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div>
+                        <label className="block text-slate-400 text-sm mb-2">Country</label>
+                        <input 
+                          type="text" 
+                          required
+                          placeholder="e.g. USA"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                          value={newSiteCountry}
+                          onChange={e => setNewSiteCountry(e.target.value)}
+                          disabled={isAddingSite}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 text-sm mb-2">City</label>
+                        <input 
+                          type="text" 
+                          required
+                          placeholder="e.g. New York"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                          value={newSiteCity}
+                          onChange={e => setNewSiteCity(e.target.value)}
+                          disabled={isAddingSite}
+                        />
+                      </div>
+                  </div>
+              )}
               
               <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
                 <div className="flex gap-3">
                   <BrainCircuit className="text-blue-400 shrink-0" size={20} />
                   <p className="text-sm text-blue-200">
-                    Our AI will automatically analyze your website to determine its category, niche, and service location.
+                    We will automatically calculate your Domain Authority (DA).
                   </p>
                 </div>
               </div>
@@ -426,7 +512,7 @@ const App: React.FC = () => {
                 {isAddingSite ? (
                   <>
                     <RefreshCw className="animate-spin" size={20} />
-                    Analyzing Website...
+                    Processing...
                   </>
                 ) : (
                   'Verify & Add Website'

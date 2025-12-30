@@ -39,19 +39,17 @@ module.exports = app => {
 
   // Add a new website
   app.post('/api/websites', requireLogin, async (req, res) => {
-    const { url } = req.body;
+    const { url, category, serviceType, location } = req.body;
 
     // Basic validation
     if (!url) return res.status(400).send({ error: 'URL is required' });
+    if (!category) return res.status(400).send({ error: 'Category is required' });
 
     // Check if already exists
     const existing = await Website.findOne({ url });
     if (existing) return res.status(400).send({ error: 'Website already exists' });
 
-    // AI Analysis (Category & Location)
-    const aiData = await analyzeWebsite(url);
-
-    // AI Domain Authority calculation
+    // AI Domain Authority calculation (Keep this)
     const domainAuthority = await estimateAuthority(url);
 
     const isAdmin = req.user.email === 'samadly728@gmail.com';
@@ -59,9 +57,9 @@ module.exports = app => {
 
     const website = new Website({
       url,
-      category: aiData.category,
-      serviceType: aiData.serviceType,
-      location: aiData.location,
+      category,
+      serviceType,
+      location,
       domainAuthority,
       owner: req.user._id,
       isVerified: isAdmin, 
