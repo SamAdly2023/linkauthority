@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import { Tab, User, Website, Transaction } from './types';
 import { getSEOAdvice } from './services/geminiService';
+import TermsOfService from './TermsOfService';
+import PrivacyPolicy from './PrivacyPolicy';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Dashboard);
@@ -983,6 +985,10 @@ const App: React.FC = () => {
           <a href="/api/logout" className="w-full flex items-center justify-center gap-2 text-xs font-medium bg-slate-800 hover:bg-red-900/30 hover:text-red-400 py-2 rounded-lg transition-colors">
              Logout
           </a>
+          <div className="flex justify-center gap-4 mt-4 text-[10px] text-slate-600">
+            <button onClick={() => setActiveTab(Tab.TermsOfService)} className="hover:text-slate-400 transition-colors">Terms</button>
+            <button onClick={() => setActiveTab(Tab.PrivacyPolicy)} className="hover:text-slate-400 transition-colors">Privacy</button>
+          </div>
         </div>
       </aside>
 
@@ -1612,6 +1618,14 @@ const App: React.FC = () => {
               </div>
             </form>
           </div>
+        )}
+
+        {activeTab === Tab.TermsOfService && (
+          <TermsOfService onBack={() => setActiveTab(Tab.Dashboard)} />
+        )}
+
+        {activeTab === Tab.PrivacyPolicy && (
+          <PrivacyPolicy onBack={() => setActiveTab(Tab.Dashboard)} />
         )}
 
         {/* Admin Tabs */}
