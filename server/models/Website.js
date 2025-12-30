@@ -13,7 +13,7 @@ const WebsiteSchema = new mongoose.Schema({
   },
   isVerified: { type: Boolean, default: false },
   verificationToken: String,
-  verificationMethod: { type: String, enum: ['file', 'dns'] },
+  verificationMethod: { type: String, enum: ['file', 'dns', 'admin'] },
   verificationDate: Date,
   lastChecked: Date
 });
