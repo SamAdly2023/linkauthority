@@ -44,6 +44,34 @@ module.exports = app => {
     }
   });
 
+  // Add Points to User
+  app.post('/api/admin/users/points', requireAdmin, async (req, res) => {
+    const { userId, points } = req.body;
+    
+    try {
+      const user = await User.findById(userId);
+      if (!user) return res.status(404).send({ error: 'User not found' });
+
+      user.points += parseInt(points);
+      await user.save();
+
+      // Create a transaction record for this manual adjustment
+      const transaction = new Transaction({
+        type: 'earn',
+        points: parseInt(points),
+        sourceUrl: 'Admin Adjustment',
+        targetUrl: 'System',
+        user: userId,
+        status: 'completed'
+      });
+      await transaction.save();
+
+      res.send(user);
+    } catch (err) {
+      res.status(422).send(err);
+    }
+  });
+
   // Get All Websites
   app.get('/api/admin/websites', requireAdmin, async (req, res) => {
     try {

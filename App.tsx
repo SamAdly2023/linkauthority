@@ -60,6 +60,8 @@ const App: React.FC = () => {
   const [adminWebsites, setAdminWebsites] = useState<Website[]>([]);
   const [adminTransactions, setAdminTransactions] = useState<Transaction[]>([]);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [addPointsModal, setAddPointsModal] = useState<{ isOpen: boolean, user: any | null }>({ isOpen: false, user: null });
+  const [pointsToAdd, setPointsToAdd] = useState<number>(0);
 
   // Modal States
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, site: Website | null }>({ isOpen: false, site: null });
@@ -94,6 +96,30 @@ const App: React.FC = () => {
       });
     }
   }, [user]);
+
+  const handleAddPoints = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addPointsModal.user) return;
+
+    try {
+      const res = await fetch('/api/admin/users/points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: addPointsModal.user._id, points: pointsToAdd })
+      });
+
+      if (res.ok) {
+        setAddPointsModal({ isOpen: false, user: null });
+        setPointsToAdd(0);
+        fetchAdminData();
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Points added successfully', type: 'success' });
+      } else {
+        setMessageModal({ isOpen: true, title: 'Error', message: 'Failed to add points', type: 'error' });
+      }
+    } catch (err) {
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Something went wrong', type: 'error' });
+    }
+  };
 
   const fetchAdminData = async () => {
     try {
@@ -924,7 +950,10 @@ const App: React.FC = () => {
                     >
                       Request Link ({site.domainAuthority} pts)
                     </button>
-                    <button className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all">
+                    <button 
+                      onClick={() => window.open(site.url, '_blank')}
+                      className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all"
+                    >
                       <ExternalLink size={20} className="text-slate-400" />
                     </button>
                   </div>
@@ -957,6 +986,8 @@ const App: React.FC = () => {
                    <thead>
                      <tr className="border-b border-slate-800 text-slate-500 text-sm uppercase tracking-wider">
                        <th className="pb-4 font-semibold">Website URL</th>
+                       <th className="pb-4 font-semibold">Niche</th>
+                       <th className="pb-4 font-semibold">Location</th>
                        <th className="pb-4 font-semibold text-center">Domain Authority</th>
                        <th className="pb-4 font-semibold text-center">Status</th>
                        <th className="pb-4 font-semibold text-right">Actions</th>
@@ -972,22 +1003,24 @@ const App: React.FC = () => {
                              </div>
                              <div>
                                <p className="font-bold text-white truncate max-w-xs">{site.url}</p>
-                               <div className="flex items-center gap-2 text-xs text-slate-500">
-                                 <span className="bg-slate-800 px-1.5 py-0.5 rounded">{site.category}</span>
-                                 {site.serviceType === 'local' && site.location ? (
-                                   <span className="flex items-center gap-1">
-                                     <MapPin size={10} />
-                                     {site.location.city}, {site.location.country}
-                                   </span>
-                                 ) : (
-                                   <span className="flex items-center gap-1">
-                                     <Globe size={10} />
-                                     Worldwide
-                                   </span>
-                                 )}
-                               </div>
                              </div>
                            </div>
+                         </td>
+                         <td className="py-6 text-slate-400">
+                            <span className="bg-slate-800 px-2 py-1 rounded text-sm">{site.category}</span>
+                         </td>
+                         <td className="py-6 text-slate-400 text-sm">
+                            {site.serviceType === 'local' && site.location ? (
+                                <span className="flex items-center gap-1">
+                                    <MapPin size={14} />
+                                    {site.location.city}, {site.location.country}
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-1">
+                                    <Globe size={14} />
+                                    Worldwide
+                                </span>
+                            )}
                          </td>
                          <td className="py-6 text-center">
                            <span className="text-xl font-bold text-blue-400">{site.domainAuthority}</span>
@@ -1010,10 +1043,22 @@ const App: React.FC = () => {
                          </td>
                          <td className="py-6 text-right">
                            <div className="flex justify-end gap-2">
-                             <button className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
+                             <button 
+                                onClick={() => {
+                                    // Placeholder for single site refresh
+                                    setMessageModal({ isOpen: true, title: 'Info', message: 'Single site refresh coming soon. Use Admin Re-analyze for now.', type: 'success' });
+                                }}
+                                className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors"
+                             >
                                <RefreshCw size={18} />
                              </button>
-                             <button className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
+                             <button 
+                                onClick={() => {
+                                    // Placeholder for settings
+                                    setMessageModal({ isOpen: true, title: 'Info', message: 'Website settings coming soon.', type: 'success' });
+                                }}
+                                className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors"
+                             >
                                <Settings size={18} />
                              </button>
                            </div>
@@ -1333,6 +1378,7 @@ const App: React.FC = () => {
                     <th className="pb-4 font-semibold">Email</th>
                     <th className="pb-4 font-semibold">Points</th>
                     <th className="pb-4 font-semibold">Websites</th>
+                    <th className="pb-4 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
@@ -1342,6 +1388,17 @@ const App: React.FC = () => {
                       <td className="py-4 text-slate-400">{u.email}</td>
                       <td className="py-4 text-blue-400 font-bold">{u.points}</td>
                       <td className="py-4 text-slate-400">{u.websites?.length || 0}</td>
+                      <td className="py-4 text-right">
+                        <button 
+                            onClick={() => {
+                                setPointsToAdd(0);
+                                setAddPointsModal({ isOpen: true, user: u });
+                            }}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors"
+                        >
+                            Add Points
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1361,6 +1418,7 @@ const App: React.FC = () => {
                     <th className="pb-4 font-semibold">Owner</th>
                     <th className="pb-4 font-semibold">DA</th>
                     <th className="pb-4 font-semibold">Category</th>
+                    <th className="pb-4 font-semibold">Location</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
@@ -1370,6 +1428,19 @@ const App: React.FC = () => {
                       <td className="py-4 text-slate-400">{w.owner?.name || 'Unknown'}</td>
                       <td className="py-4 text-blue-400 font-bold">{w.domainAuthority}</td>
                       <td className="py-4 text-slate-400">{w.category}</td>
+                      <td className="py-4 text-slate-400 text-sm">
+                        {w.serviceType === 'local' && w.location ? (
+                            <span className="flex items-center gap-1">
+                                <MapPin size={14} />
+                                {w.location.city}, {w.location.country}
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-1">
+                                <Globe size={14} />
+                                Worldwide
+                            </span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1476,6 +1547,42 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
+
+      {/* Add Points Modal */}
+      {addPointsModal.isOpen && addPointsModal.user && (
+        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+            <button onClick={() => setAddPointsModal({ isOpen: false, user: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+            <h3 className="text-2xl font-bold text-white mb-6">Add Points</h3>
+            <p className="text-slate-400 mb-4">
+                Adding points to <strong>{addPointsModal.user.name}</strong> ({addPointsModal.user.email})
+            </p>
+            
+            <form onSubmit={handleAddPoints} className="space-y-6">
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Points Amount</label>
+                <input 
+                  type="number" 
+                  required
+                  min="1"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                  value={pointsToAdd}
+                  onChange={e => setPointsToAdd(parseInt(e.target.value))}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-600/20"
+              >
+                Add Points
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
       </main>
     </div>
   );
