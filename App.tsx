@@ -1487,18 +1487,30 @@ const App: React.FC = () => {
               <div className="space-y-8 animate-in fade-in zoom-in duration-500">
                 {/* Top Section: Screenshot & Score */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60 z-10"></div>
-                        {aiReport.screenshotUrl && (
-                            <img 
-                                src={aiReport.screenshotUrl} 
-                                alt="Website Screenshot" 
-                                className="w-full h-full object-cover absolute inset-0 opacity-50 group-hover:scale-105 transition-transform duration-700"
-                            />
-                        )}
-                        <div className="relative z-20 h-full flex flex-col justify-end">
-                            <h2 className="text-4xl font-black text-white mb-2">{selectedAiSite}</h2>
-                            <p className="text-slate-300 text-lg line-clamp-2">{aiReport.summary}</p>
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Screenshot Card */}
+                        <div className="bg-slate-900/50 p-4 rounded-[2.5rem] border border-slate-800 overflow-hidden h-64 relative group">
+                            {aiReport.screenshotUrl && (
+                                <img 
+                                    src={aiReport.screenshotUrl} 
+                                    alt="Website Screenshot" 
+                                    className="w-full h-full object-cover rounded-[2rem] opacity-90 group-hover:scale-105 transition-transform duration-700"
+                                />
+                            )}
+                            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl text-white font-bold text-sm border border-white/10">
+                                {selectedAiSite}
+                            </div>
+                        </div>
+
+                        {/* Summary Card */}
+                        <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800">
+                            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                                <FileText className="text-blue-400" />
+                                Executive Summary
+                            </h2>
+                            <p className="text-slate-300 text-lg leading-relaxed whitespace-pre-wrap">
+                                {aiReport.summary}
+                            </p>
                         </div>
                     </div>
 
