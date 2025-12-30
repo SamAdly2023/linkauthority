@@ -1,11 +1,39 @@
 const mongoose = require('mongoose');
 const requireAdmin = require('../middlewares/requireAdmin');
+const { analyzeWebsite } = require('../services/gemini');
 
 const User = mongoose.model('User');
 const Website = mongoose.model('Website');
 const Transaction = mongoose.model('Transaction');
 
 module.exports = app => {
+  // Re-analyze all websites
+  app.post('/api/admin/reanalyze-all', requireAdmin, async (req, res) => {
+    try {
+      const websites = await Website.find({});
+      let count = 0;
+      
+      // Process in background to avoid timeout, but for now we'll await to show progress
+      // In production, use a job queue
+      for (const site of websites) {
+        try {
+          const aiData = await analyzeWebsite(site.url);
+          site.category = aiData.category;
+          site.serviceType = aiData.serviceType;
+          site.location = aiData.location;
+          await site.save();
+          count++;
+        } catch (err) {
+          console.error(`Failed to re-analyze ${site.url}:`, err);
+        }
+      }
+      
+      res.send({ message: `Successfully re-analyzed ${count} websites.` });
+    } catch (err) {
+      res.status(500).send({ error: 'Failed to re-analyze websites' });
+    }
+  });
+
   // Get All Users
   app.get('/api/admin/users', requireAdmin, async (req, res) => {
     try {

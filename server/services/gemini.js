@@ -65,9 +65,9 @@ const analyzeWebsite = async (url) => {
     ${websiteContent}
 
     Determine the following:
-    1. The business niche/category (e.g., Technology, Health, E-commerce, Local Business, etc.).
-    2. The service scope: is it "local" (serving a specific city/region) or "worldwide" (digital products, blogs, global shipping)?
-    3. If "local", identify the Country, State, and City.
+    1. The business niche/category (e.g., Technology, Health, E-commerce, Real Estate, Law, Plumbing, Marketing, etc.). Be specific.
+    2. The service scope: is it "local" (serving a specific city/region/country) or "worldwide" (digital products, blogs, global shipping, software)?
+    3. If "local", identify the Country, State, and City. Even if it's a country-specific service (e.g. UK only), treat it as local and provide the Country.
 
     Return ONLY a JSON object with this structure:
     {

@@ -59,6 +59,7 @@ const App: React.FC = () => {
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
   const [adminWebsites, setAdminWebsites] = useState<Website[]>([]);
   const [adminTransactions, setAdminTransactions] = useState<Transaction[]>([]);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   // Modal States
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, site: Website | null }>({ isOpen: false, site: null });
@@ -214,6 +215,30 @@ const App: React.FC = () => {
       } catch (err) {
           setMessageModal({ isOpen: true, title: 'Error', message: 'Verification request failed', type: 'error' });
       }
+  };
+
+  const handleReanalyzeAll = async () => {
+    if (!confirm('Are you sure you want to re-analyze ALL websites? This may take a while.')) return;
+    
+    setIsReanalyzing(true);
+    try {
+      const res = await fetch('/api/admin/reanalyze-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setMessageModal({ isOpen: true, title: 'Success', message: data.message, type: 'success' });
+        fetchAdminData(); // Refresh data
+      } else {
+        setMessageModal({ isOpen: true, title: 'Error', message: data.error || 'Failed to re-analyze', type: 'error' });
+      }
+    } catch (err) {
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Something went wrong', type: 'error' });
+    } finally {
+      setIsReanalyzing(false);
+    }
   };
 
   const openVerifyModal = (tx: Transaction) => {
@@ -806,46 +831,54 @@ const App: React.FC = () => {
 
         {activeTab === Tab.Marketplace && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
-                <input 
-                  type="text" 
-                  placeholder="Search categories or niches..." 
-                  className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-blue-500 outline-none text-slate-100 transition-all"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              
-              <select 
-                className="bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-4 text-slate-300 outline-none focus:border-blue-500"
-                value={filterServiceType}
-                onChange={(e) => setFilterServiceType(e.target.value as any)}
-              >
-                <option value="all">All Types</option>
-                <option value="worldwide">Worldwide</option>
-                <option value="local">Local Business</option>
-              </select>
+            <div className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
+                <div className="flex items-center gap-2 mb-4 text-slate-400 text-sm font-bold uppercase tracking-wider">
+                    <Sliders size={16} />
+                    Filters
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className="md:col-span-5 relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                        <input 
+                        type="text" 
+                        placeholder="Search categories, niches, or URLs..." 
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-blue-500 outline-none text-slate-100 transition-all"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    
+                    <div className="md:col-span-3">
+                        <select 
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-300 outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                            value={filterServiceType}
+                            onChange={(e) => setFilterServiceType(e.target.value as any)}
+                        >
+                            <option value="all">All Service Types</option>
+                            <option value="worldwide">Worldwide Only</option>
+                            <option value="local">Local Business Only</option>
+                        </select>
+                    </div>
 
-              {filterServiceType === 'local' && (
-                <>
-                  <input 
-                    type="text" 
-                    placeholder="Country" 
-                    className="bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-4 text-slate-100 outline-none focus:border-blue-500 w-32"
-                    value={filterCountry}
-                    onChange={(e) => setFilterCountry(e.target.value)}
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="City" 
-                    className="bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-4 text-slate-100 outline-none focus:border-blue-500 w-32"
-                    value={filterCity}
-                    onChange={(e) => setFilterCity(e.target.value)}
-                  />
-                </>
-              )}
+                    {filterServiceType === 'local' && (
+                        <div className="md:col-span-4 flex gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+                            <input 
+                                type="text" 
+                                placeholder="Country" 
+                                className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 outline-none focus:border-blue-500"
+                                value={filterCountry}
+                                onChange={(e) => setFilterCountry(e.target.value)}
+                            />
+                            <input 
+                                type="text" 
+                                placeholder="City" 
+                                className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 outline-none focus:border-blue-500"
+                                value={filterCity}
+                                onChange={(e) => setFilterCity(e.target.value)}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -861,10 +894,15 @@ const App: React.FC = () => {
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-col gap-1">
                       <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold uppercase tracking-wider w-fit">{site.category}</span>
-                      {site.serviceType === 'local' && site.location && (
+                      {site.serviceType === 'local' && site.location ? (
                         <span className="text-xs text-slate-500 flex items-center gap-1">
                           <MapPin size={12} />
                           {site.location.city}, {site.location.country}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <Globe size={12} />
+                          Worldwide
                         </span>
                       )}
                     </div>
@@ -934,7 +972,20 @@ const App: React.FC = () => {
                              </div>
                              <div>
                                <p className="font-bold text-white truncate max-w-xs">{site.url}</p>
-                               <p className="text-xs text-slate-500">{site.category}</p>
+                               <div className="flex items-center gap-2 text-xs text-slate-500">
+                                 <span className="bg-slate-800 px-1.5 py-0.5 rounded">{site.category}</span>
+                                 {site.serviceType === 'local' && site.location ? (
+                                   <span className="flex items-center gap-1">
+                                     <MapPin size={10} />
+                                     {site.location.city}, {site.location.country}
+                                   </span>
+                                 ) : (
+                                   <span className="flex items-center gap-1">
+                                     <Globe size={10} />
+                                     Worldwide
+                                   </span>
+                                 )}
+                               </div>
                              </div>
                            </div>
                          </td>
@@ -1385,6 +1436,23 @@ const App: React.FC = () => {
                     <input type="number" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white" defaultValue="50" />
                   </div>
                   <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl">Save Changes</button>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h4 className="text-lg font-bold text-slate-300">System Maintenance</h4>
+                <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                  <button 
+                    onClick={handleReanalyzeAll}
+                    disabled={isReanalyzing}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isReanalyzing ? <RefreshCw className="animate-spin" size={20} /> : <BrainCircuit size={20} />}
+                    Re-analyze All Websites (AI)
+                  </button>
+                  <p className="text-xs text-slate-500 text-center">
+                    This will re-run the AI categorization and location detection for every website in the database.
+                  </p>
                 </div>
               </div>
               
