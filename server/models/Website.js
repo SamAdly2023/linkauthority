@@ -12,6 +12,9 @@ const WebsiteSchema = new mongoose.Schema({
     city: String
   },
   isVerified: { type: Boolean, default: false },
+  verificationToken: String,
+  verificationMethod: { type: String, enum: ['file', 'dns'] },
+  verificationDate: Date,
   lastChecked: Date
 });
 

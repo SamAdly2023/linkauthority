@@ -25,7 +25,9 @@ export interface Website {
     state?: string;
     city?: string;
   };
-  verified: boolean;
+  verified?: boolean;
+  isVerified?: boolean;
+  verificationToken?: string;
 }
 
 export interface Transaction {

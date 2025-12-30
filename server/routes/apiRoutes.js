@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const crypto = require('crypto');
+const dns = require('dns').promises;
 const requireLogin = require('../middlewares/requireLogin');
 const { estimateAuthority } = require('../services/ai');
 const { sendNotification } = require('../services/notification');
@@ -52,6 +54,9 @@ module.exports = app => {
     // AI Domain Authority calculation
     const domainAuthority = await estimateAuthority(url);
 
+    const isAdmin = req.user.email === 'samadly728@gmail.com';
+    const verificationToken = crypto.randomBytes(16).toString('hex');
+
     const website = new Website({
       url,
       category: aiData.category,
@@ -59,7 +64,8 @@ module.exports = app => {
       location: aiData.location,
       domainAuthority,
       owner: req.user._id,
-      verified: true, // Auto-verify for now
+      isVerified: isAdmin, 
+      verificationToken,
       lastChecked: Date.now()
     });
 
@@ -73,6 +79,75 @@ module.exports = app => {
       res.send(website);
     } catch (err) {
       res.status(422).send(err);
+    }
+  });
+
+  // Verify website ownership
+  app.post('/api/websites/verify', requireLogin, async (req, res) => {
+    const { websiteId, method } = req.body;
+
+    try {
+      const website = await Website.findOne({ _id: websiteId, owner: req.user._id });
+      if (!website) return res.status(404).send({ error: 'Website not found' });
+      if (website.isVerified) return res.status(400).send({ error: 'Website already verified' });
+
+      let verified = false;
+      const domain = new URL(website.url).hostname;
+
+      if (method === 'file') {
+        const checkUrl = async (url) => {
+            try {
+                const response = await axios.get(`${url}/linkauthority-verification.txt`);
+                return response.data.trim() === website.verificationToken;
+            } catch (err) {
+                return false;
+            }
+        };
+
+        verified = await checkUrl(website.url);
+        
+        if (!verified) {
+            // Try alternative (www vs non-www)
+            const urlObj = new URL(website.url);
+            let altUrl;
+            if (urlObj.hostname.startsWith('www.')) {
+                urlObj.hostname = urlObj.hostname.replace('www.', '');
+                altUrl = urlObj.toString();
+            } else {
+                urlObj.hostname = `www.${urlObj.hostname}`;
+                altUrl = urlObj.toString();
+            }
+            // Remove trailing slash if present to avoid double slash issues
+            if (altUrl.endsWith('/')) {
+                altUrl = altUrl.slice(0, -1);
+            }
+            verified = await checkUrl(altUrl);
+        }
+      } else if (method === 'dns') {
+        try {
+          const records = await dns.resolveTxt(domain);
+          const tokenRecord = records.flat().find(r => r.includes(`linkauthority-verification=${website.verificationToken}`));
+          if (tokenRecord) {
+            verified = true;
+          }
+        } catch (err) {
+          console.log('DNS verification failed:', err.message);
+        }
+      } else {
+        return res.status(400).send({ error: 'Invalid verification method' });
+      }
+
+      if (verified) {
+        website.isVerified = true;
+        website.verificationMethod = method;
+        website.verificationDate = Date.now();
+        await website.save();
+        res.send({ success: true, website });
+      } else {
+        res.status(400).send({ error: 'Verification failed. Please check your file or DNS record.' });
+      }
+    } catch (err) {
+      res.status(500).send({ error: 'Verification process failed' });
     }
   });
 

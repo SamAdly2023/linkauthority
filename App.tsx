@@ -63,6 +63,7 @@ const App: React.FC = () => {
   // Modal States
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, site: Website | null }>({ isOpen: false, site: null });
   const [verifyModal, setVerifyModal] = useState<{ isOpen: boolean, transaction: Transaction | null }>({ isOpen: false, transaction: null });
+  const [domainVerificationModal, setDomainVerificationModal] = useState<{ isOpen: boolean, website: Website | null }>({ isOpen: false, website: null });
   const [messageModal, setMessageModal] = useState<{ isOpen: boolean, title: string, message: string, type: 'success' | 'error' }>({ isOpen: false, title: '', message: '', type: 'success' });
   const [checkoutModal, setCheckoutModal] = useState<{ isOpen: boolean, plan: { name: string, points: number, price: number } | null }>({ isOpen: false, plan: null });
   
@@ -171,11 +172,17 @@ const App: React.FC = () => {
       });
       
       if (res.ok) {
+        const website = await res.json();
         setShowAddSiteModal(false);
         setNewSiteUrl('');
         setNewSiteCategory('');
-        fetchUser(); // Refresh user to see new site
-        setMessageModal({ isOpen: true, title: 'Success', message: 'Website added and analyzed by AI!', type: 'success' });
+        
+        if (website.isVerified) {
+            fetchUser(); // Refresh user to see new site
+            setMessageModal({ isOpen: true, title: 'Success', message: 'Website added and analyzed by AI!', type: 'success' });
+        } else {
+            setDomainVerificationModal({ isOpen: true, website });
+        }
       } else {
         const err = await res.json();
         setMessageModal({ isOpen: true, title: 'Error', message: err.error || 'Failed to add website', type: 'error' });
@@ -186,6 +193,27 @@ const App: React.FC = () => {
     } finally {
       setIsAddingSite(false);
     }
+  };
+
+  const handleVerifyDomain = async (websiteId: string, method: 'file' | 'dns') => {
+      try {
+          const res = await fetch('/api/websites/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ websiteId, method })
+          });
+          const data = await res.json();
+          
+          if (res.ok) {
+              setDomainVerificationModal({ isOpen: false, website: null });
+              fetchUser();
+              setMessageModal({ isOpen: true, title: 'Success', message: 'Domain verified successfully!', type: 'success' });
+          } else {
+              setMessageModal({ isOpen: true, title: 'Verification Failed', message: data.error || 'Could not verify domain', type: 'error' });
+          }
+      } catch (err) {
+          setMessageModal({ isOpen: true, title: 'Error', message: 'Verification request failed', type: 'error' });
+      }
   };
 
   const openVerifyModal = (tx: Transaction) => {
@@ -354,6 +382,54 @@ const App: React.FC = () => {
                 )}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Domain Verification Modal */}
+      {domainVerificationModal.isOpen && domainVerificationModal.website && (
+        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+            <button onClick={() => setDomainVerificationModal({ isOpen: false, website: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+            <h3 className="text-2xl font-bold text-white mb-6">Verify Domain Ownership</h3>
+            <p className="text-slate-400 mb-4">
+                Please verify that you own <strong>{domainVerificationModal.website.url}</strong>.
+            </p>
+            
+            <div className="space-y-6">
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-800">
+                    <h4 className="text-white font-bold mb-2">Method 1: File Upload</h4>
+                    <p className="text-sm text-slate-400 mb-2">Upload a file named <code className="bg-slate-950 px-1 py-0.5 rounded text-blue-400">linkauthority-verification.txt</code> to your root directory with the following content:</p>
+                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-sm text-green-400 break-all">
+                        {domainVerificationModal.website.verificationToken}
+                    </div>
+                    <button 
+                        onClick={() => handleVerifyDomain(domainVerificationModal.website!._id!, 'file')}
+                        className="mt-3 w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors"
+                    >
+                        Verify File
+                    </button>
+                </div>
+
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-800">
+                    <h4 className="text-white font-bold mb-2">Method 2: DNS Record</h4>
+                    <p className="text-sm text-slate-400 mb-2">Add a TXT record to your domain with the following value:</p>
+                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-sm text-green-400 break-all">
+                        linkauthority-verification={domainVerificationModal.website.verificationToken}
+                    </div>
+                    <p className="text-xs text-yellow-500/80 mt-2 flex items-start gap-1">
+                        DNS changes can take time. If it fails, please wait 15 minutes and try again.
+                    </p>
+                    <button 
+                        onClick={() => handleVerifyDomain(domainVerificationModal.website!._id!, 'dns')}
+                        className="mt-3 w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors"
+                    >
+                        Verify DNS
+                    </button>
+                </div>
+            </div>
           </div>
         </div>
       )}
@@ -866,10 +942,20 @@ const App: React.FC = () => {
                            <span className="text-xl font-bold text-blue-400">{site.domainAuthority}</span>
                          </td>
                          <td className="py-6 text-center">
-                           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-bold">
-                             <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                             Verified
-                           </div>
+                           {site.isVerified ? (
+                               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-bold">
+                                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                 Verified
+                               </div>
+                           ) : (
+                               <button 
+                                   onClick={() => setDomainVerificationModal({ isOpen: true, website: site })}
+                                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-bold hover:bg-yellow-500/20 transition-colors"
+                               >
+                                 <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                                 Verify Now
+                               </button>
+                           )}
                          </td>
                          <td className="py-6 text-right">
                            <div className="flex justify-end gap-2">
