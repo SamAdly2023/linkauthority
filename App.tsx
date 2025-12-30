@@ -1404,8 +1404,11 @@ const App: React.FC = () => {
 
         {activeTab === Tab.AIExpert && (
           <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-               <BrainCircuit size={120} className="absolute -right-10 -bottom-10 opacity-10" />
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-10 rounded-[3rem] text-white shadow-2xl relative">
+               <div className="absolute inset-0 overflow-hidden rounded-[3rem]">
+                  <BrainCircuit size={120} className="absolute -right-10 -bottom-10 opacity-10" />
+               </div>
+               <div className="relative z-10">
                <h3 className="text-3xl font-black mb-4">Gemini AI SEO Expert</h3>
                <p className="text-blue-100 text-lg mb-8 max-w-xl opacity-90">
                  Get specialized advice on link placement, domain strategy, and how to maximize your points exchange efficiency using Google's most powerful AI.
@@ -1476,6 +1479,7 @@ const App: React.FC = () => {
                     {loadingAi ? <RefreshCw className="animate-spin" /> : <BrainCircuit />}
                     Generate Report
                  </button>
+               </div>
                </div>
             </div>
 
