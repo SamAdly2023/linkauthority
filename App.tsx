@@ -72,6 +72,11 @@ const App: React.FC = () => {
   const [domainVerificationModal, setDomainVerificationModal] = useState<{ isOpen: boolean, website: Website | null }>({ isOpen: false, website: null });
   const [messageModal, setMessageModal] = useState<{ isOpen: boolean, title: string, message: string, type: 'success' | 'error' }>({ isOpen: false, title: '', message: '', type: 'success' });
   const [checkoutModal, setCheckoutModal] = useState<{ isOpen: boolean, plan: { name: string, points: number, price: number } | null }>({ isOpen: false, plan: null });
+  const [editSiteModal, setEditSiteModal] = useState<{ isOpen: boolean, website: Website | null }>({ isOpen: false, website: null });
+  const [editSiteCategory, setEditSiteCategory] = useState('');
+  const [editSiteServiceType, setEditSiteServiceType] = useState<'worldwide' | 'local'>('worldwide');
+  const [editSiteCountry, setEditSiteCountry] = useState('');
+  const [editSiteCity, setEditSiteCity] = useState('');
   
   // Input States for Modals
   const [purchaseSourceUrl, setPurchaseSourceUrl] = useState('');
@@ -233,6 +238,39 @@ const App: React.FC = () => {
       setMessageModal({ isOpen: true, title: 'Error', message: 'Something went wrong', type: 'error' });
     } finally {
       setIsAddingSite(false);
+    }
+  };
+
+  const handleUpdateWebsite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editSiteModal.website) return;
+
+    try {
+      const res = await fetch(`/api/websites/${editSiteModal.website._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: editSiteCategory,
+          serviceType: editSiteServiceType,
+          location: editSiteServiceType === 'local' ? { country: editSiteCountry, city: editSiteCity } : undefined
+        })
+      });
+
+      if (res.ok) {
+        const updatedSite = await res.json();
+        // Update local state
+        setUser(prev => prev ? {
+            ...prev,
+            websites: prev.websites.map(w => w._id === updatedSite._id ? updatedSite : w)
+        } : null);
+        
+        setEditSiteModal({ isOpen: false, website: null });
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Website updated successfully', type: 'success' });
+      } else {
+        setMessageModal({ isOpen: true, title: 'Error', message: 'Failed to update website', type: 'error' });
+      }
+    } catch (err) {
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Something went wrong', type: 'error' });
     }
   };
 
@@ -539,6 +577,105 @@ const App: React.FC = () => {
                 ) : (
                   'Verify & Add Website'
                 )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Site Modal */}
+      {editSiteModal.isOpen && (
+        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+            <button onClick={() => setEditSiteModal({ isOpen: false, website: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+            <h3 className="text-2xl font-bold text-white mb-6">Edit Website</h3>
+            <form onSubmit={handleUpdateWebsite} className="space-y-4">
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Website URL</label>
+                <input 
+                  type="url" 
+                  disabled
+                  className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-slate-500 cursor-not-allowed"
+                  value={editSiteModal.website?.url || ''}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Niche / Category</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. Technology, Health, Plumbing"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                  value={editSiteCategory}
+                  onChange={e => setEditSiteCategory(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Service Type</label>
+                <div className="grid grid-cols-2 gap-4">
+                    <button
+                        type="button"
+                        onClick={() => setEditSiteServiceType('worldwide')}
+                        className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${
+                            editSiteServiceType === 'worldwide' 
+                            ? 'bg-blue-600 border-blue-500 text-white' 
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                        }`}
+                    >
+                        <Globe size={24} />
+                        <span className="font-bold text-sm">Worldwide</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setEditSiteServiceType('local')}
+                        className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${
+                            editSiteServiceType === 'local' 
+                            ? 'bg-blue-600 border-blue-500 text-white' 
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                        }`}
+                    >
+                        <MapPin size={24} />
+                        <span className="font-bold text-sm">Local Business</span>
+                    </button>
+                </div>
+              </div>
+
+              {editSiteServiceType === 'local' && (
+                  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div>
+                        <label className="block text-slate-400 text-sm mb-2">Country</label>
+                        <input 
+                          type="text" 
+                          required
+                          placeholder="e.g. USA"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                          value={editSiteCountry}
+                          onChange={e => setEditSiteCountry(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 text-sm mb-2">City</label>
+                        <input 
+                          type="text" 
+                          required
+                          placeholder="e.g. New York"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                          value={editSiteCity}
+                          onChange={e => setEditSiteCity(e.target.value)}
+                        />
+                      </div>
+                  </div>
+              )}
+
+              <button 
+                type="submit"
+                className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/20"
+              >
+                Save Changes
               </button>
             </form>
           </div>
@@ -1162,8 +1299,11 @@ const App: React.FC = () => {
                              </button>
                              <button 
                                 onClick={() => {
-                                    // Placeholder for settings
-                                    setMessageModal({ isOpen: true, title: 'Info', message: 'Website settings coming soon.', type: 'success' });
+                                    setEditSiteCategory(site.category || '');
+                                    setEditSiteServiceType(site.serviceType as 'worldwide' | 'local' || 'worldwide');
+                                    setEditSiteCountry(site.location?.country || '');
+                                    setEditSiteCity(site.location?.city || '');
+                                    setEditSiteModal({ isOpen: true, website: site });
                                 }}
                                 className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors"
                              >

@@ -80,6 +80,25 @@ module.exports = app => {
     }
   });
 
+  // Update Website Details
+  app.put('/api/websites/:id', requireLogin, async (req, res) => {
+    const { category, serviceType, location } = req.body;
+    
+    try {
+      const website = await Website.findOne({ _id: req.params.id, owner: req.user._id });
+      if (!website) return res.status(404).send({ error: 'Website not found' });
+
+      if (category) website.category = category;
+      if (serviceType) website.serviceType = serviceType;
+      if (location) website.location = location;
+
+      await website.save();
+      res.send(website);
+    } catch (err) {
+      res.status(422).send(err);
+    }
+  });
+
   // Verify website ownership
   app.post('/api/websites/verify', requireLogin, async (req, res) => {
     const { websiteId, method } = req.body;
