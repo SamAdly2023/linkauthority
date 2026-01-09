@@ -114,4 +114,68 @@ const analyzeWebsite = async (url) => {
   }
 };
 
-module.exports = { analyzeWebsite };
+const getSEOAdvice = async (siteUrl, da) => {
+  if (!ai) return null;
+
+  const prompt = `Act as a senior SEO expert. Analyze the website "${siteUrl}" (DA: ${da}).
+  Generate a highly detailed, dense, and professional SEO report in JSON format.
+  
+  Structure:
+  {
+    "seoScore": number (0-100),
+    "performanceScore": number (0-100),
+    "accessibilityScore": number (0-100),
+    "bestPracticesScore": number (0-100),
+    "summary": "A comprehensive, multi-paragraph executive summary of the site's current SEO standing, potential, and critical areas for improvement. Be specific and professional.",
+    "technicalSeo": [
+      { "title": "Specific Technical Check", "status": "pass"|"fail"|"warning", "description": "Detailed explanation of the finding and how to fix it." }
+    ],
+    "backlinkStrategy": {
+      "focus": "Detailed strategic direction for link building.",
+      "recommendedAnchors": ["anchor1", "anchor2", "anchor3", "anchor4", "anchor5"],
+      "targetNiches": ["niche1", "niche2", "niche3", "niche4"]
+    },
+    "keywordOpportunities": [
+        { "keyword": "keyword phrase", "difficulty": "Easy"|"Medium"|"Hard", "volume": "e.g. 1.2k", "intent": "Informational"|"Commercial"|"Transactional" }
+    ],
+    "monthlyGrowth": [
+      { "month": "Month 1", "traffic": number, "backlinks": number },
+      { "month": "Month 2", "traffic": number, "backlinks": number },
+      { "month": "Month 3", "traffic": number, "backlinks": number },
+      { "month": "Month 4", "traffic": number, "backlinks": number },
+      { "month": "Month 5", "traffic": number, "backlinks": number },
+      { "month": "Month 6", "traffic": number, "backlinks": number }
+    ]
+  }
+  
+  Requirements:
+  1. "technicalSeo" must include at least 12-15 distinct technical checks.
+  2. "keywordOpportunities" must include 5-8 high-potential keywords relevant to the site's niche.
+  3. "summary" should be dense and informative, providing deep technical insights.
+  4. Ensure the data is realistic for a site with DA ${da}.
+  5. Do not include markdown formatting like \`\`\`json. Just return the raw JSON string.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+      }
+    });
+
+    const text = response.text();
+    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    const data = JSON.parse(jsonStr);
+    data.screenshotUrl = `https://image.thum.io/get/width/1200/crop/800/noanimate/${siteUrl}`;
+    
+    return data;
+  } catch (error) {
+    console.error("Gemini SEO Advice Error:", error);
+    return null;
+  }
+};
+
+module.exports = { analyzeWebsite, getSEOAdvice };
+

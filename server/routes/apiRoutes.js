@@ -6,7 +6,7 @@ const dns = require('dns').promises;
 const requireLogin = require('../middlewares/requireLogin');
 const { estimateAuthority } = require('../services/ai');
 const { sendNotification } = require('../services/notification');
-const { analyzeWebsite } = require('../services/gemini');
+const { analyzeWebsite, getSEOAdvice } = require('../services/gemini');
 
 const Website = mongoose.model('Website');
 const User = mongoose.model('User');
@@ -349,5 +349,20 @@ module.exports = app => {
   app.get('/api/transactions', requireLogin, async (req, res) => {
     const transactions = await Transaction.find({ user: req.user._id }).sort({ timestamp: -1 });
     res.send(transactions);
+  });
+
+  // Get SEO Advice
+  app.post('/api/seo-advice', requireLogin, async (req, res) => {
+    const { url, da } = req.body;
+    if (!url) return res.status(400).send({ error: 'URL is required' });
+
+    try {
+      const advice = await getSEOAdvice(url, da || 1);
+      if (!advice) return res.status(500).send({ error: 'Failed to generate advice' });
+      res.send(advice);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ error: 'Failed to generate advice' });
+    }
   });
 };
