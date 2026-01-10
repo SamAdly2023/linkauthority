@@ -27,8 +27,9 @@ const LandingPage: React.FC = () => {
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
           </div>
 
-          <a href="/auth/google" className="bg-white text-slate-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-slate-200 transition-all transform hover:scale-105 shadow-xl shadow-white/5">
-            Log In / Sign Up
+          <a href="/auth/google" className="bg-white text-slate-900 px-4 py-2 md:px-6 md:py-2.5 rounded-full font-bold text-xs md:text-sm hover:bg-slate-200 transition-all transform hover:scale-105 shadow-xl shadow-white/5 whitespace-nowrap flex items-center gap-2">
+            <span>Log In</span>
+            <span className="hidden md:inline">/ Sign Up</span>
           </a>
         </div>
       </nav>
