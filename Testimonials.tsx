@@ -5,21 +5,21 @@ const testimonials = [
   {
     name: "Sarah Jenkins",
     role: "SEO Director, TechFlow",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80",
+    image: "https://ui-avatars.com/api/?name=Sarah+Jenkins&background=random&color=fff",
     content: "LinkAuthority completely transformed our link building strategy. Instead of cold emailing for weeks, we now secure relevant, high-DA links in minutes.",
     rating: 5
   },
   {
     name: "Michael Chen",
     role: "Founder, Growthify",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&h=150&q=80",
+    image: "https://ui-avatars.com/api/?name=Michael+Chen&background=random&color=fff",
     content: "The credit system is genius. I used the points from my niche blog to get a massive backlink from a DA 80+ news site. My traffic doubled in 3 months.",
     rating: 5
   },
   {
     name: "Elena Rodriguez",
     role: "Marketing Head, LocalBoost",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&h=150&q=80",
+    image: "https://ui-avatars.com/api/?name=Elena+Rodriguez&background=random&color=fff",
     content: "As a local SEO agency, finding geographically relevant links was a nightmare. This platform's location filter is a game changer for our clients.",
     rating: 5
   }

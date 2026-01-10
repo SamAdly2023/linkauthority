@@ -309,9 +309,7 @@ const LandingPage: React.FC = () => {
       <footer className="bg-slate-950 border-t border-slate-800 py-12">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-2">
-                <div className="bg-blue-600 p-1.5 rounded-lg">
-                    <ShieldCheck className="text-white" size={20} />
-                </div>
+                <img src="/logo.png" alt="LinkAuthority Logo" className="w-8 h-8 object-contain" />
                 <span className="text-lg font-bold text-white">LinkAuthority</span>
             </div>
             <div className="text-slate-500 text-sm">
