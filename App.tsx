@@ -908,7 +908,7 @@ const App: React.FC = () => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-30 w-64 bg-slate-950 border-r border-slate-800 flex flex-col p-6 gap-8 transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-30 w-64 bg-slate-950 border-r border-slate-800 flex flex-col p-6 gap-4 transition-transform duration-300 ease-in-out
         md:relative md:translate-x-0
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -949,7 +949,13 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <nav className="flex flex-col gap-2">
+        <nav className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-2 pr-2 custom-scrollbar">
+          <style>{`
+            .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+            .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+          `}</style>
           {!isAdminMode ? (
             <>
               <SidebarItem tab={Tab.Dashboard} icon={LayoutDashboard} label="Dashboard" />
