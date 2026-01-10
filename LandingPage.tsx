@@ -222,4 +222,11 @@ const Step = ({ number, title, description }: { number: string, title: string, d
     </div>
 );
 
+const FAQItem = ({ question, answer }: { question: string, answer: string }) => (
+    <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 hover:border-blue-500/20 transition-all">
+        <h3 className="text-lg font-bold text-white mb-2">{question}</h3>
+        <p className="text-slate-400 leading-relaxed text-sm">{answer}</p>
+    </div>
+);
+
 export default LandingPage;
