@@ -35,6 +35,7 @@ import { getSEOAdvice } from './services/geminiService';
 import TermsOfService from './TermsOfService';
 import PrivacyPolicy from './PrivacyPolicy';
 import CitationsPage from './CitationsPage';
+import LandingPage from './LandingPage';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Dashboard);
@@ -434,24 +435,7 @@ const App: React.FC = () => {
   };
 
   if (!user) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
-        <div className="text-center p-8 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl">
-          <div className="bg-blue-600 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6">
-            <ShieldCheck size={40} className="text-white" />
-          </div>
-          <h1 className="text-3xl font-bold mb-2">Welcome to LinkAuthority</h1>
-          <p className="text-slate-400 mb-8">The #1 Marketplace for High-Quality Backlinks</p>
-          <a 
-            href="/auth/google" 
-            className="inline-flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-xl font-bold hover:bg-slate-100 transition-all hover:scale-105"
-          >
-            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
-            Sign in with Google
-          </a>
-        </div>
-      </div>
-    );
+    return <LandingPage />;
   }
 
   const SidebarItem = ({ tab, icon: Icon, label }: { tab: Tab, icon: any, label: string }) => (
