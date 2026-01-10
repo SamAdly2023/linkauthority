@@ -34,11 +34,52 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://accounts.google.com"],
-      connectSrc: ["'self'", "https://accounts.google.com", "https://*.googleapis.com"],
-      imgSrc: ["'self'", "data:", "https://*.googleusercontent.com", "https://*.gravatar.com"],
-      frameSrc: ["'self'", "https://accounts.google.com"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: [
+        "'self'", 
+        "'unsafe-inline'", 
+        "'unsafe-eval'", 
+        "https://accounts.google.com",
+        "https://cdn.tailwindcss.com",
+        "https://www.paypal.com",
+        "https://www.googletagmanager.com",
+        "https://www.clarity.ms",
+        "https://c.bing.com"
+      ],
+      connectSrc: [
+        "'self'", 
+        "https://accounts.google.com", 
+        "https://*.googleapis.com",
+        "https://www.paypal.com",
+        "https://www.google-analytics.com",
+        "https://*.clarity.ms",
+        "https://c.bing.com",
+        "https://*.google.com"
+      ],
+      imgSrc: [
+        "'self'", 
+        "data:", 
+        "https://*.googleusercontent.com", 
+        "https://*.gravatar.com",
+        "https://www.paypalobjects.com",
+        "https://www.google.com",
+        "https://*.clarity.ms",
+        "https://c.bing.com"
+      ],
+      frameSrc: [
+        "'self'", 
+        "https://accounts.google.com",
+        "https://www.paypal.com",
+        "https://www.sandbox.paypal.com"
+      ],
+      styleSrc: [
+        "'self'", 
+        "'unsafe-inline'", 
+        "https://fonts.googleapis.com"
+      ],
+      fontSrc: [
+        "'self'",
+        "https://fonts.gstatic.com"
+      ]
     },
   },
 }));
