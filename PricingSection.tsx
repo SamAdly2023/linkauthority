@@ -1,7 +1,33 @@
-import React from 'react';
-import { Check, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Sparkles, X, ShieldCheck } from 'lucide-react';
+
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  points: number;
+  description: string;
+}
+
+const plans: Plan[] = [
+  { id: 'free', name: 'Free', price: 0, points: 100, description: 'Starter Points' },
+  { id: 'basic', name: 'Basic', price: 7, points: 500, description: 'Monthly Points' },
+  { id: 'plus', name: 'Plus', price: 15, points: 1500, description: 'Monthly Points' },
+  { id: 'pro', name: 'Pro', price: 42, points: 5000, description: 'Monthly Points' }
+];
 
 const PricingSection: React.FC = () => {
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [showLoginHint, setShowLoginHint] = useState(false);
+
+  const handlePlanClick = (plan: Plan) => {
+    if (plan.price === 0) {
+      window.location.href = '/auth/google';
+      return;
+    }
+    setSelectedPlan(plan);
+  };
+
   return (
     <section id="pricing" className="py-24 bg-slate-950 relative overflow-hidden">
       {/* Background Glow */}
@@ -26,9 +52,9 @@ const PricingSection: React.FC = () => {
               <p className="text-slate-500 text-sm mt-1">Always free</p>
             </div>
             
-            <a href="/auth/google" className="w-full py-2.5 rounded-lg border border-slate-700 text-white font-medium hover:bg-slate-800 transition-colors text-center text-sm mb-8">
-              Current plan
-            </a>
+            <button onClick={() => handlePlanClick(plans[0])} className="w-full py-2.5 rounded-lg border border-slate-700 text-white font-medium hover:bg-slate-800 transition-colors text-center text-sm mb-8">
+              Get Free plan
+            </button>
 
             <div className="space-y-4 flex-1">
               <Feature text="100 Starter Points" highlight />
@@ -51,7 +77,7 @@ const PricingSection: React.FC = () => {
               <p className="text-slate-500 text-sm mt-1">per month, billed annually</p>
             </div>
 
-            <button className="w-full py-2.5 rounded-lg border border-slate-700 text-white font-medium hover:bg-slate-800 transition-colors text-sm mb-8">
+            <button onClick={() => handlePlanClick(plans[1])} className="w-full py-2.5 rounded-lg border border-slate-700 text-white font-medium hover:bg-slate-800 transition-colors text-sm mb-8">
               Get Basic plan
             </button>
 
@@ -77,7 +103,7 @@ const PricingSection: React.FC = () => {
               <p className="text-slate-500 text-sm mt-1">per month, billed annually</p>
             </div>
 
-            <button className="w-full py-2.5 rounded-lg bg-white text-slate-900 font-bold hover:bg-slate-200 transition-colors text-sm mb-8 shadow-lg shadow-white/10">
+            <button onClick={() => handlePlanClick(plans[2])} className="w-full py-2.5 rounded-lg bg-white text-slate-900 font-bold hover:bg-slate-200 transition-colors text-sm mb-8 shadow-lg shadow-white/10">
               Get Plus plan
             </button>
 
@@ -101,7 +127,7 @@ const PricingSection: React.FC = () => {
               <p className="text-slate-500 text-sm mt-1">per month, billed annually</p>
             </div>
 
-            <button className="w-full py-2.5 rounded-lg border border-slate-700 text-white font-medium hover:bg-slate-800 transition-colors text-sm mb-8">
+            <button onClick={() => handlePlanClick(plans[3])} className="w-full py-2.5 rounded-lg border border-slate-700 text-white font-medium hover:bg-slate-800 transition-colors text-sm mb-8">
               Get Pro plan
             </button>
 
@@ -115,6 +141,86 @@ const PricingSection: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {selectedPlan && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+            <button onClick={() => { setSelectedPlan(null); setShowLoginHint(false); }} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors z-10">
+              <X size={20} />
+            </button>
+            <h3 className="text-xl font-bold text-white mb-2">Checkout: {selectedPlan.name} Plan</h3>
+            <p className="text-slate-400 text-sm mb-6">
+                You are about to purchase <span className="text-white font-bold">{selectedPlan.points} Points</span> for <span className="text-white font-bold">${selectedPlan.price}</span>.
+            </p>
+            
+            {!showLoginHint ? (
+                <div id="paypal-button-container" className="min-h-[150px]" ref={(el) => {
+                    if (el && !el.hasChildNodes() && (window as any).paypal) {
+                        (window as any).paypal.Buttons({
+                            createOrder: (data: any, actions: any) => {
+                                return actions.order.create({
+                                    purchase_units: [{
+                                        amount: {
+                                            value: selectedPlan.price.toString()
+                                        }
+                                    }]
+                                });
+                            },
+                            onApprove: (data: any, actions: any) => {
+                                return actions.order.capture().then((details: any) => {
+                                    // Attempt to credit points
+                                    fetch('/api/buy-points', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ 
+                                            points: selectedPlan.points, 
+                                            amount: selectedPlan.price,
+                                            orderId: data.orderID
+                                        })
+                                    })
+                                    .then(res => {
+                                        if (res.status === 401 || res.status === 403) {
+                                           setShowLoginHint(true);
+                                           return; 
+                                        }
+                                        return res.json();
+                                    })
+                                    .then(data => {
+                                        if (data && !data.error) {
+                                            alert(`Transaction completed by ${details.payer.name.given_name}. Points added!`);
+                                            setSelectedPlan(null);
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.error(err);
+                                        // If fetch failed, likely network or auth
+                                        setShowLoginHint(true);
+                                    });
+                                });
+                            },
+                            onError: (err: any) => {
+                                console.error(err);
+                                alert('PayPal encountered an error.');
+                            }
+                        }).render(el);
+                    }
+                }}></div>
+            ) : (
+                <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                        <ShieldCheck size={32} />
+                    </div>
+                    <h4 className="text-lg font-bold text-white mb-2">Authentication Required</h4>
+                    <p className="text-slate-400 mb-6">You need to be logged in to receive your points.</p>
+                    <a href="/auth/google" className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-full font-bold transition-colors">
+                        Log In with Google
+                    </a>
+                </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 };
