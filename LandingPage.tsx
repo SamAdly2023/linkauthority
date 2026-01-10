@@ -1,6 +1,7 @@
 import React from 'react';
-import { ShieldCheck, BarChart, Globe, Zap, CheckCircle2, ArrowRight, Search, Users, Lock, ChevronDown } from 'lucide-react';
+import { ShieldCheck, BarChart, Globe, Zap, CheckCircle2, ArrowRight, Search, Users, Lock, ChevronDown, Rocket, Target, Award } from 'lucide-react';
 import ParticleNetwork from './ParticleNetwork';
+import Testimonials from './Testimonials';
 
 const LandingPage: React.FC = () => {
   return (
@@ -20,9 +21,9 @@ const LandingPage: React.FC = () => {
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
+            <a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-            <a href="#seo-tools" className="hover:text-white transition-colors">SEO Tools</a>
           </div>
 
           <a href="/auth/google" className="bg-white text-slate-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-slate-200 transition-all transform hover:scale-105 shadow-xl shadow-white/5">
@@ -62,11 +63,41 @@ const LandingPage: React.FC = () => {
             </a>
           </div>
 
-          <div className="mt-16 flex items-center justify-center gap-8 text-slate-500 grayscale opacity-50">
-             <span className="font-bold text-xl">TRUSTED BY SEO EXPERTS</span>
+          <div className="mt-16 flex flex-wrap justify-center gap-8 md:gap-16 text-slate-500 grayscale opacity-60">
+             <div className="flex items-center gap-2">
+                <Target size={24} />
+                <span className="font-bold text-lg">SEMRush</span>
+             </div>
+             <div className="flex items-center gap-2">
+                <Award size={24} />
+                <span className="font-bold text-lg">Ahrefs</span>
+             </div>
+             <div className="flex items-center gap-2">
+                <Rocket size={24} />
+                <span className="font-bold text-lg">Moz</span>
+             </div>
+             <div className="flex items-center gap-2">
+                <Globe size={24} />
+                <span className="font-bold text-lg">Google</span>
+             </div>
           </div>
         </div>
       </header>
+      
+      {/* Live Stats Ticker */}
+      <div className="bg-slate-900 border-y border-slate-800 py-4 overflow-hidden whitespace-nowrap">
+        <div className="inline-flex gap-16 animate-infinite-scroll">
+            {[...Array(2)].map((_, i) => (
+                <div key={i} className="flex gap-16 items-center text-slate-400 font-mono text-sm">
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> 423 Links Exchanged Today</span>
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span> 1,204 New Websites Added</span>
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-purple-500"></span> $45 Average Link Value</span>
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-amber-500"></span> 98% Customer Satisfaction</span>
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500"></span> 24/7 AI Monitoring Active</span>
+                </div>
+            ))}
+        </div>
+      </div>
 
       {/* SEO Content & Features Grid */}
       <section id="features" className="py-24 bg-slate-900/50 border-t border-slate-800 relative overflow-hidden">
@@ -111,7 +142,96 @@ const LandingPage: React.FC = () => {
               title="Secure Transactions"
               description="Links are verified automatically. Points are held in escrow until the backlink is confirmed live and dofollow."
             />
+            <FeatureCard 
+              icon={Award}
+              title="White Label Reporting"
+              description="Generate professional PDF reports with your branding to show clients exactly what links you've built."
+            />
+            <FeatureCard 
+              icon={Target}
+              title="Niche Filtering"
+              description="Drill down by specific vertical, language, and estimated traffic to find the perfect link partner."
+            />
+            <FeatureCard 
+              icon={Zap}
+              title="Instant Indexing"
+              description="Our premium indexer ensures Google sees your new backlinks within hours, not weeks."
+            />
           </div>
+        </div>
+      </section>
+
+      {/* Testimonials Slider */}
+      <div id="testimonials">
+        <Testimonials />
+      </div>
+
+      {/* Comparison Section */}
+      <section className="py-24 bg-slate-950 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+                <h2 className="text-3xl font-bold text-white mb-6">Stop Wasting Money on Agencies</h2>
+                <p className="text-slate-400">See how LinkAuthority compares to traditional link building methods.</p>
+            </div>
+            
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr>
+                            <th className="p-6 bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 w-1/3">Feature</th>
+                            <th className="p-6 bg-blue-900/20 text-blue-400 font-bold border-b border-blue-500/30 w-1/3">LinkAuthority</th>
+                            <th className="p-6 bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 w-1/3">Typical Agency</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                        <tr>
+                            <td className="p-6 text-slate-300 font-medium">Cost Per Link</td>
+                            <td className="p-6 text-white font-bold bg-blue-900/10">$0 (with Points)</td>
+                            <td className="p-6 text-slate-400">$300 - $500+</td>
+                        </tr>
+                        <tr>
+                            <td className="p-6 text-slate-300 font-medium">Time to Live</td>
+                            <td className="p-6 text-white font-bold bg-blue-900/10">24-48 Hours</td>
+                            <td className="p-6 text-slate-400">4-6 Weeks</td>
+                        </tr>
+                        <tr>
+                            <td className="p-6 text-slate-300 font-medium">Transparency</td>
+                            <td className="p-6 text-white font-bold bg-blue-900/10">100% Visibility</td>
+                            <td className="p-6 text-slate-400">Black Box</td>
+                        </tr>
+                        <tr>
+                            <td className="p-6 text-slate-300 font-medium">Control</td>
+                            <td className="p-6 text-white font-bold bg-blue-900/10">You Choose Anchors</td>
+                            <td className="p-6 text-slate-400">They Choose</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-24 bg-slate-900/50 border-t border-slate-800">
+        <div className="max-w-3xl mx-auto px-6">
+            <h2 className="text-3xl font-bold text-white mb-12 text-center">Frequently Asked Questions</h2>
+            <div className="space-y-6">
+                <FAQItem 
+                    question="Is this safe for my SEO? Will Google penalize me?"
+                    answer="Yes, it is safe. We focus on high-quality, relevant content exchanges between real websites. We strictly prohibit spam farms, PBNs, and gambling/casino sites. Our AI monitors link patterns to ensure natural growth."
+                />
+                <FAQItem 
+                    question="How do I earn points?"
+                    answer="You earn points by accepting guest posts or link insertions on your own website. The amount of points you earn depends on your website's Domain Authority (DA). Higher DA = More Points."
+                />
+                <FAQItem 
+                    question="Can I buy links without having a website?"
+                    answer="Yes! You can purchase points directly via PayPal and use them to acquire backlinks for your clients or new projects without needing to host links yourself."
+                />
+                <FAQItem 
+                    question="Are the links permanent?"
+                    answer="Yes. Our terms of service require links to remain active for at least 12 months. We continually monitor all links. If a link is removed, the seller is penalized and points are refunded."
+                />
+            </div>
         </div>
       </section>
 

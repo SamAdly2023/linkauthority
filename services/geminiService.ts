@@ -1,74 +1,22 @@
 
-import { GoogleGenAI } from "@google/genai";
 import { AIReport } from "../types";
 
-let ai: GoogleGenAI;
-try {
-  ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-} catch (error) {
-  console.warn("Gemini AI initialization failed:", error);
-}
-
 export const getSEOAdvice = async (siteUrl: string, da: number): Promise<AIReport | null> => {
-  if (!ai) return null;
-  
-  const prompt = `Act as a senior SEO expert. Analyze the website "${siteUrl}" (DA: ${da}).
-  Generate a highly detailed, dense, and professional SEO report in JSON format.
-  
-  Structure:
-  {
-    "seoScore": number (0-100),
-    "performanceScore": number (0-100),
-    "accessibilityScore": number (0-100),
-    "bestPracticesScore": number (0-100),
-    "summary": "A comprehensive, multi-paragraph executive summary of the site's current SEO standing, potential, and critical areas for improvement. Be specific and professional.",
-    "technicalSeo": [
-      { "title": "Specific Technical Check", "status": "pass"|"fail"|"warning", "description": "Detailed explanation of the finding and how to fix it." }
-    ],
-    "backlinkStrategy": {
-      "focus": "Detailed strategic direction for link building.",
-      "recommendedAnchors": ["anchor1", "anchor2", "anchor3", "anchor4", "anchor5"],
-      "targetNiches": ["niche1", "niche2", "niche3", "niche4"]
-    },
-    "keywordOpportunities": [
-      { "keyword": "keyword phrase", "difficulty": "Easy"|"Medium"|"Hard", "volume": "e.g. 1.2k", "intent": "Informational"|"Commercial"|"Transactional" }
-    ],
-    "monthlyGrowth": [
-      { "month": "Month 1", "traffic": number, "backlinks": number },
-      ... (6 months projection)
-    ]
-  }
-  
-  Requirements:
-  1. "technicalSeo" must include at least 12-15 distinct technical checks.
-  2. "keywordOpportunities" must include 5-8 high-potential keywords relevant to the site's niche.
-  3. "summary" should be dense and informative, providing deep technical insights.
-  4. Ensure the data is realistic for a site with DA ${da}.
-  5. Do not include markdown formatting like \`\`\`json. Just return the raw JSON string.`;
-
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      }
+    const response = await fetch('/api/seo-advice', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: siteUrl, da })
     });
     
-    let text = '';
-    if (typeof response.text === 'function') {
-        text = response.text();
-    } else {
-        text = (response as any).text;
+    if (!response.ok) {
+        console.error("API error:", response.statusText);
+        return null;
     }
 
-    if (!text) throw new Error("Empty response from AI");
-
-    const data = JSON.parse(text);
-    
-    // Add screenshot URL
-    data.screenshotUrl = `https://image.thum.io/get/width/1200/crop/800/noanimate/${siteUrl}`;
-    
+    const data = await response.json();
     return data;
   } catch (error) {
     console.error("Gemini Error:", error);
