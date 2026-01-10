@@ -167,6 +167,9 @@ const LandingPage: React.FC = () => {
         <Testimonials />
       </div>
 
+      {/* Pricing Section */}
+      <PricingSection />
+
       {/* Comparison Section */}
       <section className="py-24 bg-slate-950 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-6">
