@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck, BarChart, Globe, Zap, CheckCircle2, ArrowRight, Search, Users, Lock, ChevronDown, Rocket, Target, Award } from 'lucide-react';
 import ParticleNetwork from './ParticleNetwork';
 import Testimonials from './Testimonials';
+import PricingSection from './PricingSection';
 
 const LandingPage: React.FC = () => {
   return (
