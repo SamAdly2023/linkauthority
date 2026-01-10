@@ -894,9 +894,7 @@ const App: React.FC = () => {
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 z-40">
         <div className="flex items-center gap-2">
-          <div className="bg-blue-600 p-1.5 rounded-lg">
-            <ShieldCheck className="text-white" size={20} />
-          </div>
+          <img src="/logo.png" alt="LinkAuthority Logo" className="w-8 h-8 object-contain" />
           <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
             LinkAuthority
           </h1>
@@ -913,9 +911,7 @@ const App: React.FC = () => {
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex items-center gap-2 px-2 md:flex hidden">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <ShieldCheck className="text-white" size={24} />
-          </div>
+          <img src="/logo.png" alt="LinkAuthority Logo" className="w-10 h-10 object-contain" />
           <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
             LinkAuthority
           </h1>
