@@ -145,17 +145,22 @@ module.exports = app => {
       let successCount = 0;
       let failCount = 0;
 
+      let lastError = null;
+
       const emailPromises = usersToEmail.map(async user => {
         if (!user.email) return;
-        const sent = await sendEmail(user.email, subject, content); 
-        if (sent) successCount++;
-        else failCount++;
+        const result = await sendEmail(user.email, subject, content); 
+        if (result.success) successCount++;
+        else {
+          failCount++;
+          lastError = result.error;
+        }
       });
       
       await Promise.all(emailPromises);
       
       if (successCount === 0 && failCount > 0) {
-        return res.status(500).send({ error: `Failed to send all ${failCount} emails. Check server logs.` });
+        return res.status(500).send({ error: `Failed to send all ${failCount} emails. Last Error: ${lastError}` });
       }
 
       res.send({ message: `Emails process complete. Sent: ${successCount}. Failed: ${failCount}` });
