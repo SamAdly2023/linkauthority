@@ -1019,6 +1019,14 @@ const App: React.FC = () => {
               <span className="hidden md:inline">Add Website</span>
               <span className="md:hidden">Add</span>
             </button>
+            <button 
+                onClick={() => setCheckoutModal({ isOpen: true, plan: { name: 'Points Pack', points: 500, price: 40 } })} 
+                className="bg-green-600 hover:bg-green-500 text-white px-4 md:px-5 py-2 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20 font-medium whitespace-nowrap"
+            >
+                <Zap size={18} />
+                <span className="hidden md:inline">Buy Points</span>
+                <span className="md:hidden">Buy</span>
+            </button>
           </div>
         </header>
 
@@ -1028,19 +1036,33 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { label: 'Active Sites', value: user.websites.length, icon: Globe, color: 'blue' },
-                { label: 'Links Hosted', value: transactions.filter(t => t.type === 'earn').length, icon: ArrowUpRight, color: 'green' },
+                { 
+                   label: 'Links Hosted', 
+                   value: transactions.filter(t => t.type === 'earn').length, 
+                   icon: transactions.filter(t => t.type === 'earn').length >= 50 ? ShieldCheck : ArrowUpRight, 
+                   color: transactions.filter(t => t.type === 'earn').length >= 50 ? 'amber' : 'green',
+                   badge: transactions.filter(t => t.type === 'earn').length >= 50 ? 'Gold Partner' : transactions.filter(t => t.type === 'earn').length >= 20 ? 'Silver Partner' : 'Bronze Partner'
+                },
                 { label: 'Links Received', value: transactions.filter(t => t.type === 'spend').length, icon: ArrowDownLeft, color: 'purple' },
               ].map((stat, i) => (
                 <div key={i} className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800 flex items-center justify-between">
                   <div>
                     <p className="text-slate-400 text-sm mb-1">{stat.label}</p>
                     <p className="text-3xl font-bold text-white">{stat.value}</p>
+                    {stat.badge && <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded ml-1">{stat.badge}</span>}
                   </div>
                   <div className={`p-4 bg-${stat.color}-500/10 text-${stat.color}-500 rounded-2xl`}>
                     <stat.icon size={28} />
                   </div>
                 </div>
               ))}
+              
+              <div className="bg-gradient-to-br from-indigo-900/50 to-blue-900/50 p-6 rounded-3xl border border-blue-500/20 flex flex-col justify-center">
+                   <p className="text-blue-200 text-sm mb-1">Estimated Value Saved</p>
+                   <p className="text-3xl font-bold text-white">${(user.points * 1.5).toLocaleString()}</p>
+                   <p className="text-xs text-blue-300/60 mt-2">vs buying guest posts</p>
+              </div>
+            </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
