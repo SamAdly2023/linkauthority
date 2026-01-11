@@ -24,22 +24,7 @@ import {
 import ParticleNetwork from './ParticleNetwork';
 import Testimonials from './Testimonials';
 import PricingSection from './PricingSection';
-
-const ChatWidget = () => (
-  <a 
-    href="https://www.facebook.com/linkauthority2026/" 
-    target="_blank" 
-    rel="noopener noreferrer"
-    className="fixed bottom-6 right-6 z-50 bg-[#0084FF] hover:bg-[#0078db] text-white p-4 rounded-full shadow-lg shadow-blue-600/30 transition-all hover:scale-110 flex items-center justify-center group"
-    title="Chat with us on Facebook"
-  >
-    <MessageCircle size={28} className="fill-current" />
-    <span className="absolute right-full mr-4 bg-white text-slate-900 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-      Chat Support
-    </span>
-    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
-  </a>
-);
+import ChatWidget from './ChatWidget';
 
 const LandingPage: React.FC = () => {
   return (
