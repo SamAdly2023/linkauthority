@@ -142,17 +142,23 @@ module.exports = app => {
         usersToEmail = await User.find({ _id: userIds[0] });
       }
       
-      let count = 0;
-      const emailPromises = usersToEmail.map(user => {
-        if (!user.email) return Promise.resolve();
-        count++;
-        // wrap content in basic html structure if needed, but sendEmail takes html
-        return sendEmail(user.email, subject, content); 
+      let successCount = 0;
+      let failCount = 0;
+
+      const emailPromises = usersToEmail.map(async user => {
+        if (!user.email) return;
+        const sent = await sendEmail(user.email, subject, content); 
+        if (sent) successCount++;
+        else failCount++;
       });
       
       await Promise.all(emailPromises);
       
-      res.send({ message: `Emails sent to ${count} users` });
+      if (successCount === 0 && failCount > 0) {
+        return res.status(500).send({ error: `Failed to send all ${failCount} emails. Check server logs.` });
+      }
+
+      res.send({ message: `Emails process complete. Sent: ${successCount}. Failed: ${failCount}` });
     } catch (err) {
       console.error("Email error:", err);
       res.status(500).send({ error: 'Failed to send emails' });

@@ -9,14 +9,16 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: keys.emailUser,
     pass: keys.emailPass
-  }
+  },
+  logger: true, // Log to console
+  debug: true   // Include SMTP traffic in logs
 });
 
 // Generic send function
 const sendEmail = async (to, subject, html, attachments = []) => {
   if (!keys.emailUser || !keys.emailPass) {
     console.log('Email credentials not provided. Skipping email.');
-    return;
+    return false;
   }
 
   const mailOptions = {
@@ -30,8 +32,10 @@ const sendEmail = async (to, subject, html, attachments = []) => {
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent: %s', info.messageId);
+    return true;
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error sending email to ' + to, error);
+    return false;
   }
 };
 
