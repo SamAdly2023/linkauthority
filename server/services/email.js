@@ -4,8 +4,8 @@ const path = require('path');
 
 const transporter = nodemailer.createTransport({
   host: "s5531.usc1.stableserver.net",
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  port: 465,
+  secure: true, // true for 465, false for other ports
   auth: {
     user: keys.emailUser,
     pass: keys.emailPass
