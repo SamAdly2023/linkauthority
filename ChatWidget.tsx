@@ -50,7 +50,7 @@ const ChatWidget: React.FC = () => {
 
                     {/* Facebook Page Plugin Iframe */}
                     <iframe 
-                        src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(pageUrl)}&tabs=messages&width=340&height=500&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false&appId`}
+                        src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(pageUrl)}&tabs=messages&width=340&height=500&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false`}
                         width="340" 
                         height="500" 
                         style={{ border: 'none', overflow: 'hidden', position: 'relative', zIndex: 10 }} 
@@ -58,7 +58,7 @@ const ChatWidget: React.FC = () => {
                         frameBorder="0" 
                         allowFullScreen={true} 
                         allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                        className="w-full h-full"
+                        className="w-full h-full bg-white"
                     ></iframe>
                 </div>
                 
