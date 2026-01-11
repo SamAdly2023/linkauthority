@@ -6,6 +6,13 @@ const dns = require('dns').promises;
 const requireLogin = require('../middlewares/requireLogin');
 const { estimateAuthority } = require('../services/ai');
 const { sendNotification } = require('../services/notification');
+const { 
+  sendWebsiteAddedEmail, 
+  sendWebsiteVerifiedEmail, 
+  sendLinkRequestEmail, 
+  sendLinkVerifiedEmail,
+  sendAdminNotification 
+} = require('../services/email');
 const { analyzeWebsite, getSEOAdvice } = require('../services/gemini');
 
 const Website = mongoose.model('Website');
@@ -73,6 +80,10 @@ module.exports = app => {
       // Add to user's websites list
       req.user.websites.push(website);
       await req.user.save();
+
+      // Email Notification
+      sendWebsiteAddedEmail(req.user, website).catch(console.error);
+      sendAdminNotification('New Website Added', `User ${req.user.name} added ${website.url} (DA: ${website.domainAuthority})`);
 
       res.send(website);
     } catch (err) {
@@ -159,6 +170,11 @@ module.exports = app => {
         website.verificationMethod = method;
         website.verificationDate = Date.now();
         await website.save();
+
+        // Email Notification
+        sendWebsiteVerifiedEmail(req.user, website).catch(console.error);
+        sendAdminNotification('Website Verified', `User ${req.user.name} verified ${website.url}`);
+
         res.send({ success: true, website });
       } else {
         res.status(400).send({ error: 'Verification failed. Please check your file or DNS record.' });
@@ -215,13 +231,16 @@ module.exports = app => {
       await spendTransaction.save();
       await earnTransaction.save();
 
-      // Notify Seller
+      // Notify Seller (GHL)
       sendNotification('TRANSACTION_CREATED', seller, {
         type: 'link_request',
         buyer: req.user.name,
         targetUrl: targetUrl,
         points: cost
       });
+
+      // Notify Seller (Email)
+      sendLinkRequestEmail(seller, req.user.name, spendTransaction).catch(console.error);
 
       res.send({ user: req.user, transaction: spendTransaction });
     } catch (err) {
@@ -304,6 +323,9 @@ module.exports = app => {
             verificationUrl: verificationUrl,
             targetUrl: transaction.sourceUrl
           });
+
+          // Send Email to Buyer
+          sendLinkVerifiedEmail(buyerTransaction.user, req.user.name, buyerTransaction).catch(console.error);
         }
       }
 

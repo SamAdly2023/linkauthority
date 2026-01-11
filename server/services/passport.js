@@ -2,6 +2,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const mongoose = require('mongoose');
 const keys = require('../config/keys');
+const { sendWelcomeEmail, sendAdminNotification } = require('./email');
 
 const User = mongoose.model('User');
 
@@ -60,9 +61,18 @@ passport.use(
         const user = await new User({
           googleId: profile.id,
           name: profile.displayName,
-          email: profile.emails && profile.emails[0] ? profile.emails[0].value : undefined
+          email: profile.emails && profile.emails[0] ? profile.emails[0].value : undefined,
+          avatar: profile.photos && profile.photos[0] ? profile.photos[0].value : undefined,
+          points: 100
         }).save();
         console.log("New user created:", user.id);
+        
+        // Send Welcome Email
+        if (user.email) {
+            sendWelcomeEmail(user).catch(err => console.error("Error sending welcome email:", err));
+            sendAdminNotification('New User Signup', `User ${user.name} (${user.email}) just signed up.`);
+        }
+
         done(null, user);
       } catch (err) {
         console.error("CRITICAL ERROR in Google Strategy:", err);
