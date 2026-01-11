@@ -44,7 +44,9 @@ app.use(helmet({
         "https://www.paypal.com",
         "https://www.googletagmanager.com",
         "https://www.clarity.ms",
-        "https://c.bing.com"
+        "https://c.bing.com",
+        "https://connect.facebook.net",
+        "https://www.facebook.com"
       ],
       connectSrc: [
         "'self'", 
@@ -54,7 +56,9 @@ app.use(helmet({
         "https://www.google-analytics.com",
         "https://*.clarity.ms",
         "https://c.bing.com",
-        "https://*.google.com"
+        "https://*.google.com",
+        "https://www.facebook.com",
+        "https://web.facebook.com"
       ],
       imgSrc: [
         "'self'", 
@@ -64,13 +68,17 @@ app.use(helmet({
         "https://www.paypalobjects.com",
         "https://www.google.com",
         "https://*.clarity.ms",
-        "https://c.bing.com"
+        "https://c.bing.com",
+        "https://www.facebook.com",
+        "https://*.facebook.com"
       ],
       frameSrc: [
         "'self'", 
         "https://accounts.google.com",
         "https://www.paypal.com",
-        "https://www.sandbox.paypal.com"
+        "https://www.sandbox.paypal.com",
+        "https://www.facebook.com",
+        "https://web.facebook.com"
       ],
       styleSrc: [
         "'self'", 
