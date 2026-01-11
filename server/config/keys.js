@@ -6,7 +6,7 @@ module.exports = {
   paypalClientID: process.env.PAYPAL_CLIENT_ID,
   paypalSecret: process.env.PAYPAL_SECRET,
   ghlWebhookUrl: process.env.GHL_WEBHOOK_URL,
-  emailUser: process.env.EMAIL_USER,
-  emailPass: process.env.EMAIL_PASS,
+  emailUser: process.env.EMAIL_USER || 'info@linkauthority.live',
+  emailPass: process.env.EMAIL_PASS || 'Ahmed@19801990',
   adminEmail: 'samadly728@gmail.com'
 };
