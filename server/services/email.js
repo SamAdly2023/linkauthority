@@ -13,8 +13,19 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
   logger: true, // Log to console
   debug: true   // Include SMTP traffic in logs
+});
+
+// Verify connection configuration
+transporter.verify(function(error, success) {
+  if (error) {
+    console.log('SMTP Connection Error:', error);
+  } else {
+    console.log('SMTP Server is ready to take our messages');
+  }
 });
 
 // Generic send function
