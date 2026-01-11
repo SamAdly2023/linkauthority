@@ -1063,7 +1063,6 @@ const App: React.FC = () => {
                    <p className="text-xs text-blue-300/60 mt-2">vs buying guest posts</p>
               </div>
             </div>
-            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Chart */}
