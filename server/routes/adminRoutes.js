@@ -1,10 +1,12 @@
 const mongoose = require('mongoose');
 const requireAdmin = require('../middlewares/requireAdmin');
 const { analyzeWebsite } = require('../services/gemini');
+const { sendEmail } = require('../services/email');
 
 const User = mongoose.model('User');
 const Website = mongoose.model('Website');
 const Transaction = mongoose.model('Transaction');
+const Notification = mongoose.model('Notification');
 
 module.exports = app => {
   // Re-analyze all websites
@@ -118,5 +120,76 @@ module.exports = app => {
     // In a real app, you'd save this to a Settings model
     // For now, we'll just echo it back
     res.send({ message: 'Settings updated', settings: req.body });
+  });
+
+  // -------------------------
+  // COMMUNICATIONS
+  // -------------------------
+  
+  // Send Email
+  app.post('/api/admin/send-email', requireAdmin, async (req, res) => {
+    const { type, userIds, subject, content } = req.body;
+    
+    let usersToEmail = [];
+    
+    try {
+      if (type === 'all') {
+        usersToEmail = await User.find({ email: { $exists: true, $ne: '' } });
+      } else if (type === 'selected') {
+        usersToEmail = await User.find({ _id: { $in: userIds } });
+      } else if (type === 'single') {
+        if (!userIds || userIds.length === 0) return res.status(400).send({ error: 'No user selected' });
+        usersToEmail = await User.find({ _id: userIds[0] });
+      }
+      
+      let count = 0;
+      const emailPromises = usersToEmail.map(user => {
+        if (!user.email) return Promise.resolve();
+        count++;
+        // wrap content in basic html structure if needed, but sendEmail takes html
+        return sendEmail(user.email, subject, content); 
+      });
+      
+      await Promise.all(emailPromises);
+      
+      res.send({ message: `Emails sent to ${count} users` });
+    } catch (err) {
+      console.error("Email error:", err);
+      res.status(500).send({ error: 'Failed to send emails' });
+    }
+  });
+
+  // Send Notification (In-App)
+  app.post('/api/admin/send-notification', requireAdmin, async (req, res) => {
+    const { type, userIds, message } = req.body;
+    
+    try {
+      let usersToNotify = [];
+        if (type === 'all') {
+        usersToNotify = await User.find({}, '_id'); 
+      } else if (type === 'selected') {
+        // userIds is an array of strings
+        usersToNotify = userIds.map(id => ({ _id: id }));
+      } else if (type === 'single') {
+        if (!userIds || userIds.length === 0) return res.status(400).send({ error: 'No user selected' });
+        usersToNotify = [{ _id: userIds[0] }];
+      }
+
+      const notifications = usersToNotify.map(u => ({
+        recipient: u._id,
+        message,
+        read: false,
+        createdAt: new Date(),
+        type: 'info'
+      }));
+      
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+      }
+        res.send({ message: `Notifications sent to ${notifications.length} users` });
+    } catch (err) {
+        console.error("Notification error:", err);
+      res.status(500).send({ error: 'Failed to send notifications' });
+    }
   });
 };

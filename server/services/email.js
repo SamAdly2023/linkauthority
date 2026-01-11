@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const keys = require('../config/keys');
+const path = require('path');
 
 const transporter = nodemailer.createTransport({
   host: "s5531.usc1.stableserver.net",
@@ -12,7 +13,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // Generic send function
-const sendEmail = async (to, subject, html) => {
+const sendEmail = async (to, subject, html, attachments = []) => {
   if (!keys.emailUser || !keys.emailPass) {
     console.log('Email credentials not provided. Skipping email.');
     return;
@@ -22,7 +23,8 @@ const sendEmail = async (to, subject, html) => {
     from: `"LinkAuthority" <${keys.emailUser}>`,
     to,
     subject,
-    html
+    html,
+    attachments
   };
 
   try {
@@ -125,6 +127,7 @@ const sendAdminNotification = async (subject, message) => {
 };
 
 module.exports = {
+  sendEmail,
   sendWelcomeEmail,
   sendWebsiteAddedEmail,
   sendWebsiteVerifiedEmail,

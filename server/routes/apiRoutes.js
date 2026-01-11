@@ -18,6 +18,7 @@ const { analyzeWebsite, getSEOAdvice } = require('../services/gemini');
 const Website = mongoose.model('Website');
 const User = mongoose.model('User');
 const Transaction = mongoose.model('Transaction');
+const Notification = mongoose.model('Notification');
 
 module.exports = app => {
   // Update User Profile
@@ -386,5 +387,33 @@ module.exports = app => {
       console.error(err);
       res.status(500).send({ error: 'Failed to generate advice' });
     }
+  });
+
+  // -------------------------
+  // NOTIFICATIONS
+  // -------------------------
+  app.get('/api/notifications', requireLogin, async (req, res) => {
+    try {
+      const notifications = await Notification.find({ recipient: req.user._id })
+        .sort({ createdAt: -1 })
+        .limit(20);
+      res.send(notifications);
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  });
+
+  app.post('/api/notifications/mark-read', requireLogin, async (req, res) => {
+      try {
+          const { id } = req.body;
+          if (id) {
+              await Notification.findByIdAndUpdate(id, { read: true });
+          } else {
+              await Notification.updateMany({ recipient: req.user._id, read: false }, { read: true });
+          }
+          res.send({ success: true });
+      } catch (err) {
+          res.status(500).send(err);
+      }
   });
 };

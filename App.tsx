@@ -28,7 +28,10 @@ import {
   FileText,
   Sliders,
   Menu,
-  MapPin
+  MapPin,
+  Mail,
+  Bell,
+  Send
 } from 'lucide-react';
 import { Tab, User, Website, Transaction, AIReport } from './types';
 import { getSEOAdvice } from './services/geminiService';
@@ -73,6 +76,42 @@ const App: React.FC = () => {
   const [addPointsModal, setAddPointsModal] = useState<{ isOpen: boolean, user: any | null }>({ isOpen: false, user: null });
   const [pointsToAdd, setPointsToAdd] = useState<number>(0);
 
+  // Communication State
+  const [commType, setCommType] = useState<'email' | 'notification'>('email');
+  const [recipientType, setRecipientType] = useState<'all' | 'selected'>('all');
+  const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailContent, setEmailContent] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [isSendingComm, setIsSendingComm] = useState(false);
+
+  // User Notification State
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  useEffect(() => {
+    if (user) fetchNotifications();
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('/api/notifications');
+      if (res.ok) {
+        setNotifications(await res.json());
+      }
+    } catch(err) { console.error(err); }
+  };
+
+  const handleMarkRead = async () => {
+     if (unreadCount === 0) return;
+     try {
+       await fetch('/api/notifications/mark-read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+     } catch(err) { console.error(err); }
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   // Modal States
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, site: Website | null }>({ isOpen: false, site: null });
   const [verifyModal, setVerifyModal] = useState<{ isOpen: boolean, transaction: Transaction | null }>({ isOpen: false, transaction: null });
@@ -111,6 +150,59 @@ const App: React.FC = () => {
       });
     }
   }, [user]);
+
+  const handleSendCommunication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Validate
+    if (commType === 'email' && (!emailSubject || !emailContent)) {
+       setMessageModal({ isOpen: true, title: 'Validation Error', message: 'Subject and content are required for emails', type: 'error' });
+       return;
+    }
+    if (commType === 'notification' && !notificationMessage) {
+       setMessageModal({ isOpen: true, title: 'Validation Error', message: 'Message is required for notifications', type: 'error' });
+       return;
+    }
+    if (recipientType === 'selected' && selectedRecipientIds.length === 0) {
+       setMessageModal({ isOpen: true, title: 'Validation Error', message: 'Please select at least one user', type: 'error' });
+       return;
+    }
+
+    if (!confirm('Are you sure you want to send this broadcast?')) return;
+    
+    setIsSendingComm(true);
+    try {
+      const endpoint = commType === 'email' ? '/api/admin/send-email' : '/api/admin/send-notification';
+      const body = {
+        type: recipientType,
+        userIds: selectedRecipientIds,
+        subject: emailSubject,
+        content: emailContent,
+        message: notificationMessage
+      };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setMessageModal({ isOpen: true, title: 'Success', message: data.message, type: 'success' });
+        setEmailSubject('');
+        setEmailContent('');
+        setNotificationMessage('');
+        if (recipientType === 'selected') setSelectedRecipientIds([]);
+      } else {
+        setMessageModal({ isOpen: true, title: 'Error', message: data.error || 'Failed to send', type: 'error' });
+      }
+    } catch (err) {
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Communication failed', type: 'error' });
+    } finally {
+      setIsSendingComm(false);
+    }
+  };
 
   const handleAddPoints = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -968,6 +1060,7 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.AdminUsers} icon={Users} label="All Users" />
               <SidebarItem tab={Tab.AdminWebsites} icon={Globe} label="All Websites" />
               <SidebarItem tab={Tab.AdminTransactions} icon={FileText} label="All Transactions" />
+              <SidebarItem tab={Tab.AdminCommunications} icon={Mail} label="Communications" />
               <SidebarItem tab={Tab.AdminSettings} icon={Sliders} label="Settings" />
             </>
           )}
@@ -1005,6 +1098,47 @@ const App: React.FC = () => {
             <p className="text-slate-400 text-sm md:text-base">Welcome back, {user.name.split(' ')[0]}!</p>
           </div>
           <div className="flex gap-4 w-full md:w-auto">
+             <div className="relative z-50">
+                <button 
+                  onClick={() => {
+                     if (!isNotificationsOpen) handleMarkRead();
+                     setIsNotificationsOpen(!isNotificationsOpen);
+                  }}
+                  className="w-10 h-10 bg-slate-800/50 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors relative border border-slate-700"
+                >
+                   <Bell size={20} />
+                   {unreadCount > 0 && (
+                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-slate-900 shadow-sm animate-pulse">
+                       {unreadCount}
+                     </span>
+                   )}
+                </button>
+                
+                {isNotificationsOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)}></div>
+                    <div className="absolute top-12 right-0 w-80 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-96 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                            <h4 className="font-bold text-white text-sm">Notifications</h4>
+                            <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-500 hover:text-white"><X size={14} /></button>
+                        </div>
+                        <div className="overflow-y-auto flex-1 custom-scrollbar">
+                            {notifications.length === 0 ? (
+                                <div className="p-8 text-center text-slate-500 text-xs">No notifications yet</div>
+                            ) : (
+                                notifications.map(n => (
+                                    <div key={n._id} className={`p-4 border-b border-slate-800 hover:bg-slate-800/50 transition-colors ${!n.read ? 'bg-blue-500/5' : ''}`}>
+                                        <p className="text-sm text-slate-200 mb-1">{n.message}</p>
+                                        <p className="text-[10px] text-slate-500">{new Date(n.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                  </>
+                )}
+             </div>
+
             <div className="relative group flex-1 md:flex-none">
                <Zap className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-400" size={18} />
                <span className="block w-full md:w-auto pl-10 pr-4 py-2 bg-amber-400/10 text-amber-400 rounded-full border border-amber-400/20 font-bold text-sm text-center">
@@ -2022,6 +2156,138 @@ const App: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === Tab.AdminCommunications && (
+          <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-2xl font-bold text-white mb-6">Communications Center</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Type Selection */}
+              <div className="space-y-6">
+                <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                  <h4 className="text-lg font-bold text-slate-300 mb-4">Message Type</h4>
+                   <div className="flex gap-4">
+                      <button 
+                        onClick={() => setCommType('email')} 
+                        className={`flex-1 py-3 rounded-xl border font-bold flex items-center justify-center gap-2 transition-all ${commType === 'email' ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                      >
+                        <Mail size={18} /> Email
+                      </button>
+                      <button 
+                         onClick={() => setCommType('notification')}
+                         className={`flex-1 py-3 rounded-xl border font-bold flex items-center justify-center gap-2 transition-all ${commType === 'notification' ? 'bg-purple-600/20 border-purple-500 text-purple-400' : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                      >
+                        <Bell size={18} /> Push Notification
+                      </button>
+                   </div>
+                </div>
+
+                <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                   <h4 className="text-lg font-bold text-slate-300 mb-4">Recipients</h4>
+                   <div className="space-y-4">
+                     <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-800 cursor-pointer hover:bg-slate-900 relative group">
+                        <input 
+                          type="radio" 
+                          name="recipientType" 
+                          checked={recipientType === 'all'} 
+                          onChange={() => setRecipientType('all')}
+                          className="w-5 h-5 text-blue-600 bg-slate-900 border-slate-700 focus:ring-blue-600 focus:ring-2" 
+                        />
+                        <div>
+                          <p className="text-slate-200 font-bold group-hover:text-blue-400 transition-colors">All Users</p>
+                          <p className="text-xs text-slate-500">Send to every registered user ({adminUsers.length})</p>
+                        </div>
+                     </label>
+
+                     <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-800 cursor-pointer hover:bg-slate-900 relative group">
+                        <input 
+                          type="radio" 
+                          name="recipientType" 
+                          checked={recipientType === 'selected'} 
+                          onChange={() => setRecipientType('selected')}
+                          className="w-5 h-5 text-blue-600 bg-slate-900 border-slate-700 focus:ring-blue-600 focus:ring-2" 
+                        />
+                        <div>
+                          <p className="text-slate-200 font-bold group-hover:text-blue-400 transition-colors">Specific Users</p>
+                          <p className="text-xs text-slate-500">Select users from a list</p>
+                        </div>
+                     </label>
+
+                     {recipientType === 'selected' && (
+                        <div className="mt-4 max-h-60 overflow-y-auto custom-scrollbar border border-slate-800 rounded-xl p-2 bg-slate-900">
+                           {adminUsers.filter(u => u.name && u.email).map(u => (
+                             <label key={u._id} className="flex items-center gap-3 p-2 hover:bg-slate-800 rounded-lg cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={selectedRecipientIds.includes(u._id || '')}
+                                  onChange={(e) => {
+                                    if (e.target.checked) setSelectedRecipientIds(prev => [...prev, u._id || '']);
+                                    else setSelectedRecipientIds(prev => prev.filter(id => id !== u._id));
+                                  }}
+                                  className="w-4 h-4 rounded text-blue-600 focus:ring-0 cursor-pointer"
+                                />
+                                <div className="min-w-0">
+                                   <p className="text-sm font-medium text-slate-300 truncate">{u.name}</p>
+                                   <p className="text-xs text-slate-600 truncate">{u.email}</p>
+                                </div>
+                             </label>
+                           ))}
+                        </div>
+                     )}
+                   </div>
+                </div>
+              </div>
+
+              {/* Message Content */}
+              <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col h-full">
+                <h4 className="text-lg font-bold text-slate-300 mb-6">Content</h4>
+                <form onSubmit={handleSendCommunication} className="space-y-4 flex-1 flex flex-col">
+                  {commType === 'email' && (
+                    <div>
+                      <label className="block text-slate-400 text-sm mb-2 font-bold">Subject Line</label>
+                      <input 
+                        type="text" 
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-colors"
+                        placeholder="e.g., Special Offer: 50% Off Points!"
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex-1">
+                    <label className="block text-slate-400 text-sm mb-2 font-bold">
+                       {commType === 'email' ? 'Email Body (HTML supported)' : 'Notification Message'}
+                    </label>
+                    <textarea 
+                      className="w-full h-full min-h-[200px] bg-slate-900 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-colors resize-none font-mono text-sm"
+                      placeholder={commType === 'email' ? "<h1>Hello!</h1><p>We have exciting news...</p>" : "You have received 50 bonus points!"}
+                      value={commType === 'email' ? emailContent : notificationMessage}
+                      onChange={(e) => commType === 'email' ? setEmailContent(e.target.value) : setNotificationMessage(e.target.value)}
+                    ></textarea>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <button 
+                      type="submit"
+                      disabled={isSendingComm}
+                      className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${
+                          isSendingComm ? 'bg-slate-700 cursor-not-allowed' :
+                          commType === 'email' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' : 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/20'
+                        }`}
+                    >
+                      {isSendingComm ? <RefreshCw className="animate-spin" /> : <Send size={20} />}
+                      {isSendingComm ? 'Sending Broadcast...' : `Send ${commType === 'email' ? 'Email' : 'Push Notification'}`}
+                    </button>
+                    <p className="text-center text-slate-500 text-xs mt-3">
+                       This action will be queued immediately. Double-check your content before sending.
+                    </p>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         )}

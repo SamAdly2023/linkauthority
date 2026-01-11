@@ -13,6 +13,7 @@ require('dotenv').config();
 require('./models/User');
 require('./models/Website');
 require('./models/Transaction');
+require('./models/Notification');
 require('./services/passport');
 
 const keys = require('./config/keys');

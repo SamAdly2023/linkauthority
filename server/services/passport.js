@@ -63,7 +63,7 @@ passport.use(
           name: profile.displayName,
           email: profile.emails && profile.emails[0] ? profile.emails[0].value : undefined,
           avatar: profile.photos && profile.photos[0] ? profile.photos[0].value : undefined,
-          points: 100
+          points: 200
         }).save();
         console.log("New user created:", user.id);
         
