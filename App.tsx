@@ -31,7 +31,13 @@ import {
   MapPin,
   Mail,
   Bell,
-  Send
+  Send,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Youtube,
+  MessageCircle,
 } from 'lucide-react';
 import { Tab, User, Website, Transaction, AIReport } from './types';
 import { getSEOAdvice } from './services/geminiService';
@@ -134,6 +140,22 @@ const App: React.FC = () => {
   useEffect(() => {
     fetchUser();
   }, []);
+
+  const ChatWidget = () => (
+    <a 
+      href="https://www.facebook.com/linkauthority2026/" 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="fixed bottom-6 right-6 z-50 bg-[#0084FF] hover:bg-[#0078db] text-white p-4 rounded-full shadow-lg shadow-blue-600/30 transition-all hover:scale-110 flex items-center justify-center group"
+      title="Chat with us on Facebook"
+    >
+      <MessageCircle size={28} className="fill-current" />
+      <span className="absolute right-full mr-4 bg-white text-slate-900 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+        Chat Support
+      </span>
+      <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+    </a>
+  );
 
   useEffect(() => {
     if (user) {
@@ -1087,11 +1109,18 @@ const App: React.FC = () => {
             <button onClick={() => { setActiveTab(Tab.TermsOfService); setIsMobileMenuOpen(false); }} className="hover:text-slate-400 transition-colors">Terms</button>
             <button onClick={() => { setActiveTab(Tab.PrivacyPolicy); setIsMobileMenuOpen(false); }} className="hover:text-slate-400 transition-colors">Privacy</button>
           </div>
+          <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-slate-800/50">
+             <a href="https://www.facebook.com/linkauthority2026/" target="_blank" className="text-slate-600 hover:text-blue-500 transition-colors"><Facebook size={14} /></a>
+             <a href="https://www.instagram.com/linkauthority/" target="_blank" className="text-slate-600 hover:text-pink-500 transition-colors"><Instagram size={14} /></a>
+             <a href="https://www.linkedin.com/company/link-authority2026" target="_blank" className="text-slate-600 hover:text-blue-400 transition-colors"><Linkedin size={14} /></a>
+             <a href="https://x.com/authority2026" target="_blank" className="text-slate-600 hover:text-white transition-colors"><Twitter size={14} /></a>
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-8 pt-20 md:pt-8">
+      <main className="flex-1 overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 relative">
+        <ChatWidget />
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-10 gap-4">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 capitalize">{activeTab.replace('admin_', 'Admin ')}</h2>

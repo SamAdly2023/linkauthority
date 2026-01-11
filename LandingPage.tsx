@@ -1,12 +1,50 @@
 import React from 'react';
-import { ShieldCheck, BarChart, Globe, Zap, CheckCircle2, ArrowRight, Search, Users, Lock, ChevronDown, Rocket, Target, Award } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  BarChart, 
+  Globe, 
+  Zap, 
+  CheckCircle2, 
+  ArrowRight, 
+  Search, 
+  Users, 
+  Lock, 
+  ChevronDown, 
+  Rocket, 
+  Target, 
+  Award,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Youtube,
+  MessageCircle,
+  Mail
+} from 'lucide-react';
 import ParticleNetwork from './ParticleNetwork';
 import Testimonials from './Testimonials';
 import PricingSection from './PricingSection';
 
+const ChatWidget = () => (
+  <a 
+    href="https://www.facebook.com/linkauthority2026/" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="fixed bottom-6 right-6 z-50 bg-[#0084FF] hover:bg-[#0078db] text-white p-4 rounded-full shadow-lg shadow-blue-600/30 transition-all hover:scale-110 flex items-center justify-center group"
+    title="Chat with us on Facebook"
+  >
+    <MessageCircle size={28} className="fill-current" />
+    <span className="absolute right-full mr-4 bg-white text-slate-900 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+      Chat Support
+    </span>
+    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+  </a>
+);
+
 const LandingPage: React.FC = () => {
   return (
-    <div className="bg-slate-950 min-h-screen text-slate-100 font-inter selection:bg-blue-500/30">
+    <div className="bg-slate-950 min-h-screen text-slate-100 font-inter selection:bg-blue-500/30 relative">
+      <ChatWidget />
       
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
@@ -238,6 +276,64 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* Footer */}
+      <footer className="bg-slate-950 border-t border-slate-800 pt-20 pb-10">
+        <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                <div className="md:col-span-2 space-y-6">
+                    <div className="flex items-center gap-3">
+                        <img src="/logo.png" alt="LinkAuthority Logo" className="w-10 h-10 object-contain" />
+                        <span className="text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+                        LinkAuthority
+                        </span>
+                    </div>
+                    <p className="text-slate-400 leading-relaxed max-w-sm">
+                        LinkAuthority: The AI-powered backlink exchange for SEO specialists. Automate your link building, verify domain ownership, and rank faster with high-DA niche-relevant links.
+                    </p>
+                    <div className="flex gap-4">
+                        <SocialIcon href="https://www.facebook.com/linkauthority2026/" icon={Facebook} label="Facebook" />
+                        <SocialIcon href="https://www.instagram.com/linkauthority/" icon={Instagram} label="Instagram" />
+                        <SocialIcon href="https://www.linkedin.com/company/link-authority2026" icon={Linkedin} label="LinkedIn" />
+                        <SocialIcon href="https://x.com/authority2026" icon={Twitter} label="X (Twitter)" />
+                        <SocialIcon href="https://www.youtube.com/@LinkAuthority" icon={Youtube} label="YouTube" />
+                    </div>
+                </div>
+
+                <div>
+                    <h4 className="text-white font-bold mb-6">Contact Us</h4>
+                    <div className="space-y-4">
+                        <a href="mailto:info@linkauthority.live" className="flex items-center gap-3 text-slate-400 hover:text-white transition-colors group">
+                           <Mail size={18} className="group-hover:text-blue-400 transition-colors" />
+                           info@linkauthority.live
+                        </a>
+                         <a href="mailto:linkauthority2026@gmail.com" className="flex items-center gap-3 text-slate-400 hover:text-white transition-colors group">
+                           <Mail size={18} className="group-hover:text-blue-400 transition-colors" />
+                           linkauthority2026@gmail.com
+                        </a>
+                        <div className="flex items-center gap-3 text-slate-400">
+                           <Globe size={18} />
+                           Worldwide Service Area
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 className="text-white font-bold mb-6">Legal</h4>
+                    <div className="space-y-3">
+                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Terms of Service</a>
+                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Privacy Policy</a>
+                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Cookie Policy</a>
+                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Sitemap</a>
+                    </div>
+                </div>
+            </div>
+
+            <div className="pt-8 border-t border-slate-800 text-center text-slate-500 text-sm">
+                <p>&copy; {new Date().getFullYear()} LinkAuthority. All rights reserved.</p>
+            </div>
+        </div>
+      </footer>
+
       {/* How It Works Section */}
       <section id="how-it-works" className="py-24 bg-slate-950 border-t border-slate-800 relative">
         <div className="max-w-7xl mx-auto px-6">
@@ -348,6 +444,18 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
         <h3 className="text-lg font-bold text-white mb-2">{question}</h3>
         <p className="text-slate-400 leading-relaxed text-sm">{answer}</p>
     </div>
+);
+
+const SocialIcon = ({ href, icon: Icon, label }: { href: string, icon: any, label: string }) => (
+    <a 
+      href={href} 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      className="p-3 bg-slate-900 rounded-xl hover:bg-blue-600 hover:text-white text-slate-400 transition-all hover:-translate-y-1 block"
+      aria-label={label}
+    >
+      <Icon size={20} />
+    </a>
 );
 
 export default LandingPage;
