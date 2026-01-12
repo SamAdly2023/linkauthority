@@ -1,46 +1,49 @@
 <div align="center">
+  <img src="https://linkauthority.live/link-authority-logo.png" alt="LinkAuthority Logo" width="100" />
   <h1>LinkAuthority</h1>
   <p><strong>The #1 Marketplace for High-Quality Backlinks & AI SEO Analysis</strong></p>
 </div>
 
-LinkAuthority is a comprehensive platform that connects website owners to exchange high-quality backlinks, improving their Domain Authority (DA) and search engine rankings. It features a point-based economy and leverages Google's Gemini AI to provide expert SEO advice and technical audits.
+LinkAuthority is a comprehensive platform that connects website owners to exchange high-quality backlinks, improving their Domain Authority (DA) and search engine rankings. It points-based economy and leverages Google's Gemini AI to provide expert SEO advice and technical audits.
 
 ## 🚀 Key Features
 
 ### 🔗 Link Marketplace
 - **Earn Points**: Accept link requests from other users and place them on your verified sites.
-- **Spend Points**: Use your earned points to buy high-quality backlinks from other verified sites in your niche.
+- **Spend Points**: User your earned points to buy high-quality backlinks from other verified sites in your niche.
 - **Smart Matching**: Filter sites by category, DA, and location (Local/Worldwide).
 
 ### 🧠 AI SEO Expert (Powered by Gemini)
 - **Detailed Reports**: Generate professional SEO reports for your websites.
 - **Technical Audit**: Automated checks for performance, accessibility, and best practices.
-- **Growth Projections**: Visualize potential traffic and backlink growth.
 - **Strategic Advice**: Get AI-tailored strategies for backlink acquisition and anchor text usage.
 
-### 🛡️ Trust & Verification
-- **Domain Verification**: Verify ownership via DNS TXT record or HTML file upload.
-- **Automated DA Calculation**: System automatically assigns point values based on Domain Authority.
-- **Transaction Verification**: Manual and automated verification steps to ensure links are actually placed.
+### 🤖 Automation & Integrations
+- **GoHighLevel Integration**: Seamlessly syncs new user signups and sends transactional emails (Welcome, Verification, Link Requests) via GHL workflows.
+- **Google Auth**: Secure and fast login via Google OAuth 2.0.
+- **PayPal Integration**: Secure payment processing for point purchases.
 
-### 📊 Dashboard & Analytics
-- **Real-time Stats**: Track your points, transactions, and site performance.
-- **Interactive Charts**: Visualizations for traffic and growth.
+### 🛡️ Security & SEO
+- **Enterprise-Grade Security**: Protected against XSS, NoSQL Injection, Parameter Pollution, and DDOS (Rate Limiting).
+- **Technical SEO**: Fully optimized with dynamic Meta Tags, JSON-LD Structured Data, Sitemap.xml, and Robots.txt.
+- **Trust Verification**: Domain ownership verification via DNS TXT records.
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS
-- **UI Components**: Lucide React (Icons), Recharts (Charts)
-- **AI Integration**: Google Gemini AI (via `@google/genai`)
-- **Backend**: Node.js, Express (in `server/` directory)
-- **Database**: MongoDB (implied by Mongoose models)
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Lucide React
+- **SEO Engine**: React Helmet Async, Schema.org JSON-LD
+- **Backend**: Node.js, Express, MongoDB
+- **Security**: Helmet, XSS-Clean, HPP, Express Rate Limit, Mongo Sanitize
+- **AI**: Google Gemini Pro (via `@google/genai`)
+- **Email/CRM**: GoHighLevel Webhooks
 
 ## 🏁 Getting Started
 
 ### Prerequisites
-- Node.js (v16+)
-- MongoDB (for the backend)
-- Google Gemini API Key
+- Node.js (v18+)
+- MongoDB URI
+- Google Cloud Project (OAuth Credentials + Gemini API)
+- GoHighLevel Account (Optional, for emails)
 
 ### Installation
 
