@@ -4,8 +4,8 @@ const path = require('path');
 
 const transporter = nodemailer.createTransport({
   host: "s5531.usc1.stableserver.net",
-  port: 465,
-  secure: true, // true for 465, false for other ports
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: keys.emailUser,
     pass: keys.emailPass
@@ -13,8 +13,11 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
+  // Force IPv4 as some environments struggle with IPv6 defaults
+  family: 4, 
+  connectionTimeout: 20000, // Extended timeout
+  greetingTimeout: 20000,
+  socketTimeout: 20000,
   logger: true, // Log to console
   debug: true   // Include SMTP traffic in logs
 });
