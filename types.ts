@@ -53,6 +53,8 @@ export enum Tab {
   Terms = 'terms',
   Privacy = 'privacy',
   UserGuide = 'userguide',
+  About = 'about',
+  Contact = 'contact',
   AdminUsers = 'admin_users',
   AdminWebsites = 'admin_websites',
   AdminTransactions = 'admin_transactions',

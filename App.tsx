@@ -47,6 +47,10 @@ import CitationsPage from './CitationsPage';
 import LandingPage from './LandingPage';
 import ChatWidget from './ChatWidget';
 import SEO from './SEO';
+import UserGuide from './UserGuide';
+import PricingSection from './PricingSection';
+import AboutUs from './AboutUs';
+import ContactUs from './ContactUs';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Dashboard);
@@ -139,6 +143,32 @@ const App: React.FC = () => {
   
   // Mobile Menu State
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // SEO: Handle URL routing for standalone pages
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === '/privacy-policy') setActiveTab(Tab.Privacy);
+    else if (path === '/terms-of-service') setActiveTab(Tab.Terms);
+    else if (path === '/user-guide') setActiveTab(Tab.UserGuide);
+    else if (path === '/about-us') setActiveTab(Tab.About);
+    else if (path === '/contact-us') setActiveTab(Tab.Contact);
+    else if (path === '/pricing') setActiveTab(Tab.Guide);
+  }, []);
+
+  // Update URL when tab changes (Simple History management for SEO cleanliness)
+  useEffect(() => {
+    let path = '/';
+    if (activeTab === Tab.Privacy) path = '/privacy-policy';
+    else if (activeTab === Tab.Terms) path = '/terms-of-service';
+    else if (activeTab === Tab.UserGuide) path = '/user-guide';
+    else if (activeTab === Tab.About) path = '/about-us';
+    else if (activeTab === Tab.Contact) path = '/contact-us';
+    else if (activeTab === Tab.Guide) path = '/pricing';
+    
+    if (path !== '/' && window.location.pathname !== path) {
+        window.history.pushState({}, '', path);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     fetchUser();
@@ -1141,6 +1171,8 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.UserGuide} icon={BookOpen} label="User Guide" />
               <SidebarItem tab={Tab.Profile} icon={UserIcon} label="My Profile" />
               <div className="pt-4 mt-2 border-t border-slate-800">
+                  <SidebarItem tab={Tab.About} icon={Users} label="About Us" />
+                  <SidebarItem tab={Tab.Contact} icon={MessageCircle} label="Contact Us" />
                   <SidebarItem tab={Tab.Terms} icon={FileText} label="Terms of Service" />
                   <SidebarItem tab={Tab.Privacy} icon={ShieldCheck} label="Privacy Policy" />
               </div>
@@ -2105,11 +2137,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-import UserGuide from './UserGuide';
-import PricingSection from './PricingSection'; // Ensure this is imported
-
-// ... inside App component return statement ...
-
         {activeTab === Tab.Terms && (
           <TermsOfService onBack={() => setActiveTab(Tab.Dashboard)} />
         )}
@@ -2127,6 +2154,14 @@ import PricingSection from './PricingSection'; // Ensure this is imported
         {/* Updated Guide Tab to only show Pricing now, or rename component usage */}
         {activeTab === Tab.Guide && (
              <PricingSection />
+        )}
+
+        {activeTab === Tab.About && (
+             <AboutUs />
+        )}
+
+        {activeTab === Tab.Contact && (
+             <ContactUs />
         )}
 
         {/* Admin Tabs */}
