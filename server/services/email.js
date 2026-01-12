@@ -29,19 +29,26 @@ transporter.verify(function(error, success) {
 });
 
 // Generic send function
-const sendEmail = async (to, subject, html, attachments = []) => {
+const sendEmail = async (to, subject, html, attachments = [], name = null) => {
   // Option 1: Send via GoHighLevel Webhook (Primary if configured)
   if (keys.ghlWebhookUrl) {
     try {
       console.log(`Sending email to ${to} via GHL Webhook...`);
       // We send the data expected by our GHL Automation
-      await axios.post(keys.ghlWebhookUrl, {
+      const payload = {
         type: 'email', // Distinguish between basic sync and email sending
         email: to,
         subject: subject,
         html: html, // We pass the raw HTML
-        message: html 
-      });
+        message: html
+      };
+
+      if (name) {
+        payload.firstName = name.split(' ')[0];
+        payload.lastName = name.split(' ').slice(1).join(' ');
+      }
+
+      await axios.post(keys.ghlWebhookUrl, payload);
       console.log('Email sent successfully via GHL Webhook');
       return { success: true, messageId: 'ghl-webhook' };
     } catch (error) {
@@ -93,7 +100,7 @@ const sendWelcomeEmail = async (user) => {
       <p style="margin-top: 30px; font-size: 12px; color: #666;">If you have any questions, reply to this email.</p>
     </div>
   `;
-  await sendEmail(user.email, subject, html);
+  await sendEmail(user.email, subject, html, [], user.name);
 };
 
 const sendWebsiteAddedEmail = async (user, website) => {
@@ -108,7 +115,7 @@ const sendWebsiteAddedEmail = async (user, website) => {
       ${!website.isVerified ? '<p>Please verify your website to start earning points.</p>' : ''}
     </div>
   `;
-  await sendEmail(user.email, subject, html);
+  await sendEmail(user.email, subject, html, [], user.name);
 };
 
 const sendWebsiteVerifiedEmail = async (user, website) => {
@@ -121,7 +128,7 @@ const sendWebsiteVerifiedEmail = async (user, website) => {
       <p>You can now use this site to exchange links and earn points.</p>
     </div>
   `;
-  await sendEmail(user.email, subject, html);
+  await sendEmail(user.email, subject, html, [], user.name);
 };
 
 const sendLinkRequestEmail = async (seller, buyerName, transaction) => {
@@ -137,7 +144,7 @@ const sendLinkRequestEmail = async (seller, buyerName, transaction) => {
       <a href="https://linkauthority.com" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Request</a>
     </div>
   `;
-  await sendEmail(seller.email, subject, html);
+  await sendEmail(seller.email, subject, html, [], seller.name);
 };
 
 const sendLinkVerifiedEmail = async (buyer, sellerName, transaction) => {
@@ -152,7 +159,7 @@ const sendLinkVerifiedEmail = async (buyer, sellerName, transaction) => {
       <p>Points have been transferred successfully.</p>
     </div>
   `;
-  await sendEmail(buyer.email, subject, html);
+  await sendEmail(buyer.email, subject, html, [], buyer.name);
 };
 
 const sendAdminNotification = async (subject, message) => {

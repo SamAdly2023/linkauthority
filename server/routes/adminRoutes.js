@@ -149,7 +149,7 @@ module.exports = app => {
 
       const emailPromises = usersToEmail.map(async user => {
         if (!user.email) return;
-        const result = await sendEmail(user.email, subject, content); 
+        const result = await sendEmail(user.email, subject, content, [], user.name); 
         if (result.success) successCount++;
         else {
           failCount++;
