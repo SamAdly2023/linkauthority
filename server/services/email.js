@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const keys = require('../config/keys');
 const path = require('path');
+const axios = require('axios');
 
 const transporter = nodemailer.createTransport({
   host: "192.250.227.239", // IP for s5531.usc1.stableserver.net to bypass DNS issues
@@ -29,6 +30,29 @@ transporter.verify(function(error, success) {
 
 // Generic send function
 const sendEmail = async (to, subject, html, attachments = []) => {
+  // Option 1: Send via GoHighLevel Webhook (Primary if configured)
+  if (keys.ghlWebhookUrl) {
+    try {
+      console.log(`Sending email to ${to} via GHL Webhook...`);
+      // We send the data expected by our GHL Automation
+      await axios.post(keys.ghlWebhookUrl, {
+        email: to,
+        subject: subject,
+        html: html, // We pass the raw HTML
+        message: html // Redundant key just in case user maps 'message' instead
+      });
+      console.log('Email sent successfully via GHL Webhook');
+      return { success: true, messageId: 'ghl-webhook' };
+    } catch (error) {
+       console.error('GHL Webhook Failed:', error.message);
+       // If GHL fails, we can either try SMTP or just fail. 
+       // For now, let's log it and fall through to SMTP as backup? 
+       // No, usually if one is configured, we stick to it. But fallback is safest.
+       console.log('Falling back to SMTP...');
+    }
+  }
+
+  // Option 2: Send via SMTP (Fallback)
   if (!keys.emailUser || !keys.emailPass) {
     console.log('Email credentials not provided. Skipping email.');
     return false;
