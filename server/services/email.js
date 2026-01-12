@@ -3,23 +3,19 @@ const keys = require('../config/keys');
 const path = require('path');
 
 const transporter = nodemailer.createTransport({
-  host: "s5531.usc1.stableserver.net",
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  host: "192.250.227.239", // IP for s5531.usc1.stableserver.net to bypass DNS issues
+  port: 465,
+  secure: true, // true for 465, false for other ports
   auth: {
     user: keys.emailUser,
     pass: keys.emailPass
   },
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+    ciphers: 'SSLv3'
   },
-  // Force IPv4 as some environments struggle with IPv6 defaults
-  family: 4, 
-  connectionTimeout: 20000, // Extended timeout
-  greetingTimeout: 20000,
-  socketTimeout: 20000,
-  logger: true, // Log to console
-  debug: true   // Include SMTP traffic in logs
+  logger: true,
+  debug: true
 });
 
 // Verify connection configuration
