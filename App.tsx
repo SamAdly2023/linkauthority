@@ -863,17 +863,33 @@ const App: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-400 text-sm mb-2">Your Website URL (Source)</label>
-                <input 
-                  type="url" 
-                  required
-                  placeholder="https://my-site.com"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
-                  value={purchaseSourceUrl}
-                  onChange={e => setPurchaseSourceUrl(e.target.value)}
-                />
+                <label className="block text-slate-400 text-sm mb-2">Select Your Website (Source)</label>
+                {/* Simplified Selection for Better UX */}
+                {user?.websites && user.websites.length > 0 ? (
+                  <select
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer"
+                    value={purchaseSourceUrl}
+                    onChange={e => setPurchaseSourceUrl(e.target.value)}
+                  >
+                    <option value="" disabled>-- Select a website --</option>
+                    {user.websites.filter(w => w.isVerified).map(w => (
+                      <option key={w._id} value={w.url}>{w.url} (DA: {w.domainAuthority})</option>
+                    ))}
+                  </select>
+                ) : (
+                   <input 
+                    type="url" 
+                    required
+                    placeholder="https://my-site.com"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                    value={purchaseSourceUrl}
+                    onChange={e => setPurchaseSourceUrl(e.target.value)}
+                  />
+                )}
+                
                 <p className="text-xs text-slate-500 mt-2">
-                  This is the site you want to promote. The seller will place a link to this URL on their site.
+                  Select the verified website you want to build authority for.
                 </p>
               </div>
 
