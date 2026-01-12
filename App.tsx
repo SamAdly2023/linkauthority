@@ -46,6 +46,7 @@ import PrivacyPolicy from './PrivacyPolicy';
 import CitationsPage from './CitationsPage';
 import LandingPage from './LandingPage';
 import ChatWidget from './ChatWidget';
+import SEO from './SEO';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Dashboard);
@@ -556,6 +557,11 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-950 overflow-hidden relative">
+      <SEO 
+        title="Dashboard - LinkAuthority" 
+        description="Manage your backlinks, verify websites, and track your SEO progress on LinkAuthority." 
+        name="LinkAuthority Dashboard"
+      />
       {/* Add Site Modal */}
       {showAddSiteModal && (
         <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">

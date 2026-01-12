@@ -25,10 +25,16 @@ import ParticleNetwork from './ParticleNetwork';
 import Testimonials from './Testimonials';
 import PricingSection from './PricingSection';
 import ChatWidget from './ChatWidget';
+import SEO from './SEO';
 
 const LandingPage: React.FC = () => {
   return (
     <div className="bg-slate-950 min-h-screen text-slate-100 font-inter selection:bg-blue-500/30 relative">
+      <SEO 
+        title="LinkAuthority - Free Backlink Exchange Platform | Boost SEO" 
+        description="Join LinkAuthority to exchange high-quality backlinks, increase your Domain Authority (DA), and rank higher on Google safely. The #1 community for SEO growth."
+        canonical="https://linkauthority.live/"
+      />
       <ChatWidget />
       
       {/* Navigation */}

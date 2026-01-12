@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
+import SEO from './SEO';
 
 interface TermsOfServiceProps {
   onBack: () => void;
@@ -8,6 +9,11 @@ interface TermsOfServiceProps {
 const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
   return (
     <div className="p-6 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <SEO 
+        title="Terms of Service - LinkAuthority" 
+        description="Read the Terms of Service for LinkAuthority. Guidelines and rules for using our backlink exchange platform."
+        canonical="https://linkauthority.live/terms-of-service"
+      />
       <button 
         onClick={onBack}
         className="flex items-center text-slate-400 hover:text-white mb-6 transition-colors"

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
+import SEO from './SEO';
 
 interface PrivacyPolicyProps {
   onBack: () => void;
@@ -8,6 +9,11 @@ interface PrivacyPolicyProps {
 const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
   return (
     <div className="p-6 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <SEO 
+        title="Privacy Policy - LinkAuthority" 
+        description="Our Privacy Policy explains how LinkAuthority collects and uses your data. Your privacy is our priority."
+        canonical="https://linkauthority.live/privacy-policy"
+      />
       <button 
         onClick={onBack}
         className="flex items-center text-slate-400 hover:text-white mb-6 transition-colors"
