@@ -28,8 +28,41 @@ transporter.verify(function(error, success) {
   }
 });
 
+// Signature Template
+const getSignature = () => {
+  return `
+    <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-family: Arial, sans-serif;">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <img src="https://linkauthority.live/link-authority-logo.png" alt="LinkAuthority" style="width: 50px; height: 50px; border-radius: 5px; object-fit: contain;">
+        <div>
+          <p style="margin: 0; font-weight: bold; color: #333; font-size: 16px;">Sam Adly</p>
+          <p style="margin: 0; color: #666; font-size: 14px;">CEO, LinkAuthority</p>
+        </div>
+      </div>
+      <div style="margin-top: 15px;">
+        <a href="https://www.facebook.com/linkauthority2026/" style="margin-right: 15px; text-decoration: none; display: inline-block;">
+          <img src="https://cdn-icons-png.flaticon.com/32/145/145802.png" alt="Facebook" style="width: 24px; height: 24px;">
+        </a>
+        <a href="https://www.instagram.com/linkauthority/" style="margin-right: 15px; text-decoration: none; display: inline-block;">
+           <img src="https://cdn-icons-png.flaticon.com/32/3955/3955024.png" alt="Instagram" style="width: 24px; height: 24px;">
+        </a>
+        <a href="https://www.linkedin.com/company/link-authority2026" style="margin-right: 15px; text-decoration: none; display: inline-block;">
+           <img src="https://cdn-icons-png.flaticon.com/32/145/145807.png" alt="LinkedIn" style="width: 24px; height: 24px;">
+        </a>
+         <a href="https://x.com/authority2026" style="margin-right: 15px; text-decoration: none; display: inline-block;">
+           <img src="https://cdn-icons-png.flaticon.com/32/3670/3670151.png" alt="Twitter/X" style="width: 24px; height: 24px;">
+        </a>
+      </div>
+    </div>
+  `;
+};
+
 // Generic send function
 const sendEmail = async (to, subject, html, attachments = [], name = null) => {
+  
+  // Append signature to HTML body
+  const htmlWithSignature = html + getSignature();
+
   // Option 1: Send via GoHighLevel Webhook (Primary if configured)
   if (keys.ghlWebhookUrl) {
     try {
@@ -39,8 +72,8 @@ const sendEmail = async (to, subject, html, attachments = [], name = null) => {
         type: 'email', // Distinguish between basic sync and email sending
         email: to,
         subject: subject,
-        html: html, // We pass the raw HTML
-        message: html
+        html: htmlWithSignature, // We pass the raw HTML
+        message: htmlWithSignature
       };
 
       if (name) {
@@ -53,7 +86,6 @@ const sendEmail = async (to, subject, html, attachments = [], name = null) => {
       return { success: true, messageId: 'ghl-webhook' };
     } catch (error) {
        console.error('GHL Webhook Failed:', error.message);
-       // If GHL fails, we can either try SMTP or just fail. 
        console.log('Falling back to SMTP...');
     }
   }
@@ -68,7 +100,7 @@ const sendEmail = async (to, subject, html, attachments = [], name = null) => {
     from: `"LinkAuthority" <${keys.emailUser}>`,
     to,
     subject,
-    html,
+    html: htmlWithSignature,
     attachments
   };
 
