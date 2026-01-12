@@ -5,6 +5,7 @@ const WebsiteSchema = new mongoose.Schema({
   domainAuthority: { type: Number, default: 0 },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   category: String,
+  description: { type: String, maxlength: 200 }, // Short bio for contextual backlinks
   serviceType: { type: String, enum: ['local', 'worldwide'], default: 'worldwide' },
   location: {
     country: String,
@@ -13,9 +14,10 @@ const WebsiteSchema = new mongoose.Schema({
   },
   isVerified: { type: Boolean, default: false },
   verificationToken: String,
-  verificationMethod: { type: String, enum: ['file', 'dns', 'admin'] },
+  verificationMethod: { type: String, enum: ['file', 'dns', 'admin', 'script'] },
   verificationDate: Date,
-  lastChecked: Date
+  lastChecked: Date,
+  widgetActive: { type: Boolean, default: false } // For instant backlinks
 });
 
 module.exports = mongoose.model('Website', WebsiteSchema);

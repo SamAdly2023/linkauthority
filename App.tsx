@@ -66,6 +66,7 @@ const App: React.FC = () => {
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
   const [newSiteUrl, setNewSiteUrl] = useState('');
   const [newSiteCategory, setNewSiteCategory] = useState('');
+  const [newSiteDescription, setNewSiteDescription] = useState('');
   const [newSiteServiceType, setNewSiteServiceType] = useState<'worldwide' | 'local'>('worldwide');
   const [newSiteCountry, setNewSiteCountry] = useState('');
   const [newSiteCity, setNewSiteCity] = useState('');
@@ -313,6 +314,7 @@ const App: React.FC = () => {
         body: JSON.stringify({ 
             url: newSiteUrl,
             category: newSiteCategory,
+            description: newSiteDescription,
             serviceType: newSiteServiceType,
             location: newSiteServiceType === 'local' ? {
                 country: newSiteCountry,
@@ -326,6 +328,7 @@ const App: React.FC = () => {
         setShowAddSiteModal(false);
         setNewSiteUrl('');
         setNewSiteCategory('');
+        setNewSiteDescription('');
         setNewSiteServiceType('worldwide');
         setNewSiteCountry('');
         setNewSiteCity('');
@@ -396,6 +399,27 @@ const App: React.FC = () => {
               setMessageModal({ isOpen: true, title: 'Success', message: 'Domain verified successfully!', type: 'success' });
           } else {
               setMessageModal({ isOpen: true, title: 'Verification Failed', message: data.error || 'Could not verify domain', type: 'error' });
+          }
+      } catch (err) {
+          setMessageModal({ isOpen: true, title: 'Error', message: 'Verification request failed', type: 'error' });
+      }
+  };
+
+  const handleVerifyScript = async (websiteId: string) => {
+      try {
+          const res = await fetch('/api/websites/verify-script', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ websiteId })
+          });
+          const data = await res.json();
+          
+          if (res.ok) {
+              setDomainVerificationModal({ isOpen: false, website: null });
+              fetchUser();
+              setMessageModal({ isOpen: true, title: 'Success', message: 'Widget verified! Your website is now ready for instant backlinks.', type: 'success' });
+          } else {
+              setMessageModal({ isOpen: true, title: 'Verification Failed', message: data.error || 'Could not verify widget installation. Make sure the code is on your homepage.', type: 'error' });
           }
       } catch (err) {
           setMessageModal({ isOpen: true, title: 'Error', message: 'Verification request failed', type: 'error' });
@@ -593,6 +617,17 @@ const App: React.FC = () => {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
                   value={newSiteCategory}
                   onChange={e => setNewSiteCategory(e.target.value)}
+                  disabled={isAddingSite}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Short Bio / Description <span className="text-xs text-blue-400">(Optional but Recommended for SEO)</span></label>
+                <textarea 
+                  placeholder="A short description of your website to appear alongside your link (e.g. 'Expert Plumbing Services in NYC since 1990'). This creates a Contextual Backlink."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all h-24 resize-none"
+                  value={newSiteDescription}
+                  onChange={e => setNewSiteDescription(e.target.value)}
                   disabled={isAddingSite}
                 />
               </div>
@@ -816,14 +851,35 @@ const App: React.FC = () => {
                     <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-sm text-green-400 break-all">
                         linkauthority-verification={domainVerificationModal.website.verificationToken}
                     </div>
-                    <p className="text-xs text-yellow-500/80 mt-2 flex items-start gap-1">
-                        DNS changes can take time. If it fails, please wait 15 minutes and try again.
+                </div>
+
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-800 border-l-4 border-l-blue-500">
+                    <h4 className="text-white font-bold mb-2 flex items-center gap-2">
+                        <Zap size={16} className="text-blue-500" />
+                        Method 3: Instant Widget (Recommended)
+                    </h4>
+                    <p className="text-sm text-slate-400 mb-2">Enable <strong>Instant Backlinks</strong> by adding this code to your homepage (footer or sidebar):</p>
+                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs text-blue-300 break-all select-all">
+                        &lt;div id="linkauthority-widget"&gt;&lt;/div&gt;{"\n"}
+                        &lt;script src="https://linkauthority.live/widget.js" data-id="{domainVerificationModal.website._id}" async&gt;&lt;/script&gt;
+                    </div>
+                    <button 
+                        onClick={() => handleVerifyScript(domainVerificationModal.website!._id!)}
+                        className="mt-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/20"
+                    >
+                        Check Code & Verify
+                    </button>
+                    <p className="text-xs text-blue-400/80 mt-2">
+                        This method enables *Instant Revenue*. Transactions are verified automatically.
                     </p>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-slate-800">
                     <button 
                         onClick={() => handleVerifyDomain(domainVerificationModal.website!._id!, 'dns')}
-                        className="mt-3 w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors"
+                        className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold transition-colors"
                     >
-                        Verify DNS
+                        Verify DNS/File
                     </button>
                 </div>
             </div>

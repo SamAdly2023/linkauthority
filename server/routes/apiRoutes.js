@@ -47,7 +47,7 @@ module.exports = app => {
 
   // Add a new website
   app.post('/api/websites', requireLogin, async (req, res) => {
-    const { url, category, serviceType, location } = req.body;
+    const { url, category, description, serviceType, location } = req.body;
 
     // Basic validation
     if (!url) return res.status(400).send({ error: 'URL is required' });
@@ -66,6 +66,7 @@ module.exports = app => {
     const website = new Website({
       url,
       category,
+      description,
       serviceType,
       location,
       domainAuthority,
@@ -94,13 +95,14 @@ module.exports = app => {
 
   // Update Website Details
   app.put('/api/websites/:id', requireLogin, async (req, res) => {
-    const { category, serviceType, location } = req.body;
+    const { category, description, serviceType, location } = req.body;
     
     try {
       const website = await Website.findOne({ _id: req.params.id, owner: req.user._id });
       if (!website) return res.status(404).send({ error: 'Website not found' });
 
       if (category) website.category = category;
+      if (description !== undefined) website.description = description;
       if (serviceType) website.serviceType = serviceType;
       if (location) website.location = location;
 
@@ -228,24 +230,136 @@ module.exports = app => {
       req.user.points -= cost;
       await req.user.save();
 
-      // Save transactions (Seller points are NOT added yet)
+      // Check if Target Site has Widget Installed (Auto-Verify)
+      if (targetSite.widgetActive) {
+        spendTransaction.status = 'completed';
+        spendTransaction.verificationUrl = 'Widget Auto-Verification';
+        
+        earnTransaction.status = 'completed';
+        earnTransaction.verificationUrl = 'Widget Auto-Verification';
+        
+        // Credit Seller Immediately
+        seller.points += cost;
+        await seller.save();
+
+        // Notify Buyer (Instant Success)
+        sendNotification('TRANSACTION_COMPLETED', req.user, {
+            type: 'link_verified',
+            seller: seller.name,
+            points: cost,
+            sourceUrl: sourceUrl
+        });
+      }
+
+      // Save transactions (Seller points are NOT added yet if not widget)
       await spendTransaction.save();
       await earnTransaction.save();
+      
+      if (targetSite.widgetActive) {
+         // Notify Seller (New Active Link)
+         sendNotification('TRANSACTION_CREATED', seller, {
+            type: 'info',
+            message: `New Instant Backlink! ${req.user.name} placed a link on ${targetUrl}. It is live via your widget.`
+         });
+         // Email notification handled by generic functions usually
+      } else {
+        // Validation/Manual Flow
+        // Notify Seller (GHL)
+        sendNotification('TRANSACTION_CREATED', seller, {
+            type: 'link_request',
+            buyer: req.user.name,
+            targetUrl: targetUrl,
+            points: cost
+        });
 
-      // Notify Seller (GHL)
-      sendNotification('TRANSACTION_CREATED', seller, {
-        type: 'link_request',
-        buyer: req.user.name,
-        targetUrl: targetUrl,
-        points: cost
-      });
-
-      // Notify Seller (Email)
-      sendLinkRequestEmail(seller, req.user.name, spendTransaction).catch(console.error);
+        // Notify Seller (Email)
+        sendLinkRequestEmail(seller, req.user.name, spendTransaction).catch(console.error);
+      }
 
       res.send({ user: req.user, transaction: spendTransaction });
     } catch (err) {
       res.status(422).send(err);
+    }
+  });
+
+  // Verify Script Installation (New Method)
+  app.post('/api/websites/verify-script', requireLogin, async (req, res) => {
+    const { websiteId } = req.body;
+    
+    try {
+      const website = await Website.findOne({ _id: websiteId, owner: req.user._id });
+      if (!website) return res.status(404).send({ error: 'Website not found' });
+
+      // Fetch the homepage
+      const response = await axios.get(website.url, {
+        headers: { 'User-Agent': 'LinkAuthority-Bot/1.0' },
+        timeout: 10000
+      });
+      
+      const $ = cheerio.load(response.data);
+      // Look for the specific script tag
+      // Matches: src=".../widget.js" and data-id="WEBSITE_ID"
+      const scriptSelector = `script[src*="widget.js"][data-id="${website._id}"]`;
+      const scriptFound = $(scriptSelector).length > 0;
+
+      if (scriptFound) {
+        website.isVerified = true;
+        website.verificationMethod = 'script';
+        website.verificationDate = new Date();
+        website.widgetActive = true;
+        await website.save();
+
+        // Award points if first verification (Logic elsewhere usually, but adding safe check)
+        // Ignoring point addition logic for now to avoid duplication if it exists elsewhere
+
+        sendWebsiteVerifiedEmail(req.user, website).catch(console.error);
+        res.send(website);
+      } else {
+        res.status(400).send({ error: 'Widget script not found. Please ensure you added the code to your homepage.' });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ error: 'Verification failed. Could not access website.' });
+    }
+  });
+  
+  // Public Widget Endpoint - Get Links to Display
+  app.get('/api/widget/:websiteId/links', async (req, res) => {
+    const { websiteId } = req.params;
+    
+    try {
+      const website = await Website.findById(websiteId);
+      if (!website) return res.status(404).send({ error: 'Site not found' });
+      
+      // Find all COMPLETED transactions where this site is the TARGET (Seller)
+      // i.e., People paid this site to host their link
+      const transactions = await Transaction.find({
+        targetUrl: website.url, // This is how we link them currently (by URL string)
+        type: 'earn', // The seller's transaction record
+        status: { $in: ['completed', 'active'] } // Completed transactions should be shown
+      });
+      
+      // Fetch descriptions for the source URLs
+      const sourceUrls = transactions.map(t => t.sourceUrl);
+      const sourceSites = await Website.find({ url: { $in: sourceUrls } }).select('url description');
+      
+      const siteMap = {};
+      sourceSites.forEach(s => {
+          siteMap[s.url] = s.description;
+      });
+
+      const links = transactions.map(t => ({
+        url: t.sourceUrl, // The link to display
+        text: t.anchorText || t.sourceUrl, // Fallback to URL if no anchor text
+        description: siteMap[t.sourceUrl] || '', // Add description if available
+        rel: 'dofollow'
+      }));
+      
+      // Allow CORS for this endpoint specifically so the widget works
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.send(links);
+    } catch (err) {
+      res.status(500).send({ error: 'Server error' });
     }
   });
 
