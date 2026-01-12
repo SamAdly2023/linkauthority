@@ -36,18 +36,17 @@ const sendEmail = async (to, subject, html, attachments = []) => {
       console.log(`Sending email to ${to} via GHL Webhook...`);
       // We send the data expected by our GHL Automation
       await axios.post(keys.ghlWebhookUrl, {
+        type: 'email', // Distinguish between basic sync and email sending
         email: to,
         subject: subject,
         html: html, // We pass the raw HTML
-        message: html // Redundant key just in case user maps 'message' instead
+        message: html 
       });
       console.log('Email sent successfully via GHL Webhook');
       return { success: true, messageId: 'ghl-webhook' };
     } catch (error) {
        console.error('GHL Webhook Failed:', error.message);
        // If GHL fails, we can either try SMTP or just fail. 
-       // For now, let's log it and fall through to SMTP as backup? 
-       // No, usually if one is configured, we stick to it. But fallback is safest.
        console.log('Falling back to SMTP...');
     }
   }
@@ -174,5 +173,23 @@ module.exports = {
   sendWebsiteVerifiedEmail,
   sendLinkRequestEmail,
   sendLinkVerifiedEmail,
-  sendAdminNotification
+  sendAdminNotification,
+  // New function to sync user contact info to GHL without sending an email
+  syncUserToGHL: async (user) => {
+    if (!keys.ghlWebhookUrl) return;
+    try {
+      console.log(`Syncing user ${user.email} to GHL...`);
+      await axios.post(keys.ghlWebhookUrl, {
+        type: 'signup', // Just sync, don't send email
+        email: user.email,
+        firstName: user.name ? user.name.split(' ')[0] : '',
+        lastName: user.name ? user.name.split(' ').slice(1).join(' ') : '',
+        phone: user.phone || '',
+        tags: ['linkauthority', 'signup']
+      });
+      console.log('User synced to GHL successfully');
+    } catch (error) {
+      console.error('Failed to sync user to GHL:', error.message);
+    }
+  }
 };

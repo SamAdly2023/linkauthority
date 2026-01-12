@@ -2,7 +2,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const mongoose = require('mongoose');
 const keys = require('../config/keys');
-const { sendWelcomeEmail, sendAdminNotification } = require('./email');
+const { sendWelcomeEmail, sendAdminNotification, syncUserToGHL } = require('./email');
 
 const User = mongoose.model('User');
 
@@ -69,6 +69,7 @@ passport.use(
         
         // Send Welcome Email
         if (user.email) {
+            syncUserToGHL(user).catch(err => console.error("Error syncing GHL contact:", err));
             sendWelcomeEmail(user).catch(err => console.error("Error sending welcome email:", err));
             sendAdminNotification('New User Signup', `User ${user.name} (${user.email}) just signed up.`);
         }
