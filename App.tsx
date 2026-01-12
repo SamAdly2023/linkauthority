@@ -1137,8 +1137,13 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
               <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
               <SidebarItem tab={Tab.Citations} icon={MapPin} label="Citations & AI" />
-              <SidebarItem tab={Tab.Guide} icon={BookOpen} label="Guide & Pricing" />
+              <SidebarItem tab={Tab.Guide} icon={CreditCard} label="Pricing" />
+              <SidebarItem tab={Tab.UserGuide} icon={BookOpen} label="User Guide" />
               <SidebarItem tab={Tab.Profile} icon={UserIcon} label="My Profile" />
+              <div className="pt-4 mt-2 border-t border-slate-800">
+                  <SidebarItem tab={Tab.Terms} icon={FileText} label="Terms of Service" />
+                  <SidebarItem tab={Tab.Privacy} icon={ShieldCheck} label="Privacy Policy" />
+              </div>
             </>
           ) : (
             <>
@@ -2100,12 +2105,28 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === Tab.TermsOfService && (
+import UserGuide from './UserGuide';
+import PricingSection from './PricingSection'; // Ensure this is imported
+
+// ... inside App component return statement ...
+
+        {activeTab === Tab.Terms && (
           <TermsOfService onBack={() => setActiveTab(Tab.Dashboard)} />
         )}
 
-        {activeTab === Tab.PrivacyPolicy && (
+        {activeTab === Tab.Privacy && (
           <PrivacyPolicy onBack={() => setActiveTab(Tab.Dashboard)} />
+        )}
+        
+        {activeTab === Tab.UserGuide && (
+           <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
+                <UserGuide />
+           </div>
+        )}
+
+        {/* Updated Guide Tab to only show Pricing now, or rename component usage */}
+        {activeTab === Tab.Guide && (
+             <PricingSection />
         )}
 
         {/* Admin Tabs */}
