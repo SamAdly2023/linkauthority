@@ -20,7 +20,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // Verify connection configuration
-transporter.verify(function(error, success) {
+transporter.verify(function (error, success) {
   if (error) {
     console.log('SMTP Connection Error:', error);
   } else {
@@ -33,7 +33,7 @@ const getSignature = () => {
   return `
     <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-family: Arial, sans-serif;">
       <div style="display: flex; align-items: center; gap: 15px;">
-        <img src="https://linkauthority.live/link-authority-logo.png" alt="LinkAuthority" style="width: 50px; height: 50px; border-radius: 5px; object-fit: contain;">
+        <img src="https://www.linkauthority.live/link-authority-logo.png" alt="LinkAuthority" style="width: 50px; height: 50px; border-radius: 5px; object-fit: contain;">
         <div>
           <p style="margin: 0; font-weight: bold; color: #333; font-size: 16px;">Sam Adly</p>
           <p style="margin: 0; color: #666; font-size: 14px;">CEO, LinkAuthority</p>
@@ -59,7 +59,7 @@ const getSignature = () => {
 
 // Generic send function
 const sendEmail = async (to, subject, html, attachments = [], name = null) => {
-  
+
   // Append signature to HTML body
   const htmlWithSignature = html + getSignature();
 
@@ -85,8 +85,8 @@ const sendEmail = async (to, subject, html, attachments = [], name = null) => {
       console.log('Email sent successfully via GHL Webhook');
       return { success: true, messageId: 'ghl-webhook' };
     } catch (error) {
-       console.error('GHL Webhook Failed:', error.message);
-       console.log('Falling back to SMTP...');
+      console.error('GHL Webhook Failed:', error.message);
+      console.log('Falling back to SMTP...');
     }
   }
 
@@ -205,6 +205,25 @@ const sendAdminNotification = async (subject, message) => {
   await sendEmail(keys.adminEmail, `Admin Alert: ${subject}`, html);
 };
 
+const sendContactFormEmail = async (name, email, subject, message) => {
+  if (!keys.adminEmail) return;
+  const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px;">
+        <h2 style="color: #2563EB;">New Contact Form Submission</h2>
+        <div style="background-color: #f9fafb; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>Name:</strong> ${name || 'N/A'}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 5px 0;"><strong>Subject:</strong> ${subject}</p>
+        </div>
+        <div style="margin-top: 20px;">
+            <h3 style="font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px; color: #444;">Message:</h3>
+            <p style="white-space: pre-wrap; line-height: 1.5; color: #333;">${message}</p>
+        </div>
+      </div>
+    `;
+  await sendEmail(keys.adminEmail, `Contact Form: ${subject}`, html, [], name, email); // Reply-to email
+};
+
 module.exports = {
   sendEmail,
   sendWelcomeEmail,
@@ -213,6 +232,7 @@ module.exports = {
   sendLinkRequestEmail,
   sendLinkVerifiedEmail,
   sendAdminNotification,
+  sendContactFormEmail,
   // New function to sync user contact info to GHL without sending an email
   syncUserToGHL: async (user) => {
     if (!keys.ghlWebhookUrl) return;

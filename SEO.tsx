@@ -16,8 +16,8 @@ const SEO: React.FC<SEOProps> = ({
   description = 'Boost your website\'s Domain Authority and SEO rankings safely with LinkAuthority. The smartest way to build high-quality backlinks and grow your organic traffic.',
   name = 'LinkAuthority',
   type = 'website',
-  image = 'https://linkauthority.live/link-authority-logo.png',
-  url = 'https://linkauthority.live/',
+  image = 'https://www.linkauthority.live/link-authority-logo.png',
+  url = 'https://www.linkauthority.live/',
   canonical
 }) => {
   return (

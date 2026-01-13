@@ -7,7 +7,7 @@ const AboutUs: React.FC = () => {
             <SEO 
                 title="About Us - LinkAuthority" 
                 description="Learn about LinkAuthority, the premier automated backlink exchange marketplace for SEO professionals."
-                canonical="https://linkauthority.live/about-us"
+                canonical="https://www.linkauthority.live/about-us"
             />
             
             <div className="bg-slate-900/50 rounded-3xl p-8 border border-slate-800">

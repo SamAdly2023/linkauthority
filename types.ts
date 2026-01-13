@@ -12,6 +12,7 @@ export interface User {
   rating?: number;
   reviewCount?: number;
   isAdmin?: boolean;
+  lastActiveAt?: string;
 }
 
 export interface Website {

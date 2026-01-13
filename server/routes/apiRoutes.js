@@ -6,12 +6,13 @@ const dns = require('dns').promises;
 const requireLogin = require('../middlewares/requireLogin');
 const { estimateAuthority } = require('../services/ai');
 const { sendNotification } = require('../services/notification');
-const { 
-  sendWebsiteAddedEmail, 
-  sendWebsiteVerifiedEmail, 
-  sendLinkRequestEmail, 
+const {
+  sendWebsiteAddedEmail,
+  sendWebsiteVerifiedEmail,
+  sendLinkRequestEmail,
   sendLinkVerifiedEmail,
-  sendAdminNotification 
+  sendAdminNotification,
+  sendContactFormEmail
 } = require('../services/email');
 const { analyzeWebsite, getSEOAdvice } = require('../services/gemini');
 
@@ -24,16 +25,33 @@ module.exports = app => {
   // Update User Profile
   app.put('/api/user', requireLogin, async (req, res) => {
     const { name, phone, avatar } = req.body;
-    
+
     try {
       if (name) req.user.name = name;
       if (phone) req.user.phone = phone;
       if (avatar) req.user.avatar = avatar;
-      
+
       await req.user.save();
       res.send(req.user);
     } catch (err) {
       res.status(422).send(err);
+    }
+  });
+
+  // Contact Form Submission
+  app.post('/api/contact', async (req, res) => {
+    const { name, email, subject, message } = req.body;
+
+    if (!email || !message) {
+      return res.status(422).send({ error: 'Email and message are required' });
+    }
+
+    try {
+      await sendContactFormEmail(name, email, subject || 'No Subject', message);
+      res.send({ success: true, message: 'Message sent successfully' });
+    } catch (err) {
+      console.error('Contact form error:', err);
+      res.status(500).send({ error: 'Failed to send message' });
     }
   });
 
@@ -71,14 +89,14 @@ module.exports = app => {
       location,
       domainAuthority,
       owner: req.user._id,
-      isVerified: isAdmin, 
+      isVerified: isAdmin,
       verificationToken,
       lastChecked: Date.now()
     });
 
     try {
       await website.save();
-      
+
       // Add to user's websites list
       req.user.websites.push(website);
       await req.user.save();
@@ -96,7 +114,7 @@ module.exports = app => {
   // Update Website Details
   app.put('/api/websites/:id', requireLogin, async (req, res) => {
     const { category, description, serviceType, location } = req.body;
-    
+
     try {
       const website = await Website.findOne({ _id: req.params.id, owner: req.user._id });
       if (!website) return res.status(404).send({ error: 'Website not found' });
@@ -127,32 +145,32 @@ module.exports = app => {
 
       if (method === 'file') {
         const checkUrl = async (url) => {
-            try {
-                const response = await axios.get(`${url}/linkauthority-verification.txt`);
-                return response.data.trim() === website.verificationToken;
-            } catch (err) {
-                return false;
-            }
+          try {
+            const response = await axios.get(`${url}/linkauthority-verification.txt`);
+            return response.data.trim() === website.verificationToken;
+          } catch (err) {
+            return false;
+          }
         };
 
         verified = await checkUrl(website.url);
-        
+
         if (!verified) {
-            // Try alternative (www vs non-www)
-            const urlObj = new URL(website.url);
-            let altUrl;
-            if (urlObj.hostname.startsWith('www.')) {
-                urlObj.hostname = urlObj.hostname.replace('www.', '');
-                altUrl = urlObj.toString();
-            } else {
-                urlObj.hostname = `www.${urlObj.hostname}`;
-                altUrl = urlObj.toString();
-            }
-            // Remove trailing slash if present to avoid double slash issues
-            if (altUrl.endsWith('/')) {
-                altUrl = altUrl.slice(0, -1);
-            }
-            verified = await checkUrl(altUrl);
+          // Try alternative (www vs non-www)
+          const urlObj = new URL(website.url);
+          let altUrl;
+          if (urlObj.hostname.startsWith('www.')) {
+            urlObj.hostname = urlObj.hostname.replace('www.', '');
+            altUrl = urlObj.toString();
+          } else {
+            urlObj.hostname = `www.${urlObj.hostname}`;
+            altUrl = urlObj.toString();
+          }
+          // Remove trailing slash if present to avoid double slash issues
+          if (altUrl.endsWith('/')) {
+            altUrl = altUrl.slice(0, -1);
+          }
+          verified = await checkUrl(altUrl);
         }
       } else if (method === 'dns') {
         try {
@@ -234,42 +252,42 @@ module.exports = app => {
       if (targetSite.widgetActive) {
         spendTransaction.status = 'completed';
         spendTransaction.verificationUrl = 'Widget Auto-Verification';
-        
+
         earnTransaction.status = 'completed';
         earnTransaction.verificationUrl = 'Widget Auto-Verification';
-        
+
         // Credit Seller Immediately
         seller.points += cost;
         await seller.save();
 
         // Notify Buyer (Instant Success)
         sendNotification('TRANSACTION_COMPLETED', req.user, {
-            type: 'link_verified',
-            seller: seller.name,
-            points: cost,
-            sourceUrl: sourceUrl
+          type: 'link_verified',
+          seller: seller.name,
+          points: cost,
+          sourceUrl: sourceUrl
         });
       }
 
       // Save transactions (Seller points are NOT added yet if not widget)
       await spendTransaction.save();
       await earnTransaction.save();
-      
+
       if (targetSite.widgetActive) {
-         // Notify Seller (New Active Link)
-         sendNotification('TRANSACTION_CREATED', seller, {
-            type: 'info',
-            message: `New Instant Backlink! ${req.user.name} placed a link on ${targetUrl}. It is live via your widget.`
-         });
-         // Email notification handled by generic functions usually
+        // Notify Seller (New Active Link)
+        sendNotification('TRANSACTION_CREATED', seller, {
+          type: 'info',
+          message: `New Instant Backlink! ${req.user.name} placed a link on ${targetUrl}. It is live via your widget.`
+        });
+        // Email notification handled by generic functions usually
       } else {
         // Validation/Manual Flow
         // Notify Seller (GHL)
         sendNotification('TRANSACTION_CREATED', seller, {
-            type: 'link_request',
-            buyer: req.user.name,
-            targetUrl: targetUrl,
-            points: cost
+          type: 'link_request',
+          buyer: req.user.name,
+          targetUrl: targetUrl,
+          points: cost
         });
 
         // Notify Seller (Email)
@@ -285,7 +303,7 @@ module.exports = app => {
   // Verify Script Installation (New Method)
   app.post('/api/websites/verify-script', requireLogin, async (req, res) => {
     const { websiteId } = req.body;
-    
+
     try {
       const website = await Website.findOne({ _id: websiteId, owner: req.user._id });
       if (!website) return res.status(404).send({ error: 'Website not found' });
@@ -295,7 +313,7 @@ module.exports = app => {
         headers: { 'User-Agent': 'LinkAuthority-Bot/1.0' },
         timeout: 10000
       });
-      
+
       const $ = cheerio.load(response.data);
       // Look for the specific script tag
       // Matches: src=".../widget.js" and data-id="WEBSITE_ID"
@@ -322,15 +340,15 @@ module.exports = app => {
       res.status(500).send({ error: 'Verification failed. Could not access website.' });
     }
   });
-  
+
   // Public Widget Endpoint - Get Links to Display
   app.get('/api/widget/:websiteId/links', async (req, res) => {
     const { websiteId } = req.params;
-    
+
     try {
       const website = await Website.findById(websiteId);
       if (!website) return res.status(404).send({ error: 'Site not found' });
-      
+
       // Find all COMPLETED transactions where this site is the TARGET (Seller)
       // i.e., People paid this site to host their link
       const transactions = await Transaction.find({
@@ -338,14 +356,14 @@ module.exports = app => {
         type: 'earn', // The seller's transaction record
         status: { $in: ['completed', 'active'] } // Completed transactions should be shown
       });
-      
+
       // Fetch descriptions for the source URLs
       const sourceUrls = transactions.map(t => t.sourceUrl);
       const sourceSites = await Website.find({ url: { $in: sourceUrls } }).select('url description');
-      
+
       const siteMap = {};
       sourceSites.forEach(s => {
-          siteMap[s.url] = s.description;
+        siteMap[s.url] = s.description;
       });
 
       const links = transactions.map(t => ({
@@ -354,7 +372,7 @@ module.exports = app => {
         description: siteMap[t.sourceUrl] || '', // Add description if available
         rel: 'dofollow'
       }));
-      
+
       // Allow CORS for this endpoint specifically so the widget works
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.send(links);
@@ -389,9 +407,9 @@ module.exports = app => {
         headers: { 'User-Agent': 'LinkAuthority-Bot/1.0' },
         timeout: 10000
       });
-      
+
       const $ = cheerio.load(response.data);
-      
+
       // Check for link to sourceUrl (Buyer's site)
       // transaction.sourceUrl is the Buyer's site
       const normalize = (url) => url ? url.replace(/\/$/, '').toLowerCase() : '';
@@ -401,7 +419,7 @@ module.exports = app => {
       $('a').each((i, link) => {
         const href = $(link).attr('href');
         const rel = $(link).attr('rel') || '';
-        
+
         if (href && normalize(href).includes(targetLink)) {
           // Check for nofollow
           if (!rel.toLowerCase().includes('nofollow')) {
@@ -426,7 +444,7 @@ module.exports = app => {
 
       // Update the related buyer transaction and notify buyer
       if (transaction.relatedTransactionId) {
-        const buyerTransaction = await Transaction.findByIdAndUpdate(transaction.relatedTransactionId, { 
+        const buyerTransaction = await Transaction.findByIdAndUpdate(transaction.relatedTransactionId, {
           status: 'completed',
           verificationUrl: verificationUrl
         }).populate('user');
@@ -460,9 +478,9 @@ module.exports = app => {
 
     try {
       // In a real app, verify the PayPal payment ID here before crediting points
-      
+
       req.user.points += points;
-      
+
       // Record the transaction
       const transaction = new Transaction({
         type: 'earn', // Treated as earning for now
@@ -518,16 +536,16 @@ module.exports = app => {
   });
 
   app.post('/api/notifications/mark-read', requireLogin, async (req, res) => {
-      try {
-          const { id } = req.body;
-          if (id) {
-              await Notification.findByIdAndUpdate(id, { read: true });
-          } else {
-              await Notification.updateMany({ recipient: req.user._id, read: false }, { read: true });
-          }
-          res.send({ success: true });
-      } catch (err) {
-          res.status(500).send(err);
+    try {
+      const { id } = req.body;
+      if (id) {
+        await Notification.findByIdAndUpdate(id, { read: true });
+      } else {
+        await Notification.updateMany({ recipient: req.user._id, read: false }, { read: true });
       }
+      res.send({ success: true });
+    } catch (err) {
+      res.status(500).send(err);
+    }
   });
 };

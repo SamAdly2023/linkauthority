@@ -15,7 +15,7 @@
 
   // Determine Base URL from the script src (allows for dev/prod flexibility)
   var src = scriptTag.getAttribute('src');
-  var baseUrl = src ? new URL(src).origin : 'https://linkauthority.live';
+  var baseUrl = src ? new URL(src).origin : 'https://www.linkauthority.live';
 
   // Create or Find Container
   var container = document.getElementById('linkauthority-widget');

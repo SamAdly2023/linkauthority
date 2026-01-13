@@ -10,10 +10,10 @@ interface Plan {
 }
 
 const plans: Plan[] = [
-  { id: 'starter', name: 'Starter', price: 0, points: 100, description: 'Browse only, verify 1 site' },
-  { id: 'growth', name: 'Growth', price: 29, points: 500, description: '5 requests, AI Matching' },
-  { id: 'professional', name: 'Professional', price: 79, points: 2000, description: 'Unlimited sites, Priority' },
-  { id: 'agency', name: 'Agency', price: 199, points: 6000, description: 'White-label, API, Bulk' }
+  { id: 'starter', name: 'Starter', price: 0, points: 50, description: 'Browse only, verify 1 site' },
+  { id: 'growth', name: 'Growth', price: 29, points: 100, description: '5 requests, AI Matching' },
+  { id: 'professional', name: 'Professional', price: 89, points: 400, description: 'Unlimited sites, Priority' },
+  { id: 'agency', name: 'Agency', price: 199, points: 1000, description: 'White-label, API, Bulk' }
 ];
 
 const PricingSection: React.FC = () => {
@@ -57,7 +57,7 @@ const PricingSection: React.FC = () => {
             </button>
 
             <div className="space-y-4 flex-1">
-              <Feature text="100 Starter Points" highlight />
+              <Feature text="50 Starter Points" highlight />
               <Feature text="Browse Marketplace" />
               <Feature text="Verify 1 Website" />
               <Feature text="Community Support" />
@@ -82,7 +82,7 @@ const PricingSection: React.FC = () => {
             </button>
 
             <div className="space-y-4 flex-1">
-              <Feature text="500 Monthly Points" />
+              <Feature text="100 Monthly Points" />
               <Feature text="5 Active Link Requests" />
               <Feature text="AI Niche Matching" />
               <Feature text="Email Support" />
@@ -97,7 +97,7 @@ const PricingSection: React.FC = () => {
             <div className="mb-4 mt-2">
               <h3 className="text-lg font-medium text-slate-100">Professional</h3>
               <div className="flex items-baseline gap-2 mt-2">
-                <span className="text-4xl font-bold text-white">$79</span>
+                <span className="text-4xl font-bold text-white">$89</span>
                 <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">SAVE 25%</span>
               </div>
               <p className="text-slate-500 text-sm mt-1">per month, billed annually</p>
@@ -108,7 +108,7 @@ const PricingSection: React.FC = () => {
             </button>
 
             <div className="space-y-4 flex-1">
-              <Feature text="2,000 Monthly Points" highlight />
+              <Feature text="400 Monthly Points" highlight />
               <Feature text="Unlimited Websites" />
               <Feature text="Priority Verification" />
               <Feature text="Advanced AI Analytics" />
@@ -132,7 +132,7 @@ const PricingSection: React.FC = () => {
             </button>
 
             <div className="space-y-4 flex-1">
-              <Feature text="6,000 Monthly Points" />
+              <Feature text="1,000 Monthly Points" />
               <Feature text="White Label Reports" />
               <Feature text="API Access" />
               <Feature text="Bulk Import" />

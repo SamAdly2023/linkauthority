@@ -11,7 +11,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
       <SEO 
         title="Terms of Service - LinkAuthority" 
         description="Read the Terms of Service for LinkAuthority. Guidelines and rules for using our backlink exchange platform."
-        canonical="https://linkauthority.live/terms-of-service"
+        canonical="https://www.linkauthority.live/terms-of-service"
       />
       
       <div className="bg-slate-900/50 rounded-3xl shadow-sm border border-slate-800 p-8">

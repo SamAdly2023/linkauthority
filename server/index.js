@@ -28,6 +28,14 @@ mongoose.connect(keys.mongoURI)
 
 const app = express();
 
+// Force www redirect in production
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && !req.headers.host.startsWith('www.')) {
+    return res.redirect(301, 'https://www.linkauthority.live' + req.url);
+  }
+  next();
+});
+
 app.set('trust proxy', 1); // Trust first proxy for Render
 
 // Security Headers
@@ -46,7 +54,8 @@ app.use(helmet({
         "https://www.clarity.ms",
         "https://c.bing.com",
         "https://connect.facebook.net",
-        "https://www.facebook.com"
+        "https://www.facebook.com",
+        "https://api.xolby.com"
       ],
       connectSrc: [
         "'self'", 
@@ -58,7 +67,8 @@ app.use(helmet({
         "https://c.bing.com",
         "https://*.google.com",
         "https://www.facebook.com",
-        "https://web.facebook.com"
+        "https://web.facebook.com",
+        "https://api.xolby.com"
       ],
       imgSrc: [
         "'self'", 
@@ -78,7 +88,8 @@ app.use(helmet({
         "https://www.paypal.com",
         "https://www.sandbox.paypal.com",
         "https://www.facebook.com",
-        "https://web.facebook.com"
+        "https://web.facebook.com",
+        "https://api.xolby.com"
       ],
       styleSrc: [
         "'self'", 

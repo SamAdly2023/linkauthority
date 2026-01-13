@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://linkauthority.live/link-authority-logo.png" alt="LinkAuthority Logo" width="100" />
+  <img src="https://www.linkauthority.live/link-authority-logo.png" alt="LinkAuthority Logo" width="100" />
   <h1>LinkAuthority</h1>
   <p><strong>The #1 Marketplace for High-Quality Backlinks & AI SEO Analysis</strong></p>
 </div>

@@ -33,7 +33,7 @@ const LandingPage: React.FC = () => {
       <SEO 
         title="LinkAuthority - Free Backlink Exchange Platform | Boost SEO" 
         description="Join LinkAuthority to exchange high-quality backlinks, increase your Domain Authority (DA), and rank higher on Google safely. The #1 community for SEO growth."
-        canonical="https://linkauthority.live/"
+        canonical="https://www.linkauthority.live/"
       />
       <ChatWidget />
       
@@ -267,64 +267,6 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-slate-950 border-t border-slate-800 pt-20 pb-10">
-        <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-                <div className="md:col-span-2 space-y-6">
-                    <div className="flex items-center gap-3">
-                        <img src="/logo.png" alt="LinkAuthority Logo" className="w-10 h-10 object-contain" />
-                        <span className="text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                        LinkAuthority
-                        </span>
-                    </div>
-                    <p className="text-slate-400 leading-relaxed max-w-sm">
-                        LinkAuthority: The AI-powered backlink exchange for SEO specialists. Automate your link building, verify domain ownership, and rank faster with high-DA niche-relevant links.
-                    </p>
-                    <div className="flex gap-4">
-                        <SocialIcon href="https://www.facebook.com/linkauthority2026/" icon={Facebook} label="Facebook" />
-                        <SocialIcon href="https://www.instagram.com/linkauthority/" icon={Instagram} label="Instagram" />
-                        <SocialIcon href="https://www.linkedin.com/company/link-authority2026" icon={Linkedin} label="LinkedIn" />
-                        <SocialIcon href="https://x.com/authority2026" icon={Twitter} label="X (Twitter)" />
-                        <SocialIcon href="https://www.youtube.com/@LinkAuthority" icon={Youtube} label="YouTube" />
-                    </div>
-                </div>
-
-                <div>
-                    <h4 className="text-white font-bold mb-6">Contact Us</h4>
-                    <div className="space-y-4">
-                        <a href="mailto:info@linkauthority.live" className="flex items-center gap-3 text-slate-400 hover:text-white transition-colors group">
-                           <Mail size={18} className="group-hover:text-blue-400 transition-colors" />
-                           info@linkauthority.live
-                        </a>
-                         <a href="mailto:linkauthority2026@gmail.com" className="flex items-center gap-3 text-slate-400 hover:text-white transition-colors group">
-                           <Mail size={18} className="group-hover:text-blue-400 transition-colors" />
-                           linkauthority2026@gmail.com
-                        </a>
-                        <div className="flex items-center gap-3 text-slate-400">
-                           <Globe size={18} />
-                           Worldwide Service Area
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 className="text-white font-bold mb-6">Legal</h4>
-                    <div className="space-y-3">
-                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Terms of Service</a>
-                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Privacy Policy</a>
-                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Cookie Policy</a>
-                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Sitemap</a>
-                    </div>
-                </div>
-            </div>
-
-            <div className="pt-8 border-t border-slate-800 text-center text-slate-500 text-sm">
-                <p>&copy; {new Date().getFullYear()} LinkAuthority. All rights reserved.</p>
-            </div>
-        </div>
-      </footer>
-
       {/* How It Works Section */}
       <section id="how-it-works" className="py-24 bg-slate-950 border-t border-slate-800 relative">
         <div className="max-w-7xl mx-auto px-6">
@@ -393,14 +335,59 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-950 border-t border-slate-800 py-12">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-                <img src="/logo.png" alt="LinkAuthority Logo" className="w-8 h-8 object-contain" />
-                <span className="text-lg font-bold text-white">LinkAuthority</span>
+      <footer className="bg-slate-950 border-t border-slate-800 pt-20 pb-10">
+        <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                <div className="md:col-span-2 space-y-6">
+                    <div className="flex items-center gap-3">
+                        <img src="/logo.png" alt="LinkAuthority Logo" className="w-10 h-10 object-contain" />
+                        <span className="text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+                        LinkAuthority
+                        </span>
+                    </div>
+                    <p className="text-slate-400 leading-relaxed max-w-sm">
+                        LinkAuthority: The AI-powered backlink exchange for SEO specialists. Automate your link building, verify domain ownership, and rank faster with high-DA niche-relevant links.
+                    </p>
+                    <div className="flex gap-4">
+                        <SocialIcon href="https://www.facebook.com/linkauthority2026/" icon={Facebook} label="Facebook" />
+                        <SocialIcon href="https://www.instagram.com/linkauthority/" icon={Instagram} label="Instagram" />
+                        <SocialIcon href="https://www.linkedin.com/company/link-authority2026" icon={Linkedin} label="LinkedIn" />
+                        <SocialIcon href="https://x.com/authority2026" icon={Twitter} label="X (Twitter)" />
+                        <SocialIcon href="https://www.youtube.com/@LinkAuthority" icon={Youtube} label="YouTube" />
+                    </div>
+                </div>
+
+                <div>
+                    <h4 className="text-white font-bold mb-6">Contact Us</h4>
+                    <div className="space-y-4">
+                        <a href="mailto:info@linkauthority.live" className="flex items-center gap-3 text-slate-400 hover:text-white transition-colors group">
+                           <Mail size={18} className="group-hover:text-blue-400 transition-colors" />
+                           info@linkauthority.live
+                        </a>
+                         <a href="mailto:linkauthority2026@gmail.com" className="flex items-center gap-3 text-slate-400 hover:text-white transition-colors group">
+                           <Mail size={18} className="group-hover:text-blue-400 transition-colors" />
+                           linkauthority2026@gmail.com
+                        </a>
+                        <div className="flex items-center gap-3 text-slate-400">
+                           <Globe size={18} />
+                           Worldwide Service Area
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 className="text-white font-bold mb-6">Legal</h4>
+                    <div className="space-y-3">
+                        <a href="/terms-of-service" className="block text-slate-400 hover:text-white transition-colors">Terms of Service</a>
+                        <a href="/privacy-policy" className="block text-slate-400 hover:text-white transition-colors">Privacy Policy</a>
+                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Cookie Policy</a>
+                        <a href="#" className="block text-slate-400 hover:text-white transition-colors">Sitemap</a>
+                    </div>
+                </div>
             </div>
-            <div className="text-slate-500 text-sm">
-                &copy; 2026 LinkAuthority. All rights reserved.
+
+            <div className="pt-8 border-t border-slate-800 text-center text-slate-500 text-sm">
+                <p>&copy; {new Date().getFullYear()} LinkAuthority. All rights reserved.</p>
             </div>
         </div>
       </footer>

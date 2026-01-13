@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /dashboard
 
-Sitemap: https://linkauthority.live/sitemap.xml
+Sitemap: https://www.linkauthority.live/sitemap.xml

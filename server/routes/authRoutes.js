@@ -18,6 +18,10 @@ module.exports = app => {
 
   app.get('/api/current_user', async (req, res) => {
     if (req.user) {
+      // Update last active timestamp
+      req.user.lastActiveAt = new Date();
+      await req.user.save();
+
       // Populate websites to send full objects, not just IDs
       await req.user.populate('websites');
     }

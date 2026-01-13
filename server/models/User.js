@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema({
   email: { type: String },
   phone: { type: String },
   avatar: { type: String },
+  lastActiveAt: { type: Date },
   referralCode: { type: String, unique: true, sparse: true },
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   rating: { type: Number, default: 5.0 },

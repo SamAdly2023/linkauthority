@@ -11,7 +11,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
       <SEO 
         title="Privacy Policy - LinkAuthority" 
         description="Our Privacy Policy explains how LinkAuthority collects and uses your data. Your privacy is our priority."
-        canonical="https://linkauthority.live/privacy-policy"
+        canonical="https://www.linkauthority.live/privacy-policy"
       />
       
       <div className="bg-slate-900/50 rounded-3xl shadow-sm border border-slate-800 p-8">
