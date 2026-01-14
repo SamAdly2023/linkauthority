@@ -2261,22 +2261,26 @@ const App: React.FC = () => {
                           <span className="px-2 py-1 bg-yellow-500/10 text-yellow-500 text-xs font-bold rounded uppercase">Pending</span>
                         )}
                       </td>
-                      <td className="py-4 text-right flex items-center justify-end gap-2">
-                        {!w.isVerified && (
+                      <td className="py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {!w.isVerified && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleVerifyWebsite(w._id); }}
+                              className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-lg transition-colors"
+                            >
+                              Verify
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleVerifyWebsite(w._id)}
-                            className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-lg transition-colors"
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteWebsite(w._id); }}
+                            className="p-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-lg transition-colors"
+                            title="Delete Website"
                           >
-                            Verify
+                            <Trash2 size={16} />
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteWebsite(w._id)}
-                          className="p-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-lg transition-colors"
-                          title="Delete Website"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
