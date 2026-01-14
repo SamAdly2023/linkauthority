@@ -2262,20 +2262,28 @@ const App: React.FC = () => {
                         )}
                       </td>
                       <td className="py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2 relative z-10">
                           {!w.isVerified && (
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); handleVerifyWebsite(w._id); }}
-                              className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleVerifyWebsite(w._id);
+                              }}
+                              className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer relative z-20"
                             >
                               Verify
                             </button>
                           )}
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); handleDeleteWebsite(w._id); }}
-                            className="p-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-lg transition-colors"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteWebsite(w._id);
+                            }}
+                            className="p-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-lg transition-colors cursor-pointer relative z-20"
                             title="Delete Website"
                           >
                             <Trash2 size={16} />
