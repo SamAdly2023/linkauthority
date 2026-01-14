@@ -14,7 +14,7 @@ module.exports = app => {
     try {
       const websites = await Website.find({});
       let count = 0;
-      
+
       // Process in background to avoid timeout, but for now we'll await to show progress
       // In production, use a job queue
       for (const site of websites) {
@@ -29,7 +29,7 @@ module.exports = app => {
           console.error(`Failed to re-analyze ${site.url}:`, err);
         }
       }
-      
+
       res.send({ message: `Successfully re-analyzed ${count} websites.` });
     } catch (err) {
       res.status(500).send({ error: 'Failed to re-analyze websites' });
@@ -49,7 +49,7 @@ module.exports = app => {
   // Add Points to User
   app.post('/api/admin/users/points', requireAdmin, async (req, res) => {
     const { userId, points } = req.body;
-    
+
     try {
       const user = await User.findById(userId);
       if (!user) return res.status(404).send({ error: 'User not found' });
@@ -87,7 +87,7 @@ module.exports = app => {
   // Verify Website
   app.post('/api/admin/websites/verify', requireAdmin, async (req, res) => {
     const { websiteId } = req.body;
-    
+
     try {
       const website = await Website.findById(websiteId);
       if (!website) return res.status(404).send({ error: 'Website not found' });
@@ -100,6 +100,16 @@ module.exports = app => {
       res.send(website);
     } catch (err) {
       res.status(422).send(err);
+    }
+  });
+
+  // Delete Website
+  app.delete('/api/admin/websites/:id', requireAdmin, async (req, res) => {
+    try {
+      await Website.findByIdAndDelete(req.params.id);
+      res.send({ message: 'Website deleted successfully' });
+    } catch (err) {
+      res.status(500).send({ error: 'Failed to delete website' });
     }
   });
 
@@ -125,13 +135,13 @@ module.exports = app => {
   // -------------------------
   // COMMUNICATIONS
   // -------------------------
-  
+
   // Send Email
   app.post('/api/admin/send-email', requireAdmin, async (req, res) => {
     const { type, userIds, subject, content } = req.body;
-    
+
     let usersToEmail = [];
-    
+
     try {
       if (type === 'all') {
         usersToEmail = await User.find({ email: { $exists: true, $ne: '' } });
@@ -141,7 +151,7 @@ module.exports = app => {
         if (!userIds || userIds.length === 0) return res.status(400).send({ error: 'No user selected' });
         usersToEmail = await User.find({ _id: userIds[0] });
       }
-      
+
       let successCount = 0;
       let failCount = 0;
 
@@ -149,16 +159,16 @@ module.exports = app => {
 
       const emailPromises = usersToEmail.map(async user => {
         if (!user.email) return;
-        const result = await sendEmail(user.email, subject, content, [], user.name); 
+        const result = await sendEmail(user.email, subject, content, [], user.name);
         if (result.success) successCount++;
         else {
           failCount++;
           lastError = result.error;
         }
       });
-      
+
       await Promise.all(emailPromises);
-      
+
       if (successCount === 0 && failCount > 0) {
         return res.status(500).send({ error: `Failed to send all ${failCount} emails. Last Error: ${lastError}` });
       }
@@ -173,11 +183,11 @@ module.exports = app => {
   // Send Notification (In-App)
   app.post('/api/admin/send-notification', requireAdmin, async (req, res) => {
     const { type, userIds, message } = req.body;
-    
+
     try {
       let usersToNotify = [];
-        if (type === 'all') {
-        usersToNotify = await User.find({}, '_id'); 
+      if (type === 'all') {
+        usersToNotify = await User.find({}, '_id');
       } else if (type === 'selected') {
         // userIds is an array of strings
         usersToNotify = userIds.map(id => ({ _id: id }));
@@ -193,13 +203,13 @@ module.exports = app => {
         createdAt: new Date(),
         type: 'info'
       }));
-      
+
       if (notifications.length > 0) {
         await Notification.insertMany(notifications);
       }
-        res.send({ message: `Notifications sent to ${notifications.length} users` });
+      res.send({ message: `Notifications sent to ${notifications.length} users` });
     } catch (err) {
-        console.error("Notification error:", err);
+      console.error("Notification error:", err);
       res.status(500).send({ error: 'Failed to send notifications' });
     }
   });

@@ -38,6 +38,7 @@ import {
   Twitter,
   Youtube,
   MessageCircle,
+  Trash2,
 } from 'lucide-react';
 import { Tab, User, Website, Transaction, AIReport } from './types';
 import { getSEOAdvice } from './services/geminiService';
@@ -502,6 +503,26 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteWebsite = async (websiteId: string) => {
+    if (!confirm('Are you sure you want to delete this website? This action cannot be undone.')) return;
+
+    try {
+      const res = await fetch(`/api/admin/websites/${websiteId}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Website deleted successfully', type: 'success' });
+        fetchAdminData(); // Refresh list
+      } else {
+        const data = await res.json();
+        setMessageModal({ isOpen: true, title: 'Error', message: data.error || 'Failed to delete website', type: 'error' });
+      }
+    } catch (err) {
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Something went wrong', type: 'error' });
+    }
+  };
+
   const openVerifyModal = (tx: Transaction) => {
     setVerifyModal({ isOpen: true, transaction: tx });
     setVerificationUrl('');
@@ -599,8 +620,8 @@ const App: React.FC = () => {
         setIsMobileMenuOpen(false);
       }}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === tab
-          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
         }`}
     >
       <Icon size={20} />
@@ -668,8 +689,8 @@ const App: React.FC = () => {
                     type="button"
                     onClick={() => setNewSiteServiceType('worldwide')}
                     className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${newSiteServiceType === 'worldwide'
-                        ? 'bg-blue-600 border-blue-500 text-white'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
                       }`}
                   >
                     <Globe size={24} />
@@ -679,8 +700,8 @@ const App: React.FC = () => {
                     type="button"
                     onClick={() => setNewSiteServiceType('local')}
                     className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${newSiteServiceType === 'local'
-                        ? 'bg-blue-600 border-blue-500 text-white'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
                       }`}
                   >
                     <MapPin size={24} />
@@ -784,8 +805,8 @@ const App: React.FC = () => {
                     type="button"
                     onClick={() => setEditSiteServiceType('worldwide')}
                     className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${editSiteServiceType === 'worldwide'
-                        ? 'bg-blue-600 border-blue-500 text-white'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
                       }`}
                   >
                     <Globe size={24} />
@@ -795,8 +816,8 @@ const App: React.FC = () => {
                     type="button"
                     onClick={() => setEditSiteServiceType('local')}
                     className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${editSiteServiceType === 'local'
-                        ? 'bg-blue-600 border-blue-500 text-white'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-900'
                       }`}
                   >
                     <MapPin size={24} />
@@ -1858,8 +1879,8 @@ const App: React.FC = () => {
                               <div className="text-right">
                                 <p className="text-blue-400 font-mono font-bold">{k.volume}</p>
                                 <span className={`text-xs px-2 py-0.5 rounded font-bold ${k.difficulty === 'Easy' ? 'bg-green-500/10 text-green-500' :
-                                    k.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-500' :
-                                      'bg-red-500/10 text-red-500'
+                                  k.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-500' :
+                                    'bg-red-500/10 text-red-500'
                                   }`}>
                                   {k.difficulty}
                                 </span>
@@ -1880,7 +1901,7 @@ const App: React.FC = () => {
                       {aiReport.technicalSeo.map((item, i) => (
                         <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-950/50 border border-slate-800 hover:border-slate-700 transition-colors">
                           <div className={`mt-1.5 w-3 h-3 rounded-full shrink-0 shadow-[0_0_10px] ${item.status === 'pass' ? 'bg-green-500 shadow-green-500/50' :
-                              item.status === 'fail' ? 'bg-red-500 shadow-red-500/50' : 'bg-yellow-500 shadow-yellow-500/50'
+                            item.status === 'fail' ? 'bg-red-500 shadow-red-500/50' : 'bg-yellow-500 shadow-yellow-500/50'
                             }`} />
                           <div>
                             <h5 className="font-bold text-white text-sm mb-1">{item.title}</h5>
@@ -2020,8 +2041,8 @@ const App: React.FC = () => {
                     <button
                       onClick={() => setCheckoutModal({ isOpen: true, plan })}
                       className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${plan.popular
-                          ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20'
-                          : 'bg-slate-800 hover:bg-slate-700 text-white'
+                        ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20'
+                        : 'bg-slate-800 hover:bg-slate-700 text-white'
                         }`}
                     >
                       <CreditCard size={18} />
@@ -2240,7 +2261,7 @@ const App: React.FC = () => {
                           <span className="px-2 py-1 bg-yellow-500/10 text-yellow-500 text-xs font-bold rounded uppercase">Pending</span>
                         )}
                       </td>
-                      <td className="py-4 text-right">
+                      <td className="py-4 text-right flex items-center justify-end gap-2">
                         {!w.isVerified && (
                           <button
                             onClick={() => handleVerifyWebsite(w._id)}
@@ -2249,6 +2270,13 @@ const App: React.FC = () => {
                             Verify
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDeleteWebsite(w._id)}
+                          className="p-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-lg transition-colors"
+                          title="Delete Website"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -2415,7 +2443,7 @@ const App: React.FC = () => {
                       type="submit"
                       disabled={isSendingComm}
                       className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${isSendingComm ? 'bg-slate-700 cursor-not-allowed' :
-                          commType === 'email' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' : 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/20'
+                        commType === 'email' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' : 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/20'
                         }`}
                     >
                       {isSendingComm ? <RefreshCw className="animate-spin" /> : <Send size={20} />}
