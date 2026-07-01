@@ -23,6 +23,7 @@ app.set('trust proxy', 1); // Trust first proxy for Render
 
 // Security Headers
 app.use(helmet({
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
