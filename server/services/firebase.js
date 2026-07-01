@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const admin = require('firebase-admin');
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+const { getFirestore } = require('firebase-admin/firestore');
 
 let serviceAccount;
 
@@ -26,23 +28,27 @@ if (!serviceAccount) {
   }
 }
 
+let firebaseApp;
+
 if (serviceAccount) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-  } catch (err) {
-    // If the app is already initialized, it will throw an error. We can safely ignore it.
-    if (err.code !== 'app/duplicate-app' && !err.message.includes('already exists')) {
+  const apps = getApps();
+  if (apps.length === 0) {
+    try {
+      firebaseApp = initializeApp({
+        credential: cert(serviceAccount)
+      });
+    } catch (err) {
       console.error("Firebase Admin initialization failed:", err);
     }
+  } else {
+    firebaseApp = apps[0];
   }
 } else {
   console.error("CRITICAL: Firebase Admin credentials not found! Both environment variable and JSON file are missing.");
 }
 
-const auth = admin.auth();
-const db = admin.firestore();
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
 
 const toDoc = (doc) => {
   if (!doc.exists) return null;
@@ -58,7 +64,7 @@ const toDocs = (snapshot) => {
 };
 
 module.exports = {
-  admin,
+  admin: { auth, firestore: db }, // for backwards compatibility helper exports if any
   auth,
   db,
   toDoc,
