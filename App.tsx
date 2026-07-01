@@ -2096,15 +2096,15 @@ const App: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                  { name: 'Starter', points: 50, price: 0, popular: false },
-                  { name: 'Growth', points: 100, price: 29, popular: false },
-                  { name: 'Professional', points: 400, price: 89, popular: true },
-                  { name: 'Agency', points: 1000, price: 199, popular: false },
+                  { name: 'Starter Pack', points: 100, price: 19, popular: false },
+                  { name: 'Growth Pack', points: 300, price: 49, popular: false },
+                  { name: 'Authority Pack', points: 1000, price: 129, popular: true },
+                  { name: 'Agency Pack', points: 3000, price: 299, popular: false },
                 ].map((plan, i) => (
                   <div key={i} className={`bg-slate-900 p-8 rounded-3xl border ${plan.popular ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-800'} relative flex flex-col`}>
                     {plan.popular && (
                       <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                        Most Popular
+                        Best Value
                       </div>
                     )}
                     <h3 className="text-lg font-bold text-white mb-2">{plan.name}</h3>
@@ -2116,7 +2116,7 @@ const App: React.FC = () => {
                     <ul className="space-y-3 mb-8 flex-1">
                       <li className="flex items-center gap-3 text-sm text-slate-300">
                         <CheckCircle2 size={16} className="text-green-500 shrink-0" />
-                        <span>{plan.points} Authority Points</span>
+                        <span>{plan.points} Exchange Credits</span>
                       </li>
                       <li className="flex items-center gap-3 text-sm text-slate-300">
                         <CheckCircle2 size={16} className="text-green-500 shrink-0" />
@@ -2136,29 +2136,10 @@ const App: React.FC = () => {
                         }`}
                     >
                       <CreditCard size={18} />
-                      Buy Now
+                      Buy Pack
                     </button>
                   </div>
                 ))}
-              </div>
-
-              {/* Subscription Option */}
-              <div className="mt-12 bg-gradient-to-r from-indigo-900/50 to-blue-900/50 p-8 rounded-3xl border border-indigo-500/30 flex flex-col md:flex-row items-center justify-between gap-8">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-2xl font-bold text-white">Pro Membership</h3>
-                    <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-lg">COMING SOON</span>
-                  </div>
-                  <p className="text-indigo-200 max-w-xl">
-                    Get 30 points every month, priority support, and advanced SEO analytics for a flat monthly fee.
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-3xl font-bold text-white mb-1">$29<span className="text-lg text-indigo-300 font-normal">/mo</span></p>
-                  <button disabled className="bg-indigo-600/50 text-indigo-200 px-8 py-3 rounded-xl font-bold cursor-not-allowed">
-                    Join Waitlist
-                  </button>
-                </div>
               </div>
             </div>
           </div>
