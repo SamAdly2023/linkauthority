@@ -191,12 +191,16 @@ const App: React.FC = () => {
   }, [activeTab]);
 
   const handleLogin = async () => {
+    console.log("handleLogin: starting Google login...");
     try {
       const firebaseUser = await loginWithGoogle();
+      console.log("handleLogin: loginWithGoogle returned user:", firebaseUser);
       const token = await firebaseUser.getIdToken();
+      console.log("handleLogin: retrieved ID token");
       localStorage.setItem('firebaseToken', token);
       fetchUser();
     } catch (err: any) {
+      console.error("handleLogin error caught:", err);
       if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
         setMessageModal({
           isOpen: true,
@@ -234,12 +238,16 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log("App: onAuthStateChanged listener registered");
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      console.log("onAuthStateChanged triggered. User:", firebaseUser);
       if (firebaseUser) {
         const token = await firebaseUser.getIdToken();
+        console.log("onAuthStateChanged: retrieved token");
         localStorage.setItem('firebaseToken', token);
         fetchUser();
       } else {
+        console.log("onAuthStateChanged: no user signed in");
         localStorage.removeItem('firebaseToken');
         setUser(null);
       }
