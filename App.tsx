@@ -723,7 +723,7 @@ const App: React.FC = () => {
       />
       {/* Add Site Modal */}
       {showAddSiteModal && (
-        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
             <button onClick={() => setShowAddSiteModal(false)} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
               <X size={24} />
@@ -854,7 +854,7 @@ const App: React.FC = () => {
 
       {/* Edit Site Modal */}
       {editSiteModal.isOpen && (
-        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
             <button onClick={() => setEditSiteModal({ isOpen: false, website: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
               <X size={24} />
@@ -951,7 +951,7 @@ const App: React.FC = () => {
 
       {/* Domain Verification Modal */}
       {domainVerificationModal.isOpen && domainVerificationModal.website && (
-        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-lg relative shadow-2xl shadow-black/50 overflow-y-auto max-h-[90vh] animate-in zoom-in-95 duration-200">
             <button onClick={() => setDomainVerificationModal({ isOpen: false, website: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
               <X size={24} />
@@ -1025,7 +1025,7 @@ const App: React.FC = () => {
 
       {/* Purchase Modal */}
       {purchaseModal.isOpen && purchaseModal.site && (
-        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
             <button onClick={() => setPurchaseModal({ isOpen: false, site: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
               <X size={24} />
@@ -1099,7 +1099,7 @@ const App: React.FC = () => {
 
       {/* Verify Modal */}
       {verifyModal.isOpen && verifyModal.transaction && (
-        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
             <button onClick={() => setVerifyModal({ isOpen: false, transaction: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
               <X size={24} />
@@ -1134,7 +1134,7 @@ const App: React.FC = () => {
 
       {/* Checkout Modal */}
       {checkoutModal.isOpen && checkoutModal.plan && (
-        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 w-full max-w-md max-h-[90vh] overflow-y-auto relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
             <button onClick={() => setCheckoutModal({ isOpen: false, plan: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors z-10">
               <X size={20} />
@@ -1187,7 +1187,7 @@ const App: React.FC = () => {
 
       {/* Message Modal (Alert Replacement) */}
       {messageModal.isOpen && (
-        <div className="absolute inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-sm relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200 text-center">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${messageModal.type === 'success' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
               {messageModal.type === 'success' ? <ShieldCheck size={32} /> : <X size={32} />}
@@ -2089,7 +2089,7 @@ const App: React.FC = () => {
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-bold text-white mb-4">Fast Track Your Growth</h2>
                 <p className="text-slate-400 max-w-2xl mx-auto">
-                  Don't want to wait to earn points? Purchase points directly or subscribe for monthly benefits.
+                  Don't want to wait to earn points? Purchase point packs directly.
                   Secure payment via PayPal.
                 </p>
               </div>
@@ -2601,7 +2601,7 @@ const App: React.FC = () => {
 
         {/* Add Points Modal */}
         {addPointsModal.isOpen && addPointsModal.user && (
-          <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
               <button onClick={() => setAddPointsModal({ isOpen: false, user: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
                 <X size={24} />
