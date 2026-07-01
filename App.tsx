@@ -161,6 +161,7 @@ const App: React.FC = () => {
   // Input States for Modals
   const [purchaseSourceUrl, setPurchaseSourceUrl] = useState('');
   const [verificationUrl, setVerificationUrl] = useState('');
+  const [customVerificationUrl, setCustomVerificationUrl] = useState('');
 
   // Mobile Menu State
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -519,42 +520,22 @@ const App: React.FC = () => {
     }
   };
 
-  const handleVerifyDomain = async (websiteId: string, method: 'file' | 'dns') => {
+  const handleVerifyIntegration = async (websiteId: string, customUrl?: string) => {
     try {
-      const res = await fetch('/api/websites/verify', {
+      const res = await fetch('/api/websites/verify-integration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ websiteId, method })
+        body: JSON.stringify({ websiteId, customUrl })
       });
       const data = await res.json();
 
       if (res.ok) {
         setDomainVerificationModal({ isOpen: false, website: null });
+        setCustomVerificationUrl('');
         fetchUser();
-        setMessageModal({ isOpen: true, title: 'Success', message: 'Domain verified successfully!', type: 'success' });
+        setMessageModal({ isOpen: true, title: 'Success', message: 'Integration verified! Backlinks are active.', type: 'success' });
       } else {
-        setMessageModal({ isOpen: true, title: 'Verification Failed', message: data.error || 'Could not verify domain', type: 'error' });
-      }
-    } catch (err) {
-      setMessageModal({ isOpen: true, title: 'Error', message: 'Verification request failed', type: 'error' });
-    }
-  };
-
-  const handleVerifyScript = async (websiteId: string) => {
-    try {
-      const res = await fetch('/api/websites/verify-script', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ websiteId })
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        setDomainVerificationModal({ isOpen: false, website: null });
-        fetchUser();
-        setMessageModal({ isOpen: true, title: 'Success', message: 'Widget verified! Your website is now ready for instant backlinks.', type: 'success' });
-      } else {
-        setMessageModal({ isOpen: true, title: 'Verification Failed', message: data.error || 'Could not verify widget installation. Make sure the code is on your homepage.', type: 'error' });
+        setMessageModal({ isOpen: true, title: 'Verification Failed', message: data.error || 'Could not verify integration', type: 'error' });
       }
     } catch (err) {
       setMessageModal({ isOpen: true, title: 'Error', message: 'Verification request failed', type: 'error' });
@@ -971,65 +952,70 @@ const App: React.FC = () => {
       {/* Domain Verification Modal */}
       {domainVerificationModal.isOpen && domainVerificationModal.website && (
         <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-md relative shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-lg relative shadow-2xl shadow-black/50 overflow-y-auto max-h-[90vh] animate-in zoom-in-95 duration-200">
             <button onClick={() => setDomainVerificationModal({ isOpen: false, website: null })} className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors">
               <X size={24} />
             </button>
-            <h3 className="text-2xl font-bold text-white mb-6">Verify Domain Ownership</h3>
-            <p className="text-slate-400 mb-4">
-              Please verify that you own <strong>{domainVerificationModal.website.url}</strong>.
+            <h3 className="text-2xl font-bold text-white mb-6">Integrate Partner Exchange</h3>
+            <p className="text-slate-400 mb-6 text-sm">
+              Choose one of the integration options below to verify ownership of <strong>{domainVerificationModal.website.url}</strong> and enable automatic backlink exchanges.
             </p>
 
             <div className="space-y-6">
-              <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-800">
-                <h4 className="text-white font-bold mb-2">Method 1: File Upload</h4>
-                <p className="text-sm text-slate-400 mb-2">Upload a file named <code className="bg-slate-950 px-1 py-0.5 rounded text-blue-400">linkauthority-verification.txt</code> to your root directory with the following content:</p>
-                <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-sm text-green-400 break-all">
-                  {domainVerificationModal.website.verificationToken}
+              {/* Option 1: WordPress Plugin */}
+              <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-800/80 border-l-4 border-l-blue-500">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-white font-bold flex items-center gap-2">
+                    <Sparkles size={18} className="text-blue-400" />
+                    Option 1: WordPress Plugin (Recommended)
+                  </h4>
                 </div>
-                <button
-                  onClick={() => handleVerifyDomain(domainVerificationModal.website!._id!, 'file')}
-                  className="mt-3 w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors"
-                >
-                  Verify File
-                </button>
-              </div>
-
-              <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-800">
-                <h4 className="text-white font-bold mb-2">Method 2: DNS Record</h4>
-                <p className="text-sm text-slate-400 mb-2">Add a TXT record to your domain with the following value:</p>
-                <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-sm text-green-400 break-all">
-                  linkauthority-verification={domainVerificationModal.website.verificationToken}
-                </div>
-              </div>
-
-              <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-800 border-l-4 border-l-blue-500">
-                <h4 className="text-white font-bold mb-2 flex items-center gap-2">
-                  <Zap size={16} className="text-blue-500" />
-                  Method 3: Instant Widget (Recommended)
-                </h4>
-                <p className="text-sm text-slate-400 mb-2">Enable <strong>Instant Backlinks</strong> by adding this code to your homepage (footer or sidebar):</p>
-                <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs text-blue-300 break-all select-all">
-                  &lt;div id="linkauthority-widget"&gt;&lt;/div&gt;{"\n"}
-                  &lt;script src="https://www.linkauthority.live/widget.js" data-id="{domainVerificationModal.website._id}" async&gt;&lt;/script&gt;
-                </div>
-                <button
-                  onClick={() => handleVerifyScript(domainVerificationModal.website!._id!)}
-                  className="mt-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/20"
-                >
-                  Check Code & Verify
-                </button>
-                <p className="text-xs text-blue-400/80 mt-2">
-                  This method enables *Instant Revenue*. Transactions are verified automatically.
+                <p className="text-xs text-slate-400 mb-4">
+                  Install our lightweight plugin. It automatically creates a SEO-friendly dofollow <code>/partners</code> page and links it to our exchange network.
                 </p>
+                <a
+                  href={`/api/wp/generate-plugin/${domainVerificationModal.website._id || domainVerificationModal.website.id}`}
+                  className="inline-flex w-full items-center justify-center bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-lg shadow-blue-500/20"
+                >
+                  Download WP Plugin (.zip)
+                </a>
+                <p className="text-[11px] text-slate-500 mt-2">
+                  * Upload, activate the plugin in WordPress, then click verify below.
+                </p>
+                <button
+                  onClick={() => handleVerifyIntegration(domainVerificationModal.website!._id || domainVerificationModal.website!.id)}
+                  className="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 rounded-xl text-sm font-semibold transition-colors"
+                >
+                  Verify Plugin Installation
+                </button>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-800">
+              {/* Option 2: JS snippet fallback */}
+              <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-800/80">
+                <h4 className="text-white font-bold mb-2">Option 2: JavaScript Snippet (Custom Sites)</h4>
+                <p className="text-xs text-slate-400 mb-3">
+                  Paste the widget container and script tag into the HTML of any page (e.g. your custom Partners page):
+                </p>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-blue-300 break-all select-all whitespace-pre-line leading-relaxed mb-4">
+                  {`<!-- Widget Container -->\n<div id="linkauthority-partners-widget"></div>\n\n<!-- LinkAuthority Widget Script -->\n<script src="https://www.linkauthority.live/widget.js" data-token="${domainVerificationModal.website.verificationToken}" async></script>`}
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-xs text-slate-400 mb-1.5 font-medium">Custom Page URL (if not /partners):</label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/custom-partners-page"
+                    value={customVerificationUrl}
+                    onChange={(e) => setCustomVerificationUrl(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
                 <button
-                  onClick={() => handleVerifyDomain(domainVerificationModal.website!._id!, 'dns')}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold transition-colors"
+                  onClick={() => handleVerifyIntegration(domainVerificationModal.website!._id || domainVerificationModal.website!.id, customVerificationUrl)}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 rounded-xl text-sm font-semibold transition-colors"
                 >
-                  Verify DNS/File
+                  Verify JS Integration
                 </button>
               </div>
             </div>

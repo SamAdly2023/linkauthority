@@ -142,4 +142,13 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    
+    // Start verification Cron Job
+    try {
+      const cron = require('./services/cron');
+      cron.startCron();
+      console.log('Daily verification cron job service started.');
+    } catch (err) {
+      console.error('Failed to start verification cron job service:', err);
+    }
 });
