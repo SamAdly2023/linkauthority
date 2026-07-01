@@ -34,6 +34,7 @@ app.use(helmet({
         "https://cdn.tailwindcss.com",
         "https://www.paypal.com",
         "https://www.googletagmanager.com",
+        "https://*.clarity.ms",
         "https://www.clarity.ms",
         "https://c.bing.com",
         "https://connect.facebook.net",
@@ -66,7 +67,8 @@ app.use(helmet({
         "https://*.clarity.ms",
         "https://c.bing.com",
         "https://www.facebook.com",
-        "https://*.facebook.com"
+        "https://*.facebook.com",
+        "https://ui-avatars.com"
       ],
       frameSrc: [
         "'self'", 
