@@ -19,8 +19,10 @@ export const loginWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (error) {
-    console.error("Firebase Login Error:", error);
+  } catch (error: any) {
+    if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+      console.error("Firebase Login Error:", error);
+    }
     throw error;
   }
 };

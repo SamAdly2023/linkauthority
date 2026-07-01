@@ -196,8 +196,30 @@ const App: React.FC = () => {
       const token = await firebaseUser.getIdToken();
       localStorage.setItem('firebaseToken', token);
       fetchUser();
-    } catch (err) {
-      console.error("Login failed:", err);
+    } catch (err: any) {
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        setMessageModal({
+          isOpen: true,
+          title: 'Login Cancelled',
+          message: 'The sign-in window was closed. Please try again to log in.',
+          type: 'error'
+        });
+      } else if (err?.code === 'auth/popup-blocked') {
+        setMessageModal({
+          isOpen: true,
+          title: 'Popup Blocked',
+          message: 'The sign-in popup was blocked by your browser. Please enable popups for this site and try again.',
+          type: 'error'
+        });
+      } else {
+        console.error("Login failed:", err);
+        setMessageModal({
+          isOpen: true,
+          title: 'Login Failed',
+          message: err?.message || 'An unexpected error occurred during login.',
+          type: 'error'
+        });
+      }
     }
   };
 
