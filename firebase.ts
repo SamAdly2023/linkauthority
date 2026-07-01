@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAWAN7P0Yq8YRFqoXeJZYrVquEAXJlC2pE",
@@ -20,7 +20,12 @@ export const loginWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error: any) {
-    if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+    if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+      console.warn("Google sign-in popup was blocked or closed. Falling back to redirect...");
+      await signInWithRedirect(auth, googleProvider);
+      return new Promise<any>(() => {}); // Keep promise pending while page redirects
+    }
+    if (error.code !== 'auth/cancelled-popup-request') {
       console.error("Firebase Login Error:", error);
     }
     throw error;
