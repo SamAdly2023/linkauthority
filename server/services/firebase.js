@@ -27,10 +27,15 @@ if (!serviceAccount) {
 }
 
 if (serviceAccount) {
-  if (!admin.apps.length) {
+  try {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
+  } catch (err) {
+    // If the app is already initialized, it will throw an error. We can safely ignore it.
+    if (err.code !== 'app/duplicate-app' && !err.message.includes('already exists')) {
+      console.error("Firebase Admin initialization failed:", err);
+    }
   }
 } else {
   console.error("CRITICAL: Firebase Admin credentials not found! Both environment variable and JSON file are missing.");
