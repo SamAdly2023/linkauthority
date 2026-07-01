@@ -1,0 +1,254 @@
+const nodemailer = require('nodemailer');
+const keys = require('../config/keys');
+const path = require('path');
+const axios = require('axios');
+
+const transporter = nodemailer.createTransport({
+  host: "192.250.227.239", // IP for s5531.usc1.stableserver.net to bypass DNS issues
+  port: 465,
+  secure: true, // true for 465, false for other ports
+  auth: {
+    user: keys.emailUser,
+    pass: keys.emailPass
+  },
+  tls: {
+    rejectUnauthorized: false,
+    ciphers: 'SSLv3'
+  },
+  logger: true,
+  debug: true
+});
+
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log('SMTP Connection Error:', error);
+  } else {
+    console.log('SMTP Server is ready to take our messages');
+  }
+});
+
+// Signature Template
+const getSignature = () => {
+  return `
+    <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-family: Arial, sans-serif;">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <img src="https://www.linkauthority.live/link-authority-logo.png" alt="LinkAuthority" style="width: 50px; height: 50px; border-radius: 5px; object-fit: contain;">
+        <div>
+          <p style="margin: 0; font-weight: bold; color: #333; font-size: 16px;">Sam Adly</p>
+          <p style="margin: 0; color: #666; font-size: 14px;">CEO, LinkAuthority</p>
+        </div>
+      </div>
+      <div style="margin-top: 15px;">
+        <a href="https://www.facebook.com/linkauthority2026/" style="margin-right: 15px; text-decoration: none; display: inline-block;">
+          <img src="https://cdn-icons-png.flaticon.com/32/145/145802.png" alt="Facebook" style="width: 24px; height: 24px;">
+        </a>
+        <a href="https://www.instagram.com/linkauthority/" style="margin-right: 15px; text-decoration: none; display: inline-block;">
+           <img src="https://cdn-icons-png.flaticon.com/32/3955/3955024.png" alt="Instagram" style="width: 24px; height: 24px;">
+        </a>
+        <a href="https://www.linkedin.com/company/link-authority2026" style="margin-right: 15px; text-decoration: none; display: inline-block;">
+           <img src="https://cdn-icons-png.flaticon.com/32/145/145807.png" alt="LinkedIn" style="width: 24px; height: 24px;">
+        </a>
+         <a href="https://x.com/authority2026" style="margin-right: 15px; text-decoration: none; display: inline-block;">
+           <img src="https://cdn-icons-png.flaticon.com/32/3670/3670151.png" alt="Twitter/X" style="width: 24px; height: 24px;">
+        </a>
+      </div>
+    </div>
+  `;
+};
+
+// Generic send function
+const sendEmail = async (to, subject, html, attachments = [], name = null) => {
+
+  // Append signature to HTML body
+  const htmlWithSignature = html + getSignature();
+
+  // Option 1: Send via GoHighLevel Webhook (Primary if configured)
+  if (keys.ghlWebhookUrl) {
+    try {
+      console.log(`Sending email to ${to} via GHL Webhook...`);
+      // We send the data expected by our GHL Automation
+      const payload = {
+        type: 'email', // Distinguish between basic sync and email sending
+        email: to,
+        subject: subject,
+        html: htmlWithSignature, // We pass the raw HTML
+        message: htmlWithSignature
+      };
+
+      if (name) {
+        payload.firstName = name.split(' ')[0];
+        payload.lastName = name.split(' ').slice(1).join(' ');
+      }
+
+      await axios.post(keys.ghlWebhookUrl, payload);
+      console.log('Email sent successfully via GHL Webhook');
+      return { success: true, messageId: 'ghl-webhook' };
+    } catch (error) {
+      console.error('GHL Webhook Failed:', error.message);
+      console.log('Falling back to SMTP...');
+    }
+  }
+
+  // Option 2: Send via SMTP (Fallback)
+  if (!keys.emailUser || !keys.emailPass) {
+    console.log('Email credentials not provided. Skipping email.');
+    return false;
+  }
+
+  const mailOptions = {
+    from: `"LinkAuthority" <${keys.emailUser}>`,
+    to,
+    subject,
+    html: htmlWithSignature,
+    attachments
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent: %s', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending email to ' + to, error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Templates
+const sendWelcomeEmail = async (user) => {
+  const subject = 'Welcome to LinkAuthority!';
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2563EB;">Welcome to LinkAuthority!</h2>
+      <p>Hi ${user.name},</p>
+      <p>Thanks for joining LinkAuthority! We're excited to help you build high-authority backlinks and boost your SEO rankings.</p>
+      <p><strong>Next Steps:</strong></p>
+      <ol>
+        <li>Add your website to the platform.</li>
+        <li>Verify ownership to earn your initial points.</li>
+        <li>Start exchanging high-quality backlinks!</li>
+      </ol>
+      <a href="https://linkauthority.com" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Dashboard</a>
+      <p style="margin-top: 30px; font-size: 12px; color: #666;">If you have any questions, reply to this email.</p>
+    </div>
+  `;
+  await sendEmail(user.email, subject, html, [], user.name);
+};
+
+const sendWebsiteAddedEmail = async (user, website) => {
+  const subject = 'Website Added Details - LinkAuthority';
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2563EB;">Website Added Successfully</h2>
+      <p>Hi ${user.name},</p>
+      <p>You have successfully added <strong>${website.url}</strong> to LinkAuthority.</p>
+      <p><strong>Status:</strong> ${website.isVerified ? 'Verified' : 'Unverified'}</p>
+      <p><strong>Domain Authority Points:</strong> ${website.domainAuthority}</p>
+      ${!website.isVerified ? '<p>Please verify your website to start earning points.</p>' : ''}
+    </div>
+  `;
+  await sendEmail(user.email, subject, html, [], user.name);
+};
+
+const sendWebsiteVerifiedEmail = async (user, website) => {
+  const subject = 'Website Verified! - LinkAuthority';
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #10B981;">Website Verified Successfully!</h2>
+      <p>Hi ${user.name},</p>
+      <p>Great news! Your website <strong>${website.url}</strong> has been verified.</p>
+      <p>You can now use this site to exchange links and earn points.</p>
+    </div>
+  `;
+  await sendEmail(user.email, subject, html, [], user.name);
+};
+
+const sendLinkRequestEmail = async (seller, buyerName, transaction) => {
+  const subject = 'New Backlink Request - LinkAuthority';
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2563EB;">New Link Opportunity!</h2>
+      <p>Hi ${seller.name},</p>
+      <p><strong>${buyerName}</strong> wants to place a link on your site.</p>
+      <p><strong>Target URL (You host this):</strong> ${transaction.targetUrl}</p>
+      <p><strong>Points to Earn:</strong> ${transaction.points}</p>
+      <p>Log in to your dashboard to view details and approve the request.</p>
+      <a href="https://linkauthority.com" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Request</a>
+    </div>
+  `;
+  await sendEmail(seller.email, subject, html, [], seller.name);
+};
+
+const sendLinkVerifiedEmail = async (buyer, sellerName, transaction) => {
+  const subject = 'Backlink Verified & Live! - LinkAuthority';
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #10B981;">Backlink Success!</h2>
+      <p>Hi ${buyer.name},</p>
+      <p>Your backlink on <strong>${sellerName}'s website</strong> has been verified and is live!</p>
+      <p><strong>Your Link:</strong> ${transaction.sourceUrl}</p>
+      <p><strong>Verified At:</strong> ${transaction.verificationUrl}</p>
+      <p>Points have been transferred successfully.</p>
+    </div>
+  `;
+  await sendEmail(buyer.email, subject, html, [], buyer.name);
+};
+
+const sendAdminNotification = async (subject, message) => {
+  if (!keys.adminEmail) return;
+  const html = `
+    <div style="font-family: Arial, sans-serif;">
+      <h2>Admin Notification</h2>
+      <p>${message}</p>
+    </div>
+  `;
+  await sendEmail(keys.adminEmail, `Admin Alert: ${subject}`, html);
+};
+
+const sendContactFormEmail = async (name, email, subject, message) => {
+  if (!keys.adminEmail) return;
+  const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px;">
+        <h2 style="color: #2563EB;">New Contact Form Submission</h2>
+        <div style="background-color: #f9fafb; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>Name:</strong> ${name || 'N/A'}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 5px 0;"><strong>Subject:</strong> ${subject}</p>
+        </div>
+        <div style="margin-top: 20px;">
+            <h3 style="font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px; color: #444;">Message:</h3>
+            <p style="white-space: pre-wrap; line-height: 1.5; color: #333;">${message}</p>
+        </div>
+      </div>
+    `;
+  await sendEmail(keys.adminEmail, `Contact Form: ${subject}`, html, [], name, email); // Reply-to email
+};
+
+module.exports = {
+  sendEmail,
+  sendWelcomeEmail,
+  sendWebsiteAddedEmail,
+  sendWebsiteVerifiedEmail,
+  sendLinkRequestEmail,
+  sendLinkVerifiedEmail,
+  sendAdminNotification,
+  sendContactFormEmail,
+  // New function to sync user contact info to GHL without sending an email
+  syncUserToGHL: async (user) => {
+    if (!keys.ghlWebhookUrl) return;
+    try {
+      console.log(`Syncing user ${user.email} to GHL...`);
+      await axios.post(keys.ghlWebhookUrl, {
+        type: 'signup', // Just sync, don't send email
+        email: user.email,
+        firstName: user.name ? user.name.split(' ')[0] : '',
+        lastName: user.name ? user.name.split(' ').slice(1).join(' ') : '',
+        phone: user.phone || '',
+        tags: ['linkauthority', 'signup']
+      });
+      console.log('User synced to GHL successfully');
+    } catch (error) {
+      console.error('Failed to sync user to GHL:', error.message);
+    }
+  }
+};

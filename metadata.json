@@ -1,0 +1,8 @@
+{
+  "name": "LinkAuthority",
+  "description": "A Domain Authority-based backlink exchange platform where users earn points by hosting backlinks on their high-DA sites and spend points to get links from others.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

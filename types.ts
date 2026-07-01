@@ -1,0 +1,97 @@
+
+export interface User {
+  id: string;
+  _id?: string;
+  name: string;
+  email: string;
+  points: number;
+  websites: Website[];
+  phone?: string;
+  avatar?: string;
+  referralCode?: string;
+  rating?: number;
+  reviewCount?: number;
+  isAdmin?: boolean;
+  lastActiveAt?: string;
+}
+
+export interface Website {
+  id: string;
+  url: string;
+  domainAuthority: number;
+  category: string;
+  serviceType?: 'local' | 'worldwide';
+  location?: {
+    country?: string;
+    state?: string;
+    city?: string;
+  };
+  verified?: boolean;
+  isVerified?: boolean;
+  verificationToken?: string;
+}
+
+export interface Transaction {
+  id: string;
+  _id?: string;
+  type: 'earn' | 'spend';
+  points: number;
+  sourceUrl: string;
+  targetUrl: string;
+  timestamp: string;
+  status: 'pending' | 'completed' | 'failed';
+  verificationUrl?: string;
+}
+
+export enum Tab {
+  Dashboard = 'dashboard',
+  Marketplace = 'marketplace',
+  MySites = 'mysites',
+  History = 'history',
+  AIExpert = 'aiexpert',
+  Guide = 'guide',
+  Profile = 'profile',
+  Terms = 'terms',
+  Privacy = 'privacy',
+  UserGuide = 'userguide',
+  About = 'about',
+  Contact = 'contact',
+  AdminUsers = 'admin_users',
+  AdminWebsites = 'admin_websites',
+  AdminTransactions = 'admin_transactions',
+  AdminCommunications = 'admin_communications',
+  AdminSettings = 'admin_settings',
+  Citations = 'citations',
+  TermsOfService = 'terms_of_service',
+  PrivacyPolicy = 'privacy_policy'
+}
+
+export interface AIReport {
+  seoScore: number;
+  performanceScore: number;
+  accessibilityScore: number;
+  bestPracticesScore: number;
+  screenshotUrl?: string;
+  summary: string;
+  technicalSeo: {
+    title: string;
+    status: 'pass' | 'fail' | 'warning';
+    description: string;
+  }[];
+  backlinkStrategy: {
+    focus: string;
+    recommendedAnchors: string[];
+    targetNiches: string[];
+  };
+  keywordOpportunities: {
+    keyword: string;
+    difficulty: 'Easy' | 'Medium' | 'Hard';
+    volume: string;
+    intent: string;
+  }[];
+  monthlyGrowth: {
+    month: string;
+    traffic: number;
+    backlinks: number;
+  }[];
+}
