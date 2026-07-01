@@ -53,6 +53,7 @@ import PricingSection from './PricingSection';
 import AboutUs from './AboutUs';
 import ContactUs from './ContactUs';
 import { auth, loginWithGoogle, logoutUser } from './firebase';
+import { getRedirectResult } from 'firebase/auth';
 
 // Intercept window.fetch to attach Firebase auth ID Token automatically
 const originalFetch = window.fetch;
@@ -238,6 +239,19 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log("App: checking redirect result...");
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          console.log("getRedirectResult: redirect success, user:", result.user);
+        } else {
+          console.log("getRedirectResult: no redirect result found on load");
+        }
+      })
+      .catch((error) => {
+        console.error("getRedirectResult error caught:", error);
+      });
+
     console.log("App: onAuthStateChanged listener registered");
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       console.log("onAuthStateChanged triggered. User:", firebaseUser);
