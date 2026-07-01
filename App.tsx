@@ -382,13 +382,23 @@ const App: React.FC = () => {
 
   const fetchUser = () => {
     fetch('/api/current_user')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        console.log("fetchUser data received:", data);
         if (data && (data._id || data.googleId)) {
           setUser({ ...data, id: data._id });
+        } else {
+          console.warn("fetchUser: user data is missing expected identifiers:", data);
         }
       })
-      .catch(err => console.log(err));
+      .catch(err => {
+        console.error("fetchUser network/server error:", err);
+      });
   };
 
   const fetchMarketplace = () => {
