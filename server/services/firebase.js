@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const admin = require('firebase-admin');
 
 let serviceAccount;
@@ -11,10 +13,16 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
 }
 
 if (!serviceAccount) {
-  try {
-    serviceAccount = require('../config/firebase-service-account.json');
-  } catch (err) {
-    console.error("Failed to load firebase-service-account.json file:", err);
+  const filePath = path.join(__dirname, '../config/firebase-service-account.json');
+  if (fs.existsSync(filePath)) {
+    try {
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      serviceAccount = JSON.parse(fileContent);
+    } catch (err) {
+      console.error("Failed to parse firebase-service-account.json file:", err);
+    }
+  } else {
+    console.log("firebase-service-account.json file does not exist.");
   }
 }
 
@@ -31,7 +39,6 @@ if (serviceAccount) {
 const auth = admin.auth();
 const db = admin.firestore();
 
-// Helpers for Firestore conversions / schema mapping if helpful
 const toDoc = (doc) => {
   if (!doc.exists) return null;
   return { id: doc.id, ...doc.data() };
