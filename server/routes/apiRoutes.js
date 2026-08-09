@@ -167,7 +167,8 @@ module.exports = app => {
       ownerId: req.user.id,
       isVerified: isAdmin,
       verificationToken,
-      lastChecked: new Date()
+      lastChecked: new Date(),
+      createdAt: new Date()
     };
 
     try {
@@ -561,6 +562,7 @@ module.exports = app => {
       const transactionData = {
         type: 'earn',
         points: points,
+        amount: parseFloat(amount),
         sourceUrl: 'PayPal Purchase',
         targetUrl: 'System',
         userId: req.user.id,
@@ -643,114 +645,6 @@ module.exports = app => {
       res.send({ success: true });
     } catch (err) {
       res.status(500).send(err);
-    }
-  });
-
-  // Generate WP Plugin Zip
-  app.get('/api/wp/generate-plugin/:websiteId', requireLogin, async (req, res) => {
-    const AdmZip = require('adm-zip');
-    try {
-      const website = await getWebsiteById(req.params.websiteId);
-      if (!website || website.ownerId !== req.user.id) {
-        return res.status(404).send({ error: 'Website not found' });
-      }
-
-      // PHP Code template
-      const phpCode = `<?php
-/**
- * Plugin Name: LinkAuthority Partner Page
- * Description: Automatically displays high-quality SEO partner dofollow links on a dedicated /partners page.
- * Version: 1.0
- * Author: LinkAuthority
- */
-
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
-
-define( 'LINKAUTHORITY_TOKEN', '${website.verificationToken}' );
-define( 'LINKAUTHORITY_API_URL', 'https://www.linkauthority.live/api/integration/links' );
-
-function linkauthority_update_links() {
-    $response = wp_remote_get( LINKAUTHORITY_API_URL . '?token=' . LINKAUTHORITY_TOKEN );
-    if ( is_wp_error( $response ) ) {
-        return false;
-    }
-    $body = wp_remote_retrieve_body( $response );
-    $data = json_decode( $body, true );
-    if ( is_array( $data ) ) {
-        update_option( 'linkauthority_links', $data );
-        return true;
-    }
-    return false;
-}
-
-register_activation_hook( __FILE__, 'linkauthority_activate' );
-function linkauthority_activate() {
-    linkauthority_update_links();
-    if ( null === get_page_by_path( 'partners' ) ) {
-        wp_insert_post( array(
-            'post_title'    => 'Partners',
-            'post_name'     => 'partners',
-            'post_content'  => '[linkauthority_partners]',
-            'post_status'   => 'publish',
-            'post_type'     => 'page',
-        ) );
-    }
-}
-
-add_shortcode( 'linkauthority_partners', 'linkauthority_render_partners' );
-function linkauthority_render_partners() {
-    $links = get_option( 'linkauthority_links', array() );
-    if ( empty( $links ) ) {
-        linkauthority_update_links();
-        $links = get_option( 'linkauthority_links', array() );
-    }
-
-    if ( empty( $links ) ) {
-        return '<p>No partners listed yet.</p>';
-    }
-
-    $html = '<div class="linkauthority-partners-silo" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">';
-    foreach ( $links as $link ) {
-        $html .= '<div class="partner-card" style="border: 1px solid #ddd; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: sans-serif; background: #fff;">';
-        $html .= '<h3 style="margin-top:0; color:#333;">' . esc_html( $link['title'] ) . '</h3>';
-        $html .= '<p style="color:#666; font-size: 14px; line-height: 1.5;">' . esc_html( $link['description'] ) . '</p>';
-        $html .= '<a href="' . esc_url( $link['url'] ) . '" rel="dofollow" target="_blank" style="display: inline-block; background: #0073aa; color: #fff; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px;">Visit Website</a>';
-        $html .= '</div>';
-    }
-    $html .= '</div>';
-    return $html;
-}
-
-add_action( 'rest_api_init', function () {
-    register_rest_route( 'linkauthority/v1', '/update', array(
-        'methods'             => 'POST',
-        'callback'            => 'linkauthority_rest_update',
-        'permission_callback' => '__return_true',
-    ) );
-} );
-
-function linkauthority_rest_update( WP_REST_Request $request ) {
-    $token = $request->get_param( 'token' );
-    if ( $token !== LINKAUTHORITY_TOKEN ) {
-        return new WP_REST_Response( array( 'error' => 'Invalid token' ), 403 );
-    }
-    $success = linkauthority_update_links();
-    return new WP_REST_Response( array( 'success' => $success ), $success ? 200 : 500 );
-}
-`;
-
-      const zip = new AdmZip();
-      zip.addFile('linkauthority-partners/linkauthority-partners.php', Buffer.from(phpCode, 'utf8'));
-      const zipBuffer = zip.toBuffer();
-
-      res.setHeader('Content-Type', 'application/zip');
-      res.setHeader('Content-Disposition', `attachment; filename=linkauthority-partners-${website.url.replace(/https?:\/\/(www\.)?/, '').replace(/[^a-zA-Z0-9]/g, '-')}.zip`);
-      res.send(zipBuffer);
-    } catch (err) {
-      console.error(err);
-      res.status(500).send({ error: 'Failed to generate plugin' });
     }
   });
 

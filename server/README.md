@@ -5,9 +5,10 @@
 1.  Navigate to the `server` directory: `cd server`
 2.  Install dependencies: `npm install`
 3.  Create a `.env` file based on `.env.example` and fill in your credentials.
-    *   **GOOGLE_CLIENT_ID** & **GOOGLE_CLIENT_SECRET**: Get these from the [Google Cloud Console](https://console.cloud.google.com/).
-    *   **MONGO_URI**: Get this from [MongoDB Atlas](https://www.mongodb.com/atlas).
-    *   **COOKIE_KEY**: Any random string.
+    *   **FIREBASE_SERVICE_ACCOUNT**: JSON service account key from your [Firebase Console](https://console.firebase.google.com/) (Project Settings > Service Accounts). Alternatively, place the file at `server/config/firebase-service-account.json`.
+    *   **GEMINI_API_KEY**: Get this from [Google AI Studio](https://aistudio.google.com/).
+    *   **EMAIL_USER** / **EMAIL_PASS**: SMTP credentials used to send transactional emails.
+    *   **GHL_WEBHOOK_URL**: Optional GoHighLevel webhook for CRM sync and notifications.
 4.  Run the server: `npm start` (or `npm run dev` for development).
 
 ## Deployment

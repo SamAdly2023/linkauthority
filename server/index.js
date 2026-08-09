@@ -7,7 +7,6 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const firebaseAuth = require('./middlewares/firebaseAuth');
-const keys = require('./config/keys');
 
 const app = express();
 
@@ -119,6 +118,7 @@ app.use(firebaseAuth);
 require('./routes/authRoutes')(app);
 require('./routes/apiRoutes')(app);
 require('./routes/adminRoutes')(app);
+require('./routes/integrationRoutes')(app);
 
 // Global Error Handler to debug 500 errors
 app.use((err, req, res, next) => {

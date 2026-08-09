@@ -25,6 +25,7 @@ module.exports = async (req, res, next) => {
         avatar: decodedToken.picture || '',
         points: 200,
         lastActiveAt: new Date(),
+        createdAt: new Date(),
         rating: 5.0,
         reviewCount: 0,
         transactions: []

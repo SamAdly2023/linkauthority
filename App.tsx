@@ -27,6 +27,8 @@ import {
   Database,
   FileText,
   Sliders,
+  BarChart2,
+  Sparkles,
   Menu,
   MapPin,
   Mail,
@@ -45,6 +47,7 @@ import { getSEOAdvice } from './services/geminiService';
 import TermsOfService from './TermsOfService';
 import PrivacyPolicy from './PrivacyPolicy';
 import CitationsPage from './CitationsPage';
+import AdminAnalytics from './AdminAnalytics';
 import LandingPage from './LandingPage';
 import ChatWidget from './ChatWidget';
 import SEO from './SEO';
@@ -969,9 +972,19 @@ const App: React.FC = () => {
                     <Sparkles size={18} className="text-blue-400" />
                     Option 1: WordPress Plugin (Recommended)
                   </h4>
+                  {domainVerificationModal.website.isActive ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 text-green-500 text-[11px] font-bold shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                      Connected
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-700/50 text-slate-400 text-[11px] font-bold shrink-0">
+                      Not Connected
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-400 mb-4">
-                  Install our lightweight plugin. It automatically creates a SEO-friendly dofollow <code>/partners</code> page and links it to our exchange network.
+                  Install &amp; activate our lightweight plugin. It instantly connects your site, lists you as an active partner, and creates a live <code>/business-partners</code> page with dofollow links to every other active site on the network. Deactivating or deleting the plugin automatically disconnects your site and removes your links from every other member's page.
                 </p>
                 <a
                   href={`/api/wp/generate-plugin/${domainVerificationModal.website._id || domainVerificationModal.website.id}`}
@@ -980,13 +993,17 @@ const App: React.FC = () => {
                   Download WP Plugin (.zip)
                 </a>
                 <p className="text-[11px] text-slate-500 mt-2">
-                  * Upload, activate the plugin in WordPress, then click verify below.
+                  * Upload the .zip in Plugins &gt; Add New &gt; Upload Plugin, then activate it. Connection happens automatically&mdash;no manual verification needed.
                 </p>
                 <button
-                  onClick={() => handleVerifyIntegration(domainVerificationModal.website!._id || domainVerificationModal.website!.id)}
+                  onClick={() => {
+                    fetchUser();
+                    setDomainVerificationModal({ isOpen: false, website: null });
+                    setMessageModal({ isOpen: true, title: 'Refreshing', message: 'Reloaded your latest connection status. Check the Status column on My Websites.', type: 'success' });
+                  }}
                   className="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 rounded-xl text-sm font-semibold transition-colors"
                 >
-                  Verify Plugin Installation
+                  Refresh Connection Status
                 </button>
               </div>
 
@@ -1248,7 +1265,7 @@ const App: React.FC = () => {
             <button
               onClick={() => {
                 setIsAdminMode(true);
-                setActiveTab(Tab.AdminUsers);
+                setActiveTab(Tab.AdminAnalytics);
                 setIsMobileMenuOpen(false);
               }}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${isAdminMode ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
@@ -1285,6 +1302,7 @@ const App: React.FC = () => {
             </>
           ) : (
             <>
+              <SidebarItem tab={Tab.AdminAnalytics} icon={BarChart2} label="Analytics" />
               <SidebarItem tab={Tab.AdminUsers} icon={Users} label="All Users" />
               <SidebarItem tab={Tab.AdminWebsites} icon={Globe} label="All Websites" />
               <SidebarItem tab={Tab.AdminTransactions} icon={FileText} label="All Transactions" />
@@ -1668,20 +1686,30 @@ const App: React.FC = () => {
                           <span className="text-xl font-bold text-blue-400">{site.domainAuthority}</span>
                         </td>
                         <td className="py-6 text-center">
-                          {site.isVerified ? (
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-bold">
-                              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                              Verified
-                            </div>
-                          ) : (
+                          <div className="flex flex-col items-center gap-1.5">
+                            {site.isVerified ? (
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-bold">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                Verified
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setDomainVerificationModal({ isOpen: true, website: site })}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-bold hover:bg-yellow-500/20 transition-colors"
+                              >
+                                <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                                Verify Now
+                              </button>
+                            )}
                             <button
                               onClick={() => setDomainVerificationModal({ isOpen: true, website: site })}
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-bold hover:bg-yellow-500/20 transition-colors"
+                              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${site.isActive ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-800 text-slate-500 hover:text-slate-300'}`}
+                              title="WordPress plugin connection status"
                             >
-                              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                              Verify Now
+                              <span className={`w-1.5 h-1.5 rounded-full ${site.isActive ? 'bg-blue-400' : 'bg-slate-600'}`}></span>
+                              Plugin {site.isActive ? 'Active' : 'Inactive'}
                             </button>
-                          )}
+                          </div>
                         </td>
                         <td className="py-6 text-right">
                           <div className="flex justify-end gap-2">
@@ -2245,6 +2273,10 @@ const App: React.FC = () => {
         )}
 
         {/* Admin Tabs */}
+        {activeTab === Tab.AdminAnalytics && (
+          <AdminAnalytics users={adminUsers} websites={adminWebsites} transactions={adminTransactions} />
+        )}
+
         {activeTab === Tab.AdminUsers && (
           <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h3 className="text-2xl font-bold text-white mb-6">All Users</h3>
@@ -2302,6 +2334,7 @@ const App: React.FC = () => {
                     <th className="pb-4 font-semibold">Category</th>
                     <th className="pb-4 font-semibold">Location</th>
                     <th className="pb-4 font-semibold">Status</th>
+                    <th className="pb-4 font-semibold">Plugin</th>
                     <th className="pb-4 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
@@ -2330,6 +2363,13 @@ const App: React.FC = () => {
                           <span className="px-2 py-1 bg-green-500/10 text-green-500 text-xs font-bold rounded uppercase">Verified</span>
                         ) : (
                           <span className="px-2 py-1 bg-yellow-500/10 text-yellow-500 text-xs font-bold rounded uppercase">Pending</span>
+                        )}
+                      </td>
+                      <td className="py-4">
+                        {w.isActive ? (
+                          <span className="px-2 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold rounded uppercase">Active</span>
+                        ) : (
+                          <span className="px-2 py-1 bg-slate-800 text-slate-500 text-xs font-bold rounded uppercase">Inactive</span>
                         )}
                       </td>
                       <td className="py-4 text-right">

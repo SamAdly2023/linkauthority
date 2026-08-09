@@ -13,11 +13,14 @@ export interface User {
   reviewCount?: number;
   isAdmin?: boolean;
   lastActiveAt?: string;
+  createdAt?: string;
 }
 
 export interface Website {
   id: string;
   url: string;
+  name?: string;
+  description?: string;
   domainAuthority: number;
   category: string;
   serviceType?: 'local' | 'worldwide';
@@ -29,6 +32,10 @@ export interface Website {
   verified?: boolean;
   isVerified?: boolean;
   verificationToken?: string;
+  createdAt?: string;
+  isActive?: boolean;
+  pluginConnectedAt?: string;
+  pluginLastPing?: string;
 }
 
 export interface Transaction {
@@ -36,6 +43,7 @@ export interface Transaction {
   _id?: string;
   type: 'earn' | 'spend';
   points: number;
+  amount?: number;
   sourceUrl: string;
   targetUrl: string;
   timestamp: string;
@@ -56,6 +64,7 @@ export enum Tab {
   UserGuide = 'userguide',
   About = 'about',
   Contact = 'contact',
+  AdminAnalytics = 'admin_analytics',
   AdminUsers = 'admin_users',
   AdminWebsites = 'admin_websites',
   AdminTransactions = 'admin_transactions',
