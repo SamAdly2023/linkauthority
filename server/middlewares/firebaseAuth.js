@@ -1,4 +1,5 @@
 const { auth, db } = require('../services/firebase');
+const { sendWelcomeEmail, sendAdminNotification, syncUserToGHL } = require('../services/email');
 
 module.exports = async (req, res, next) => {
   req.user = null;
@@ -32,6 +33,12 @@ module.exports = async (req, res, next) => {
       };
       await userDocRef.set(newUser);
       userSnapshot = await userDocRef.get();
+
+      if (newUser.email) {
+        syncUserToGHL(newUser).catch(err => console.error('Error syncing GHL contact:', err));
+        sendWelcomeEmail(newUser).catch(err => console.error('Error sending welcome email:', err));
+        sendAdminNotification('New User Signup', `User ${newUser.name} (${newUser.email}) just signed up.`).catch(err => console.error('Error sending admin signup notification:', err));
+      }
     }
 
     const userData = userSnapshot.data();

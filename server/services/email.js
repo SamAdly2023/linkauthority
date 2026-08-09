@@ -128,7 +128,7 @@ const sendWelcomeEmail = async (user) => {
         <li>Verify ownership to earn your initial points.</li>
         <li>Start exchanging high-quality backlinks!</li>
       </ol>
-      <a href="https://linkauthority.com" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Dashboard</a>
+      <a href="https://www.linkauthority.live" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Dashboard</a>
       <p style="margin-top: 30px; font-size: 12px; color: #666;">If you have any questions, reply to this email.</p>
     </div>
   `;
