@@ -523,6 +523,28 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDownloadPlugin = async (websiteId: string) => {
+    try {
+      const res = await fetch(`/api/wp/generate-plugin/${websiteId}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setMessageModal({ isOpen: true, title: 'Error', message: err.error || 'Failed to download plugin. Please make sure you are logged in.', type: 'error' });
+        return;
+      }
+      const blob = await res.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = 'linkauthority-partners.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      setMessageModal({ isOpen: true, title: 'Error', message: 'Failed to download plugin', type: 'error' });
+    }
+  };
+
   const handleVerifyIntegration = async (websiteId: string, customUrl?: string) => {
     try {
       const res = await fetch('/api/websites/verify-integration', {
@@ -986,12 +1008,12 @@ const App: React.FC = () => {
                 <p className="text-xs text-slate-400 mb-4">
                   Install &amp; activate our lightweight plugin. It instantly connects your site, lists you as an active partner, and creates a live <code>/business-partners</code> page with dofollow links to every other active site on the network. Deactivating or deleting the plugin automatically disconnects your site and removes your links from every other member's page.
                 </p>
-                <a
-                  href={`/api/wp/generate-plugin/${domainVerificationModal.website._id || domainVerificationModal.website.id}`}
+                <button
+                  onClick={() => handleDownloadPlugin(domainVerificationModal.website!._id || domainVerificationModal.website!.id)}
                   className="inline-flex w-full items-center justify-center bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-lg shadow-blue-500/20"
                 >
                   Download WP Plugin (.zip)
-                </a>
+                </button>
                 <p className="text-[11px] text-slate-500 mt-2">
                   * Upload the .zip in Plugins &gt; Add New &gt; Upload Plugin, then activate it. Connection happens automatically&mdash;no manual verification needed.
                 </p>
