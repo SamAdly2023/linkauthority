@@ -41,6 +41,7 @@ import {
   Youtube,
   MessageCircle,
   Trash2,
+  Plug,
 } from 'lucide-react';
 import { Tab, User, Website, Transaction, AIReport } from './types';
 import { getSEOAdvice } from './services/geminiService';
@@ -1734,7 +1735,14 @@ const App: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-6 text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end items-center gap-2">
+                            <button
+                              onClick={() => setDomainVerificationModal({ isOpen: true, website: site })}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors"
+                            >
+                              <Plug size={16} />
+                              Integration
+                            </button>
                             <button
                               onClick={() => {
                                 // Placeholder for single site refresh
