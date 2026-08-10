@@ -125,7 +125,7 @@ module.exports = app => {
       const snap = await db.collection('websites').where('isActive', '==', true).get();
       const partners = snap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(site => site.id !== requester.id && site.url)
+        .filter(site => site.ownerId !== requester.ownerId && site.url)
         .sort((a, b) => (b.domainAuthority || 0) - (a.domainAuthority || 0))
         .map(site => ({
           title: site.name || hostname(site.url),

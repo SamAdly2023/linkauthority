@@ -104,6 +104,7 @@ const limiter = rateLimit({
 app.use('/api', limiter); // Apply to API routes
 
 app.use(express.json({ limit: '10kb' })); // Body limit is 10kb
+app.use(express.urlencoded({ extended: true, limit: '10kb' })); // wp_remote_post sends form-urlencoded bodies
 app.use(cors()); // Note: In production, you might want to restrict this to specific origins
 
 // Data Sanitization against XSS
