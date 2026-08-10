@@ -230,11 +230,9 @@ function linkauthority_get_status() {
 
 register_activation_hook( __FILE__, 'linkauthority_activate' );
 function linkauthority_activate() {
-    // Cache the token in an option so uninstall.php (which runs without this file loaded) can read it.
+    // Fast, local operations first: if a slow host makes the network calls below
+    // time out, the page and cron schedule are already in place regardless.
     update_option( 'linkauthority_token_cache', LINKAUTHORITY_TOKEN );
-
-    linkauthority_connect();
-    linkauthority_refresh_partners();
 
     if ( null === get_page_by_path( 'business-partners' ) ) {
         wp_insert_post( array(
@@ -249,6 +247,9 @@ function linkauthority_activate() {
     if ( ! wp_next_scheduled( 'linkauthority_cron_refresh' ) ) {
         wp_schedule_event( time(), 'hourly', 'linkauthority_cron_refresh' );
     }
+
+    linkauthority_connect();
+    linkauthority_refresh_partners();
 }
 
 register_deactivation_hook( __FILE__, 'linkauthority_deactivate' );

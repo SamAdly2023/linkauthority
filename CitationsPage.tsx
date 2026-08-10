@@ -41,6 +41,12 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
     website: ''
   });
   const [copied, setCopied] = useState(false);
+  const [comingSoon, setComingSoon] = useState(false);
+
+  const showComingSoon = () => {
+    setComingSoon(true);
+    setTimeout(() => setComingSoon(false), 3000);
+  };
 
   useEffect(() => {
     if (selectedSiteUrl) {
@@ -248,6 +254,11 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
       {/* Citation Builder Section */}
       {activeTab === 'builder' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+          {comingSoon && (
+            <div className="bg-blue-500/10 border border-blue-500/30 text-blue-300 rounded-xl px-4 py-3 text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-200">
+              Automated citation syncing is coming soon. This section is a preview of what's on the way.
+            </div>
+          )}
           {/* Data Aggregators */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8">
             <div className="flex justify-between items-center mb-6">
@@ -255,7 +266,7 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                 <h3 className="text-xl font-bold text-white">Data Aggregators & Networks</h3>
                 <p className="text-slate-400 text-sm">Sync your business data to hundreds of sites at once.</p>
               </div>
-              <button className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-xl font-bold text-sm transition-all shadow-lg shadow-green-600/20">
+              <button onClick={showComingSoon} className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-xl font-bold text-sm transition-all shadow-lg shadow-green-600/20">
                 Sync All ($59/mo)
               </button>
             </div>
@@ -278,7 +289,7 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                     <span className={`text-xs font-bold px-2 py-1 rounded uppercase bg-${item.color}-500/10 text-${item.color}-500`}>
                       {item.status}
                     </span>
-                    <button className="text-slate-400 hover:text-white">
+                    <button onClick={showComingSoon} className="text-slate-400 hover:text-white">
                       <Settings size={16} />
                     </button>
                   </div>
@@ -292,8 +303,8 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-white">Manual Citation Manager</h3>
               <div className="flex gap-2">
-                <button className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-700">Filter</button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 flex items-center gap-2">
+                <button onClick={showComingSoon} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-700">Filter</button>
+                <button onClick={showComingSoon} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 flex items-center gap-2">
                   <Plus size={16} /> Add New
                 </button>
               </div>
@@ -342,7 +353,7 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                         </div>
                       </td>
                       <td className="py-4 pr-4 text-right">
-                        <button className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
+                        <button onClick={showComingSoon} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
                           <ExternalLink size={16} />
                         </button>
                       </td>
