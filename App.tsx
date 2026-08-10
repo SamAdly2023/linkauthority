@@ -1745,8 +1745,8 @@ const App: React.FC = () => {
                             </button>
                             <button
                               onClick={() => {
-                                // Placeholder for single site refresh
-                                setMessageModal({ isOpen: true, title: 'Info', message: 'Single site refresh coming soon. Use Admin Re-analyze for now.', type: 'success' });
+                                fetchUser();
+                                setMessageModal({ isOpen: true, title: 'Refreshed', message: `Reloaded the latest status for ${site.url}.`, type: 'success' });
                               }}
                               className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors"
                             >
@@ -2100,7 +2100,7 @@ const App: React.FC = () => {
         )}
 
         {activeTab === Tab.Citations && (
-          <CitationsPage />
+          <CitationsPage websites={user.websites} />
         )}
 
         {activeTab === Tab.Guide && (

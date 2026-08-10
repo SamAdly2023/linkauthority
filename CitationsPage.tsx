@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { 
-  MapPin, 
-  Globe, 
-  CheckCircle2, 
-  AlertCircle, 
-  Bot, 
-  Code, 
-  Search, 
-  Plus, 
+import React, { useState, useEffect } from 'react';
+import {
+  MapPin,
+  Globe,
+  CheckCircle2,
+  AlertCircle,
+  Bot,
+  Code,
+  Search,
+  Plus,
   ExternalLink,
   RefreshCw,
   ShieldCheck,
@@ -15,9 +15,21 @@ import {
   Copy,
   Check
 } from 'lucide-react';
+import { Website } from './types';
 
-const CitationsPage: React.FC = () => {
+interface CitationsPageProps {
+  websites: Website[];
+}
+
+const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
   const [activeTab, setActiveTab] = useState<'audit' | 'builder' | 'schema'>('audit');
+  const [selectedSiteUrl, setSelectedSiteUrl] = useState('');
+
+  useEffect(() => {
+    if (!selectedSiteUrl && websites.length > 0) {
+      setSelectedSiteUrl(websites[0].url);
+    }
+  }, [websites, selectedSiteUrl]);
   const [schemaData, setSchemaData] = useState({
     name: '',
     type: 'LocalBusiness',
@@ -29,6 +41,12 @@ const CitationsPage: React.FC = () => {
     website: ''
   });
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (selectedSiteUrl) {
+      setSchemaData(prev => ({ ...prev, website: selectedSiteUrl }));
+    }
+  }, [selectedSiteUrl]);
 
   const generateSchema = () => {
     const schema = {
@@ -94,6 +112,29 @@ const CitationsPage: React.FC = () => {
             Schema Gen
           </button>
         </div>
+      </div>
+
+      {/* Website Selector */}
+      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+        <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl shrink-0">
+          <Globe size={18} />
+        </div>
+        {websites.length > 0 ? (
+          <div className="flex-1 min-w-0">
+            <label className="block text-[11px] text-slate-500 font-bold uppercase tracking-wider mb-1">Website</label>
+            <select
+              value={selectedSiteUrl}
+              onChange={(e) => setSelectedSiteUrl(e.target.value)}
+              className="w-full max-w-md bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-sm focus:border-blue-500 outline-none cursor-pointer"
+            >
+              {websites.map(w => (
+                <option key={w.id} value={w.url}>{w.url}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <p className="text-slate-400 text-sm">Add a website on <strong>My Websites</strong> to see citation and AI-presence data for it here.</p>
+        )}
       </div>
 
       {/* AI Assistant Audit Section */}

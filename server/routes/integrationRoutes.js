@@ -141,6 +141,37 @@ module.exports = app => {
     }
   });
 
+  // Live account/connection stats for the WordPress plugin's admin dashboard page.
+  app.get('/api/integration/status', async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.status(400).send({ error: 'Token is required' });
+
+    try {
+      const site = await getWebsiteByToken(token);
+      if (!site) return res.status(404).send({ error: 'Invalid token' });
+
+      const activeSnap = await db.collection('websites').where('isActive', '==', true).get();
+      const activePartnerCount = activeSnap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(s => s.ownerId !== site.ownerId).length;
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.send({
+        url: site.url,
+        isActive: !!site.isActive,
+        isVerified: !!site.isVerified,
+        domainAuthority: site.domainAuthority || 0,
+        category: site.category || null,
+        activePartnerCount,
+        pluginConnectedAt: site.pluginConnectedAt || null,
+        pluginLastPing: site.pluginLastPing || null
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ error: 'Failed to retrieve status' });
+    }
+  });
+
   // Generates the installable WordPress plugin .zip for a given website (owner-only).
   app.get('/api/wp/generate-plugin/:websiteId', requireLogin, async (req, res) => {
     try {
@@ -154,8 +185,8 @@ module.exports = app => {
       const phpCode = `<?php
 /**
  * Plugin Name: LinkAuthority Business Partners
- * Description: Connects this site to the LinkAuthority network and keeps a live "Business Partners" page of dofollow links to currently active partner sites.
- * Version: 2.0
+ * Description: Connects this site to the LinkAuthority network, syncs a live "Business Partners" page of dofollow links, and gives you an admin dashboard with connection status and stats.
+ * Version: 3.0
  * Author: LinkAuthority
  */
 
@@ -165,6 +196,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'LINKAUTHORITY_TOKEN', '${website.verificationToken}' );
 define( 'LINKAUTHORITY_API_BASE', '${baseUrl}/api/integration' );
+define( 'LINKAUTHORITY_APP_URL', '${baseUrl}' );
 
 function linkauthority_refresh_partners() {
     $response = wp_remote_get( LINKAUTHORITY_API_BASE . '/partners?token=' . LINKAUTHORITY_TOKEN, array( 'timeout' => 10 ) );
@@ -180,16 +212,28 @@ function linkauthority_refresh_partners() {
     return false;
 }
 
+function linkauthority_connect() {
+    return wp_remote_post( LINKAUTHORITY_API_BASE . '/connect', array(
+        'timeout' => 10,
+        'body'    => array( 'token' => LINKAUTHORITY_TOKEN ),
+    ) );
+}
+
+function linkauthority_get_status() {
+    $response = wp_remote_get( LINKAUTHORITY_API_BASE . '/status?token=' . LINKAUTHORITY_TOKEN, array( 'timeout' => 10 ) );
+    if ( is_wp_error( $response ) ) {
+        return false;
+    }
+    $data = json_decode( wp_remote_retrieve_body( $response ), true );
+    return is_array( $data ) ? $data : false;
+}
+
 register_activation_hook( __FILE__, 'linkauthority_activate' );
 function linkauthority_activate() {
     // Cache the token in an option so uninstall.php (which runs without this file loaded) can read it.
     update_option( 'linkauthority_token_cache', LINKAUTHORITY_TOKEN );
 
-    wp_remote_post( LINKAUTHORITY_API_BASE . '/connect', array(
-        'timeout' => 10,
-        'body'    => array( 'token' => LINKAUTHORITY_TOKEN ),
-    ) );
-
+    linkauthority_connect();
     linkauthority_refresh_partners();
 
     if ( null === get_page_by_path( 'business-partners' ) ) {
@@ -221,18 +265,38 @@ add_action( 'linkauthority_cron_refresh', 'linkauthority_refresh_partners' );
 add_shortcode( 'linkauthority_partners', 'linkauthority_render_partners' );
 function linkauthority_render_partners() {
     $partners = get_option( 'linkauthority_partners', array() );
-    if ( empty( $partners ) ) {
-        return '<p>No active partners listed yet.</p>';
-    }
 
-    $html = '<div class="linkauthority-partners-silo" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">';
-    foreach ( $partners as $partner ) {
-        $html .= '<div class="partner-card" style="border:1px solid #ddd; padding:20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.05); font-family:sans-serif; background:#fff;">';
-        $html .= '<h3 style="margin-top:0; color:#333;">' . esc_html( $partner['title'] ) . '</h3>';
-        $html .= '<p style="color:#666; font-size:14px; line-height:1.5;">' . esc_html( $partner['description'] ) . '</p>';
-        $html .= '<a href="' . esc_url( $partner['url'] ) . '" rel="dofollow" target="_blank" style="display:inline-block; background:#0073aa; color:#fff; padding:8px 16px; text-decoration:none; border-radius:4px; font-weight:bold; font-size:14px;">Visit Website</a>';
+    $html = '<div class="linkauthority-partners-silo">';
+    $html .= '<style>
+        .linkauthority-partners-silo{--la-blue:#2563eb;--la-blue-dark:#1d4ed8;--la-ink:#0f172a;--la-sub:#64748b;--la-border:#e5e7eb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+        .linkauthority-partners-silo .la-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem;margin:0;}
+        .linkauthority-partners-silo .la-card{position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:1.5rem;border-radius:16px;border:1px solid var(--la-border);background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+        .linkauthority-partners-silo .la-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px -8px rgba(37,99,235,.18);border-color:#c7d7fe;}
+        .linkauthority-partners-silo .la-card h3{margin:0 0 .5rem;font-size:1.05rem;font-weight:700;color:var(--la-ink);line-height:1.3;}
+        .linkauthority-partners-silo .la-card p{margin:0 0 1.25rem;font-size:.875rem;line-height:1.55;color:var(--la-sub);}
+        .linkauthority-partners-silo .la-btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;background:var(--la-blue);color:#fff !important;padding:.6rem 1rem;border-radius:10px;text-decoration:none !important;font-weight:600;font-size:.85rem;transition:background .15s ease;align-self:flex-start;}
+        .linkauthority-partners-silo .la-btn:hover{background:var(--la-blue-dark);}
+        .linkauthority-partners-silo .la-empty{padding:2rem;text-align:center;border:1px dashed var(--la-border);border-radius:16px;color:var(--la-sub);font-size:.9rem;}
+        .linkauthority-partners-silo .la-footer{margin-top:1.25rem;text-align:right;font-size:.75rem;color:#94a3b8;}
+        .linkauthority-partners-silo .la-footer a{color:var(--la-blue);text-decoration:none;font-weight:600;}
+        @media (max-width:480px){.linkauthority-partners-silo .la-grid{grid-template-columns:1fr;}}
+    </style>';
+
+    if ( empty( $partners ) ) {
+        $html .= '<div class="la-empty">No active partners listed yet. Check back soon as more sites join the network.</div>';
+    } else {
+        $html .= '<div class="la-grid">';
+        foreach ( $partners as $partner ) {
+            $html .= '<div class="la-card">';
+            $html .= '<div><h3>' . esc_html( $partner['title'] ) . '</h3>';
+            $html .= '<p>' . esc_html( $partner['description'] ) . '</p></div>';
+            $html .= '<a class="la-btn" href="' . esc_url( $partner['url'] ) . '" rel="dofollow" target="_blank">Visit Website &rarr;</a>';
+            $html .= '</div>';
+        }
         $html .= '</div>';
     }
+
+    $html .= '<div class="la-footer">Powered by <a href="' . esc_url( LINKAUTHORITY_APP_URL ) . '" target="_blank">LinkAuthority</a></div>';
     $html .= '</div>';
     return $html;
 }
@@ -252,6 +316,130 @@ function linkauthority_rest_update( WP_REST_Request $request ) {
     }
     $success = linkauthority_refresh_partners();
     return new WP_REST_Response( array( 'success' => $success ), $success ? 200 : 500 );
+}
+
+/* ------------------------------------------------------------------------
+ * Admin Dashboard
+ * ---------------------------------------------------------------------- */
+
+add_action( 'admin_menu', function () {
+    add_menu_page(
+        'LinkAuthority',
+        'LinkAuthority',
+        'manage_options',
+        'linkauthority',
+        'linkauthority_render_dashboard',
+        'dashicons-admin-links',
+        58
+    );
+} );
+
+add_action( 'admin_post_linkauthority_refresh', function () {
+    check_admin_referer( 'linkauthority_refresh_action' );
+    linkauthority_connect();
+    linkauthority_refresh_partners();
+    wp_safe_redirect( add_query_arg( 'la_refreshed', '1', admin_url( 'admin.php?page=linkauthority' ) ) );
+    exit;
+} );
+
+function linkauthority_render_dashboard() {
+    $status = linkauthority_get_status();
+    $partners_page = get_page_by_path( 'business-partners' );
+    $page_url = $partners_page ? get_permalink( $partners_page ) : home_url( '/business-partners/' );
+    $refresh_url = wp_nonce_url( admin_url( 'admin-post.php?action=linkauthority_refresh' ), 'linkauthority_refresh_action' );
+    $connected = $status && $status['isActive'];
+    ?>
+    <div class="wrap la-dash">
+        <style>
+            .la-dash{--la-blue:#2563eb;--la-blue-dark:#1d4ed8;--la-ink:#0f172a;--la-sub:#64748b;--la-border:#e5e7eb;--la-bg:#f8fafc;max-width:1000px;}
+            .la-dash .la-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;background:linear-gradient(135deg,#1d4ed8,#4338ca);border-radius:20px;padding:2rem;color:#fff;margin:1.25rem 0;}
+            .la-dash .la-header h1{margin:0 0 .35rem;font-size:1.6rem;color:#fff;font-weight:800;}
+            .la-dash .la-header p{margin:0;color:#dbeafe;font-size:.9rem;max-width:520px;}
+            .la-dash .la-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1rem;border-radius:999px;font-weight:700;font-size:.8rem;white-space:nowrap;}
+            .la-dash .la-pill.on{background:rgba(34,197,94,.18);color:#bbf7d0;}
+            .la-dash .la-pill.off{background:rgba(248,113,113,.18);color:#fecaca;}
+            .la-dash .la-pill .dot{width:8px;height:8px;border-radius:50%;background:currentColor;}
+            .la-dash .la-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem;}
+            .la-dash .la-stat{background:#fff;border:1px solid var(--la-border);border-radius:16px;padding:1.25rem 1.5rem;}
+            .la-dash .la-stat .label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--la-sub);margin-bottom:.4rem;}
+            .la-dash .la-stat .value{font-size:1.7rem;font-weight:800;color:var(--la-ink);}
+            .la-dash .la-panel{background:#fff;border:1px solid var(--la-border);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;}
+            .la-dash .la-panel h2{margin:0 0 1rem;font-size:1rem;font-weight:700;color:var(--la-ink);}
+            .la-dash .la-actions{display:flex;gap:.75rem;flex-wrap:wrap;}
+            .la-dash .la-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:10px;font-weight:600;font-size:.85rem;text-decoration:none;border:1px solid transparent;cursor:pointer;}
+            .la-dash .la-btn-primary{background:var(--la-blue);color:#fff;}
+            .la-dash .la-btn-primary:hover{background:var(--la-blue-dark);color:#fff;}
+            .la-dash .la-btn-secondary{background:#fff;color:var(--la-ink);border-color:var(--la-border);}
+            .la-dash .la-btn-secondary:hover{background:var(--la-bg);color:var(--la-ink);}
+            .la-dash .la-notice{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:.85rem 1.1rem;border-radius:12px;margin-bottom:1.25rem;font-weight:600;font-size:.85rem;}
+            .la-dash .la-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:.85rem 1.1rem;border-radius:12px;margin-bottom:1.25rem;font-size:.85rem;}
+            .la-dash code{background:#f1f5f9;padding:.15rem .4rem;border-radius:6px;font-size:.85rem;}
+        </style>
+
+        <?php if ( isset( $_GET['la_refreshed'] ) ) : ?>
+            <div class="la-notice">Connection refreshed. Status below reflects the latest sync.</div>
+        <?php endif; ?>
+
+        <div class="la-header">
+            <div>
+                <h1>LinkAuthority</h1>
+                <p>Business partner network connection for this site.</p>
+            </div>
+            <?php if ( $connected ) : ?>
+                <span class="la-pill on"><span class="dot"></span> Connected</span>
+            <?php else : ?>
+                <span class="la-pill off"><span class="dot"></span> Not Connected</span>
+            <?php endif; ?>
+        </div>
+
+        <?php if ( ! $status ) : ?>
+            <div class="la-warn">Couldn't reach LinkAuthority just now. This can happen if your host blocks outbound requests, or the connection hasn't synced yet. Click "Refresh Connection" below to retry.</div>
+        <?php endif; ?>
+
+        <div class="la-stats">
+            <div class="la-stat">
+                <div class="label">Domain Authority</div>
+                <div class="value"><?php echo $status ? esc_html( $status['domainAuthority'] ) : '&mdash;'; ?></div>
+            </div>
+            <div class="la-stat">
+                <div class="label">Active Partners</div>
+                <div class="value"><?php echo $status ? esc_html( $status['activePartnerCount'] ) : '&mdash;'; ?></div>
+            </div>
+            <div class="la-stat">
+                <div class="label">Verification</div>
+                <div class="value" style="font-size:1.1rem;"><?php echo $status && $status['isVerified'] ? 'Verified' : 'Pending'; ?></div>
+            </div>
+            <div class="la-stat">
+                <div class="label">Last Synced</div>
+                <div class="value" style="font-size:1.1rem;">
+                    <?php
+                    $last_sync = get_option( 'linkauthority_last_sync' );
+                    echo $last_sync ? esc_html( human_time_diff( $last_sync, time() ) . ' ago' ) : 'Never';
+                    ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="la-panel">
+            <h2>Actions</h2>
+            <div class="la-actions">
+                <form method="post" action="<?php echo esc_url( $refresh_url ); ?>" style="display:inline;">
+                    <button type="submit" class="la-btn la-btn-primary">&#8635; Refresh Connection</button>
+                </form>
+                <a class="la-btn la-btn-secondary" href="<?php echo esc_url( $page_url ); ?>" target="_blank">View Business Partners Page &rarr;</a>
+                <a class="la-btn la-btn-secondary" href="<?php echo esc_url( LINKAUTHORITY_APP_URL ); ?>" target="_blank">Open LinkAuthority Dashboard &rarr;</a>
+            </div>
+        </div>
+
+        <div class="la-panel">
+            <h2>Plugin Options</h2>
+            <p style="color:var(--la-sub);font-size:.85rem;margin-top:0;">
+                The Business Partners page is created automatically at <code>/business-partners</code> and updates itself hourly, plus instantly whenever another site on the network connects or disconnects. To embed the partner grid anywhere else, use the shortcode:
+            </p>
+            <code>[linkauthority_partners]</code>
+        </div>
+    </div>
+    <?php
 }
 `;
 
