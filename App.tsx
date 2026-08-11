@@ -161,6 +161,8 @@ const App: React.FC = () => {
   const [editSiteServiceType, setEditSiteServiceType] = useState<'worldwide' | 'local'>('worldwide');
   const [editSiteCountry, setEditSiteCountry] = useState('');
   const [editSiteCity, setEditSiteCity] = useState('');
+  const [editSiteLogo, setEditSiteLogo] = useState('');
+  const [editSiteDescription, setEditSiteDescription] = useState('');
 
   // Input States for Modals
   const [purchaseSourceUrl, setPurchaseSourceUrl] = useState('');
@@ -502,7 +504,9 @@ const App: React.FC = () => {
         body: JSON.stringify({
           category: editSiteCategory,
           serviceType: editSiteServiceType,
-          location: editSiteServiceType === 'local' ? { country: editSiteCountry, city: editSiteCity } : undefined
+          location: editSiteServiceType === 'local' ? { country: editSiteCountry, city: editSiteCity } : undefined,
+          logo: editSiteLogo,
+          description: editSiteDescription
         })
       });
 
@@ -963,6 +967,39 @@ const App: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Business Logo URL</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0">
+                    {editSiteLogo ? (
+                      <img src={editSiteLogo} alt="Logo preview" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                    ) : (
+                      <Globe size={20} className="text-slate-600" />
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/logo.png"
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all"
+                    value={editSiteLogo}
+                    onChange={e => setEditSiteLogo(e.target.value)}
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 mt-2">Shown next to your site on other members' Business Partners pages.</p>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Description</label>
+                <textarea
+                  placeholder="A short description of your business, shown on other members' Business Partners pages."
+                  rows={3}
+                  maxLength={200}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all resize-none"
+                  value={editSiteDescription}
+                  onChange={e => setEditSiteDescription(e.target.value)}
+                />
+              </div>
 
               <button
                 type="submit"
@@ -1758,6 +1795,8 @@ const App: React.FC = () => {
                                 setEditSiteServiceType(site.serviceType as 'worldwide' | 'local' || 'worldwide');
                                 setEditSiteCountry(site.location?.country || '');
                                 setEditSiteCity(site.location?.city || '');
+                                setEditSiteLogo(site.logo || '');
+                                setEditSiteDescription(site.description || '');
                                 setEditSiteModal({ isOpen: true, website: site });
                               }}
                               className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors"

@@ -122,14 +122,19 @@ module.exports = app => {
       const requester = await getWebsiteByToken(token);
       if (!requester) return res.status(404).send({ error: 'Invalid token' });
 
+      // NOTE: for now this shows every other active site regardless of owner, by
+      // request, to make the network easier to validate end-to-end. Ownership-based
+      // restrictions (e.g. excluding a user's own other sites) can be reintroduced
+      // once the core flow is confirmed working.
       const snap = await db.collection('websites').where('isActive', '==', true).get();
       const partners = snap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(site => site.ownerId !== requester.ownerId && site.url)
+        .filter(site => site.id !== requester.id && site.url)
         .sort((a, b) => (b.domainAuthority || 0) - (a.domainAuthority || 0))
         .map(site => ({
           title: site.name || hostname(site.url),
-          description: site.description || 'Verified LinkAuthority partner site.',
+          description: site.description || 'A trusted business we recommend.',
+          logo: site.logo || null,
           url: site.url
         }));
 
@@ -186,7 +191,7 @@ module.exports = app => {
 /**
  * Plugin Name: LinkAuthority Business Partners
  * Description: Connects this site to the LinkAuthority network, syncs a live "Business Partners" page of dofollow links, and gives you an admin dashboard with connection status and stats.
- * Version: 3.1
+ * Version: 3.2
  * Author: LinkAuthority
  */
 
@@ -286,10 +291,14 @@ function linkauthority_render_partners() {
     $html = '<div class="linkauthority-partners-silo">';
     $html .= '<style>
         .linkauthority-partners-silo{--la-blue:#2563eb;--la-blue-dark:#1d4ed8;--la-ink:#0f172a;--la-sub:#64748b;--la-border:#e5e7eb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+        .linkauthority-partners-silo .la-intro{margin:0 0 1.5rem;font-size:.95rem;line-height:1.6;color:var(--la-sub);max-width:640px;}
         .linkauthority-partners-silo .la-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem;margin:0;}
         .linkauthority-partners-silo .la-card{position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:1.5rem;border-radius:16px;border:1px solid var(--la-border);background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
         .linkauthority-partners-silo .la-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px -8px rgba(37,99,235,.18);border-color:#c7d7fe;}
-        .linkauthority-partners-silo .la-card h3{margin:0 0 .5rem;font-size:1.05rem;font-weight:700;color:var(--la-ink);line-height:1.3;}
+        .linkauthority-partners-silo .la-card-head{display:flex;align-items:center;gap:.75rem;margin-bottom:.85rem;}
+        .linkauthority-partners-silo .la-logo{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--la-border);flex-shrink:0;background:#f8fafc;}
+        .linkauthority-partners-silo .la-logo-fallback{width:44px;height:44px;border-radius:10px;flex-shrink:0;background:var(--la-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;}
+        .linkauthority-partners-silo .la-card h3{margin:0;font-size:1.05rem;font-weight:700;color:var(--la-ink);line-height:1.3;}
         .linkauthority-partners-silo .la-card p{margin:0 0 1.25rem;font-size:.875rem;line-height:1.55;color:var(--la-sub);}
         .linkauthority-partners-silo .la-btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;background:var(--la-blue);color:#fff !important;padding:.6rem 1rem;border-radius:10px;text-decoration:none !important;font-weight:600;font-size:.85rem;transition:background .15s ease;align-self:flex-start;}
         .linkauthority-partners-silo .la-btn:hover{background:var(--la-blue-dark);}
@@ -299,21 +308,33 @@ function linkauthority_render_partners() {
         @media (max-width:480px){.linkauthority-partners-silo .la-grid{grid-template-columns:1fr;}}
     </style>';
 
+    $html .= '<p class="la-intro">We are proud to support the following businesses. Take a moment to check out what they do.</p>';
+
     if ( empty( $partners ) ) {
-        $html .= '<div class="la-empty">No active partners listed yet. Check back soon as more sites join the network.</div>';
+        $html .= '<div class="la-empty">No businesses listed yet. Check back soon.</div>';
     } else {
         $html .= '<div class="la-grid">';
         foreach ( $partners as $partner ) {
+            $title = esc_html( $partner['title'] );
             $html .= '<div class="la-card">';
-            $html .= '<div><h3>' . esc_html( $partner['title'] ) . '</h3>';
-            $html .= '<p>' . esc_html( $partner['description'] ) . '</p></div>';
-            $html .= '<a class="la-btn" href="' . esc_url( $partner['url'] ) . '" rel="dofollow" target="_blank">Visit Website &rarr;</a>';
+            $html .= '<div>';
+            $html .= '<div class="la-card-head">';
+            if ( ! empty( $partner['logo'] ) ) {
+                $html .= '<img class="la-logo" src="' . esc_url( $partner['logo'] ) . '" alt="' . esc_attr( $partner['title'] ) . ' logo" loading="lazy" width="44" height="44">';
+            } else {
+                $html .= '<span class="la-logo-fallback" aria-hidden="true">' . esc_html( mb_substr( $partner['title'], 0, 1 ) ) . '</span>';
+            }
+            $html .= '<h3>' . $title . '</h3>';
+            $html .= '</div>';
+            $html .= '<p>' . esc_html( $partner['description'] ) . '</p>';
+            $html .= '</div>';
+            $html .= '<a class="la-btn" href="' . esc_url( $partner['url'] ) . '" target="_blank" rel="noopener">Visit ' . $title . ' &rarr;</a>';
             $html .= '</div>';
         }
         $html .= '</div>';
     }
 
-    $html .= '<div class="la-footer">Powered by <a href="' . esc_url( LINKAUTHORITY_APP_URL ) . '" target="_blank">LinkAuthority</a></div>';
+    $html .= '<div class="la-footer">Site by <a href="' . esc_url( LINKAUTHORITY_APP_URL ) . '" target="_blank" rel="noopener">LinkAuthority</a></div>';
     $html .= '</div>';
     return $html;
 }

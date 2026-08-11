@@ -192,7 +192,7 @@ module.exports = app => {
 
   // Update Website Details
   app.put('/api/websites/:id', requireLogin, async (req, res) => {
-    const { category, description, serviceType, location } = req.body;
+    const { category, description, serviceType, location, logo } = req.body;
 
     try {
       const website = await getWebsiteById(req.params.id);
@@ -204,6 +204,7 @@ module.exports = app => {
       if (description !== undefined) website.description = description;
       if (serviceType) website.serviceType = serviceType;
       if (location) website.location = location;
+      if (logo !== undefined) website.logo = logo;
 
       await website.save();
       res.send(website);

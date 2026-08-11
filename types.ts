@@ -21,6 +21,7 @@ export interface Website {
   url: string;
   name?: string;
   description?: string;
+  logo?: string;
   domainAuthority: number;
   category: string;
   serviceType?: 'local' | 'worldwide';
