@@ -19,7 +19,8 @@ import {
   Twitter,
   Youtube,
   MessageCircle,
-  Mail
+  Mail,
+  Plug
 } from 'lucide-react';
 import ParticleNetwork from './ParticleNetwork';
 import Testimonials from './Testimonials';
@@ -185,10 +186,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               title="Niche Filtering"
               description="Drill down by specific vertical, language, and estimated traffic to find the perfect link partner."
             />
-            <FeatureCard 
-              icon={Zap}
-              title="Instant Indexing"
-              description="Our premium indexer ensures Google sees your new backlinks within hours, not weeks."
+            <FeatureCard
+              icon={Plug}
+              title="One-Click WordPress Plugin"
+              description="Install our plugin and you're listed automatically — no manual requests. It builds a live Business Partners page on your site and keeps it in sync in real time."
             />
           </div>
         </div>
