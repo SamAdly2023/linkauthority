@@ -58,24 +58,47 @@ import PricingSection from './PricingSection';
 import AboutUs from './AboutUs';
 import ContactUs from './ContactUs';
 import { auth, loginWithGoogle, logoutUser } from './firebase';
-import { getRedirectResult } from 'firebase/auth';
+import { getRedirectResult, onIdTokenChanged } from 'firebase/auth';
 
 // Intercept window.fetch to attach Firebase auth ID Token automatically
+const applyAuthHeader = (init: any, token: string) => {
+  init.headers = init.headers || {};
+  if (init.headers instanceof Headers) {
+    init.headers.set('Authorization', `Bearer ${token}`);
+  } else if (Array.isArray(init.headers)) {
+    init.headers.push(['Authorization', `Bearer ${token}`]);
+  } else {
+    (init.headers as any)['Authorization'] = `Bearer ${token}`;
+  }
+};
+
 const originalFetch = window.fetch;
 window.fetch = async (input, init) => {
+  const isApiCall = typeof input === 'string' && input.startsWith('/api/');
   const token = localStorage.getItem('firebaseToken');
-  if (token && typeof input === 'string' && input.startsWith('/api/')) {
+  if (token && isApiCall) {
     init = init || {};
-    init.headers = init.headers || {};
-    if (init.headers instanceof Headers) {
-      init.headers.set('Authorization', `Bearer ${token}`);
-    } else if (Array.isArray(init.headers)) {
-      init.headers.push(['Authorization', `Bearer ${token}`]);
-    } else {
-      (init.headers as any)['Authorization'] = `Bearer ${token}`;
+    applyAuthHeader(init, token);
+  }
+
+  const response = await originalFetch(input, init);
+
+  // Self-heal: onIdTokenChanged keeps this fresh in the background, but if a request
+  // still lands with a stale/expired token (e.g. right at the refresh boundary), force
+  // a fresh one and retry once instead of failing the action outright.
+  if (response.status === 401 && isApiCall && auth.currentUser) {
+    try {
+      const freshToken = await auth.currentUser.getIdToken(true);
+      localStorage.setItem('firebaseToken', freshToken);
+      const retryInit: any = { ...(init || {}) };
+      applyAuthHeader(retryInit, freshToken);
+      return originalFetch(input, retryInit);
+    } catch {
+      return response;
     }
   }
-  return originalFetch(input, init);
+
+  return response;
 };
 
 const App: React.FC = () => {
@@ -275,7 +298,23 @@ const App: React.FC = () => {
         setUser(null);
       }
     });
-    return () => unsubscribe();
+
+    // Firebase ID tokens expire after 1 hour. The SDK refreshes its own copy
+    // automatically in the background, but that refresh never touched the token
+    // cached in localStorage (only set once on login/initial load above), so
+    // every API call started silently 401ing an hour into any open session.
+    // onIdTokenChanged fires on that background refresh too, so just mirror it.
+    const unsubscribeToken = onIdTokenChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const token = await firebaseUser.getIdToken();
+        localStorage.setItem('firebaseToken', token);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeToken();
+    };
   }, []);
 
   useEffect(() => {
