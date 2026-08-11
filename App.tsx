@@ -42,8 +42,9 @@ import {
   MessageCircle,
   Trash2,
   Plug,
+  Eye,
 } from 'lucide-react';
-import { Tab, User, Website, Transaction, AIReport } from './types';
+import { Tab, User, Website, Transaction, AIReport, VisitorStat } from './types';
 import { getSEOAdvice } from './services/geminiService';
 import TermsOfService from './TermsOfService';
 import PrivacyPolicy from './PrivacyPolicy';
@@ -110,6 +111,7 @@ const App: React.FC = () => {
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
   const [adminWebsites, setAdminWebsites] = useState<Website[]>([]);
   const [adminTransactions, setAdminTransactions] = useState<Transaction[]>([]);
+  const [adminVisitors, setAdminVisitors] = useState<VisitorStat[]>([]);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [addPointsModal, setAddPointsModal] = useState<{ isOpen: boolean, user: any | null }>({ isOpen: false, user: null });
   const [pointsToAdd, setPointsToAdd] = useState<number>(0);
@@ -371,15 +373,17 @@ const App: React.FC = () => {
 
   const fetchAdminData = async () => {
     try {
-      const [usersRes, sitesRes, txRes] = await Promise.all([
+      const [usersRes, sitesRes, txRes, visitorsRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch('/api/admin/websites'),
-        fetch('/api/admin/transactions')
+        fetch('/api/admin/transactions'),
+        fetch('/api/admin/visitors')
       ]);
 
       if (usersRes.ok) setAdminUsers(await usersRes.json());
       if (sitesRes.ok) setAdminWebsites(await sitesRes.json());
       if (txRes.ok) setAdminTransactions(await txRes.json());
+      if (visitorsRes.ok) setAdminVisitors(await visitorsRes.json());
     } catch (err) {
       console.error("Failed to fetch admin data", err);
     }
@@ -1363,6 +1367,7 @@ const App: React.FC = () => {
           ) : (
             <>
               <SidebarItem tab={Tab.AdminAnalytics} icon={BarChart2} label="Analytics" />
+              <SidebarItem tab={Tab.AdminVisitors} icon={Eye} label="Visitors" />
               <SidebarItem tab={Tab.AdminUsers} icon={Users} label="All Users" />
               <SidebarItem tab={Tab.AdminWebsites} icon={Globe} label="All Websites" />
               <SidebarItem tab={Tab.AdminTransactions} icon={FileText} label="All Transactions" />
@@ -2344,6 +2349,75 @@ const App: React.FC = () => {
         {/* Admin Tabs */}
         {activeTab === Tab.AdminAnalytics && (
           <AdminAnalytics users={adminUsers} websites={adminWebsites} transactions={adminTransactions} />
+        )}
+
+        {activeTab === Tab.AdminVisitors && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm mb-1">Total Business Partners Page Views</p>
+                  <p className="text-3xl font-bold text-white">{adminVisitors.reduce((sum, v) => sum + (v.pageViews || 0), 0).toLocaleString()}</p>
+                </div>
+                <div className="p-4 bg-blue-500/10 text-blue-500 rounded-2xl">
+                  <Eye size={28} />
+                </div>
+              </div>
+              <div className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm mb-1">Sites Reporting Views</p>
+                  <p className="text-3xl font-bold text-white">{adminVisitors.filter(v => v.pageViews > 0).length}</p>
+                </div>
+                <div className="p-4 bg-purple-500/10 text-purple-500 rounded-2xl">
+                  <Globe size={28} />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800">
+              <h3 className="text-2xl font-bold text-white mb-2">Visitors</h3>
+              <p className="text-slate-400 text-sm mb-6">
+                Page views on each site's Business Partners page, reported by the WordPress plugin on every sync. Sites without the plugin installed won't report any data.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-500 text-sm uppercase tracking-wider">
+                      <th className="pb-4 font-semibold">Website URL</th>
+                      <th className="pb-4 font-semibold">Owner</th>
+                      <th className="pb-4 font-semibold">Plugin</th>
+                      <th className="pb-4 font-semibold text-right">Page Views</th>
+                      <th className="pb-4 font-semibold text-right">Last Synced</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50">
+                    {adminVisitors.map((v: any) => (
+                      <tr key={v._id} className="hover:bg-slate-800/30">
+                        <td className="py-4 text-white font-medium">{v.url}</td>
+                        <td className="py-4 text-slate-400">{v.owner?.name || 'Unknown'}</td>
+                        <td className="py-4">
+                          {v.isActive ? (
+                            <span className="px-2 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold rounded uppercase">Active</span>
+                          ) : (
+                            <span className="px-2 py-1 bg-slate-800 text-slate-500 text-xs font-bold rounded uppercase">Inactive</span>
+                          )}
+                        </td>
+                        <td className="py-4 text-right text-xl font-bold text-blue-400">{v.pageViews.toLocaleString()}</td>
+                        <td className="py-4 text-right text-slate-400 text-sm">
+                          {v.pageViewsLastSync ? new Date(v.pageViewsLastSync._seconds ? v.pageViewsLastSync._seconds * 1000 : v.pageViewsLastSync).toLocaleString() : 'Never'}
+                        </td>
+                      </tr>
+                    ))}
+                    {adminVisitors.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-slate-500">No websites yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === Tab.AdminUsers && (

@@ -1,4 +1,14 @@
 
+export interface VisitorStat {
+  id: string;
+  _id?: string;
+  url: string;
+  isActive: boolean;
+  pageViews: number;
+  pageViewsLastSync: string | null;
+  owner: { name: string; email: string };
+}
+
 export interface User {
   id: string;
   _id?: string;
@@ -66,6 +76,7 @@ export enum Tab {
   About = 'about',
   Contact = 'contact',
   AdminAnalytics = 'admin_analytics',
+  AdminVisitors = 'admin_visitors',
   AdminUsers = 'admin_users',
   AdminWebsites = 'admin_websites',
   AdminTransactions = 'admin_transactions',

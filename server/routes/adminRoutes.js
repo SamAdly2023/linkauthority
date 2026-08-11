@@ -136,6 +136,32 @@ module.exports = app => {
     }
   });
 
+  // Get Visitor Stats (Business Partners page views, reported by the WordPress plugin)
+  app.get('/api/admin/visitors', requireAdmin, async (req, res) => {
+    try {
+      const websitesSnap = await db.collection('websites').get();
+      const visitors = [];
+      for (const doc of websitesSnap.docs) {
+        const data = doc.data();
+        const ownerDoc = await db.collection('users').doc(data.ownerId).get();
+        const owner = ownerDoc.exists ? { name: ownerDoc.data().name, email: ownerDoc.data().email } : { name: 'Unknown', email: 'Unknown' };
+        visitors.push({
+          id: doc.id,
+          _id: doc.id,
+          url: data.url,
+          isActive: !!data.isActive,
+          pageViews: data.pageViews || 0,
+          pageViewsLastSync: data.pageViewsLastSync || null,
+          owner
+        });
+      }
+      visitors.sort((a, b) => b.pageViews - a.pageViews);
+      res.send(visitors);
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  });
+
   // Verify Website
   app.post('/api/admin/websites/verify', requireAdmin, async (req, res) => {
     const { websiteId } = req.body;

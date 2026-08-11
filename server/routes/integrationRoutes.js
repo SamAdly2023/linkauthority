@@ -115,12 +115,25 @@ module.exports = app => {
   // Public directory endpoint the plugin polls (and the app can push-trigger) for the
   // "Business Partners" page: every currently active site on the platform, excluding the caller.
   app.get('/api/integration/partners', async (req, res) => {
-    const { token } = req.query;
+    const { token, views } = req.query;
     if (!token) return res.status(400).send({ error: 'Token is required' });
 
     try {
       const requester = await getWebsiteByToken(token);
       if (!requester) return res.status(404).send({ error: 'Invalid token' });
+
+      // The plugin reports its cumulative Business Partners page view count on every
+      // sync (hourly cron, activation, manual refresh) by piggybacking it onto this
+      // existing request rather than adding a separate network call.
+      if (views !== undefined) {
+        const parsedViews = parseInt(views, 10);
+        if (!isNaN(parsedViews)) {
+          await db.collection('websites').doc(requester.id).update({
+            pageViews: parsedViews,
+            pageViewsLastSync: new Date()
+          });
+        }
+      }
 
       // NOTE: for now this shows every other active site regardless of owner, by
       // request, to make the network easier to validate end-to-end. Ownership-based
@@ -191,7 +204,7 @@ module.exports = app => {
 /**
  * Plugin Name: LinkAuthority Business Partners
  * Description: Connects this site to the LinkAuthority network, syncs a live "Business Partners" page of dofollow links, and gives you an admin dashboard with connection status and stats.
- * Version: 3.2
+ * Version: 4.0
  * Author: LinkAuthority
  */
 
@@ -202,9 +215,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'LINKAUTHORITY_TOKEN', '${website.verificationToken}' );
 define( 'LINKAUTHORITY_API_BASE', '${baseUrl}/api/integration' );
 define( 'LINKAUTHORITY_APP_URL', '${baseUrl}' );
+define( 'LINKAUTHORITY_META_DESCRIPTION', 'Businesses we recommend and support. Check out what they do and visit their websites.' );
 
 function linkauthority_refresh_partners() {
-    $response = wp_remote_get( LINKAUTHORITY_API_BASE . '/partners?token=' . LINKAUTHORITY_TOKEN, array( 'timeout' => 10 ) );
+    $views = (int) get_option( 'linkauthority_page_views', 0 );
+    $url = LINKAUTHORITY_API_BASE . '/partners?token=' . LINKAUTHORITY_TOKEN . '&views=' . $views;
+    $response = wp_remote_get( $url, array( 'timeout' => 10 ) );
     if ( is_wp_error( $response ) ) {
         return false;
     }
@@ -216,6 +232,17 @@ function linkauthority_refresh_partners() {
         return true;
     }
     return false;
+}
+
+// Counts real front-end visits to the Business Partners page (skips admin/editor
+// views) and reports the running total back to LinkAuthority on the next sync.
+add_action( 'template_redirect', 'linkauthority_track_pageview' );
+function linkauthority_track_pageview() {
+    if ( is_admin() || ! is_page( 'business-partners' ) ) {
+        return;
+    }
+    $views = (int) get_option( 'linkauthority_page_views', 0 );
+    update_option( 'linkauthority_page_views', $views + 1 );
 }
 
 // Some themes/page builders render post_content directly without ever running it
@@ -230,7 +257,65 @@ function linkauthority_sync_page_content() {
     wp_update_post( array(
         'ID'           => $page->ID,
         'post_content' => linkauthority_render_partners(),
+        'post_excerpt' => LINKAUTHORITY_META_DESCRIPTION,
     ) );
+}
+
+// SEO: structured data + Open Graph/Twitter tags for the Business Partners page.
+add_action( 'wp_head', 'linkauthority_seo_head' );
+function linkauthority_seo_head() {
+    if ( ! is_page( 'business-partners' ) ) {
+        return;
+    }
+
+    $page_title = get_the_title();
+    $page_url = get_permalink();
+
+    echo "\n<!-- LinkAuthority SEO -->\n";
+    echo '<meta property="og:type" content="website">' . "\n";
+    echo '<meta property="og:title" content="' . esc_attr( $page_title ) . '">' . "\n";
+    echo '<meta property="og:description" content="' . esc_attr( LINKAUTHORITY_META_DESCRIPTION ) . '">' . "\n";
+    echo '<meta property="og:url" content="' . esc_url( $page_url ) . '">' . "\n";
+    echo '<meta name="twitter:card" content="summary">' . "\n";
+    echo '<meta name="twitter:title" content="' . esc_attr( $page_title ) . '">' . "\n";
+    echo '<meta name="twitter:description" content="' . esc_attr( LINKAUTHORITY_META_DESCRIPTION ) . '">' . "\n";
+
+    $partners = get_option( 'linkauthority_partners', array() );
+    if ( ! empty( $partners ) ) {
+        $items = array();
+        $position = 1;
+        foreach ( $partners as $partner ) {
+            if ( empty( $partner['title'] ) || empty( $partner['url'] ) ) {
+                continue;
+            }
+            $org = array(
+                '@type' => 'Organization',
+                'name'  => $partner['title'],
+                'url'   => $partner['url'],
+            );
+            if ( ! empty( $partner['logo'] ) ) {
+                $org['logo'] = $partner['logo'];
+            }
+            if ( ! empty( $partner['description'] ) ) {
+                $org['description'] = $partner['description'];
+            }
+            $items[] = array(
+                '@type'    => 'ListItem',
+                'position' => $position,
+                'item'     => $org,
+            );
+            $position++;
+        }
+        if ( ! empty( $items ) ) {
+            $schema = array(
+                '@context'        => 'https://schema.org',
+                '@type'           => 'ItemList',
+                'name'            => $page_title,
+                'itemListElement' => $items,
+            );
+            echo '<script type="application/ld+json">' . wp_json_encode( $schema ) . '</script>' . "\n";
+        }
+    }
 }
 
 function linkauthority_connect() {
@@ -260,6 +345,7 @@ function linkauthority_activate() {
             'post_title'   => 'Business Partners',
             'post_name'    => 'business-partners',
             'post_content' => '[linkauthority_partners]',
+            'post_excerpt' => LINKAUTHORITY_META_DESCRIPTION,
             'post_status'  => 'publish',
             'post_type'    => 'page',
         ) );
@@ -442,6 +528,10 @@ function linkauthority_render_dashboard() {
             <div class="la-stat">
                 <div class="label">Active Partners</div>
                 <div class="value"><?php echo $status ? esc_html( $status['activePartnerCount'] ) : '&mdash;'; ?></div>
+            </div>
+            <div class="la-stat">
+                <div class="label">Page Views</div>
+                <div class="value"><?php echo esc_html( (int) get_option( 'linkauthority_page_views', 0 ) ); ?></div>
             </div>
             <div class="la-stat">
                 <div class="label">Verification</div>
