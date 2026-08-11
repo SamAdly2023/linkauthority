@@ -186,7 +186,7 @@ module.exports = app => {
 /**
  * Plugin Name: LinkAuthority Business Partners
  * Description: Connects this site to the LinkAuthority network, syncs a live "Business Partners" page of dofollow links, and gives you an admin dashboard with connection status and stats.
- * Version: 3.0
+ * Version: 3.1
  * Author: LinkAuthority
  */
 
@@ -207,9 +207,25 @@ function linkauthority_refresh_partners() {
     if ( is_array( $data ) ) {
         update_option( 'linkauthority_partners', $data );
         update_option( 'linkauthority_last_sync', time() );
+        linkauthority_sync_page_content();
         return true;
     }
     return false;
+}
+
+// Some themes/page builders render post_content directly without ever running it
+// through the_content (which is what actually executes shortcodes). To work
+// reliably everywhere, write the rendered HTML straight into the page too instead
+// of relying solely on the [linkauthority_partners] shortcode being processed.
+function linkauthority_sync_page_content() {
+    $page = get_page_by_path( 'business-partners' );
+    if ( ! $page ) {
+        return;
+    }
+    wp_update_post( array(
+        'ID'           => $page->ID,
+        'post_content' => linkauthority_render_partners(),
+    ) );
 }
 
 function linkauthority_connect() {
