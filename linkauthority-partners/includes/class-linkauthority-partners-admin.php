@@ -13,6 +13,7 @@ class LinkAuthority_Partners_Admin {
 
 	public function init() {
 		add_action( 'admin_menu', array( $this, 'add_menu' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_styles' ) );
 		add_action( 'admin_notices', array( $this, 'setup_notice' ) );
 		add_action( 'admin_post_linkauthority_partners_create_page', array( $this, 'handle_create_page' ) );
 		add_action( 'admin_post_linkauthority_partners_refresh', array( $this, 'handle_refresh' ) );
@@ -48,13 +49,31 @@ class LinkAuthority_Partners_Admin {
 	 */
 	public function add_menu() {
 		add_menu_page(
-			__( 'LinkAuthority Business Partners', 'linkauthority-partners' ),
+			__( 'LinkAuthority Partners', 'linkauthority-partners' ),
 			__( 'LinkAuthority', 'linkauthority-partners' ),
 			'manage_options',
 			self::MENU_SLUG,
 			array( $this, 'render_page' ),
 			'dashicons-admin-links',
 			58
+		);
+	}
+
+	/**
+	 * Loads the admin styles on this plugin's screen only.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	public function enqueue_styles( $hook ) {
+		if ( 'toplevel_page_' . self::MENU_SLUG !== $hook ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'linkauthority-partners-admin',
+			LINKAUTHORITY_PARTNERS_PLUGIN_URL . 'assets/css/admin.css',
+			array(),
+			LINKAUTHORITY_PARTNERS_VERSION
 		);
 	}
 
@@ -81,7 +100,7 @@ class LinkAuthority_Partners_Admin {
 			wp_kses(
 				sprintf(
 					/* translators: %s: link to the plugin's settings screen. */
-					__( 'LinkAuthority Business Partners needs your site token before it can list anything. <a href="%s">Add it now</a>.', 'linkauthority-partners' ),
+					__( 'LinkAuthority Partners needs your site token before it can list anything. <a href="%s">Add it now</a>.', 'linkauthority-partners' ),
 					esc_url( self::page_url() )
 				),
 				array( 'a' => array( 'href' => array() ) )
@@ -183,9 +202,21 @@ class LinkAuthority_Partners_Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only notice key from our own redirect.
 		$notice_key = isset( $_GET['linkauthority_partners_notice'] ) ? sanitize_key( wp_unslash( $_GET['linkauthority_partners_notice'] ) ) : '';
 		$notice     = $this->notice_for( $notice_key );
+		$dashboard = LINKAUTHORITY_PARTNERS_API_BASE;
+
+		if ( '' === $settings['token'] ) {
+			$state_class = 'is-off';
+			$state_label = __( 'Not connected', 'linkauthority-partners' );
+		} elseif ( ! empty( $status['isActive'] ) ) {
+			$state_class = 'is-live';
+			$state_label = __( 'Connected and listed', 'linkauthority-partners' );
+		} else {
+			$state_class = 'is-pending';
+			$state_label = __( 'Token saved, not listed yet', 'linkauthority-partners' );
+		}
 		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'LinkAuthority Business Partners', 'linkauthority-partners' ); ?></h1>
+		<div class="wrap lap-admin">
+			<h1><?php esc_html_e( 'LinkAuthority Partners', 'linkauthority-partners' ); ?></h1>
 
 			<?php if ( ! empty( $notice ) ) : ?>
 				<div class="notice notice-<?php echo esc_attr( $notice[0] ); ?> is-dismissible">
@@ -195,76 +226,75 @@ class LinkAuthority_Partners_Admin {
 
 			<?php settings_errors( LINKAUTHORITY_PARTNERS_OPT_SETTINGS ); ?>
 
-			<h2><?php esc_html_e( 'Connection', 'linkauthority-partners' ); ?></h2>
-			<table class="widefat striped" style="max-width:640px">
-				<tbody>
-					<tr>
-						<td><strong><?php esc_html_e( 'Status', 'linkauthority-partners' ); ?></strong></td>
-						<td>
-							<?php
-							if ( '' === $settings['token'] ) {
-								esc_html_e( 'Not connected - add your site token below.', 'linkauthority-partners' );
-							} elseif ( ! empty( $status['isActive'] ) ) {
-								esc_html_e( 'Connected and listed.', 'linkauthority-partners' );
-							} else {
-								esc_html_e( 'Token saved, but this site is not listed yet.', 'linkauthority-partners' );
-							}
-							?>
-						</td>
-					</tr>
-					<tr>
-						<td><strong><?php esc_html_e( 'Businesses listed', 'linkauthority-partners' ); ?></strong></td>
-						<td><?php echo esc_html( (string) ( is_array( $partners ) ? count( $partners ) : 0 ) ); ?></td>
-					</tr>
-					<tr>
-						<td><strong><?php esc_html_e( 'Last sync', 'linkauthority-partners' ); ?></strong></td>
-						<td>
-							<?php
-							if ( $last_sync ) {
-								printf(
-									/* translators: %s: human-readable time difference, e.g. "5 mins". */
-									esc_html__( '%s ago', 'linkauthority-partners' ),
-									esc_html( human_time_diff( $last_sync, time() ) )
-								);
-							} else {
-								esc_html_e( 'Never', 'linkauthority-partners' );
-							}
-							?>
-						</td>
-					</tr>
-					<tr>
-						<td><strong><?php esc_html_e( 'Partners page', 'linkauthority-partners' ); ?></strong></td>
-						<td>
-							<?php if ( $page instanceof WP_Post ) : ?>
-								<a href="<?php echo esc_url( get_permalink( $page ) ); ?>"><?php echo esc_html( get_permalink( $page ) ); ?></a>
-							<?php else : ?>
-								<?php esc_html_e( 'Not created yet.', 'linkauthority-partners' ); ?>
-							<?php endif; ?>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+			<div class="lap-card">
+				<h2><?php esc_html_e( 'Connection', 'linkauthority-partners' ); ?></h2>
+				<p class="lap-card-intro"><?php esc_html_e( 'How this site currently stands on the LinkAuthority network.', 'linkauthority-partners' ); ?></p>
 
-			<p style="margin-top:1em">
-				<?php if ( ! $page instanceof WP_Post ) : ?>
-					<a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=linkauthority_partners_create_page' ), 'linkauthority_partners_create_page' ) ); ?>">
-						<?php esc_html_e( 'Create the Business Partners page', 'linkauthority-partners' ); ?>
+				<dl class="lap-facts">
+					<dt><?php esc_html_e( 'Status', 'linkauthority-partners' ); ?></dt>
+					<dd><span class="lap-pill <?php echo esc_attr( $state_class ); ?>"><?php echo esc_html( $state_label ); ?></span></dd>
+
+					<dt><?php esc_html_e( 'Businesses listed', 'linkauthority-partners' ); ?></dt>
+					<dd><?php echo esc_html( (string) ( is_array( $partners ) ? count( $partners ) : 0 ) ); ?></dd>
+
+					<dt><?php esc_html_e( 'Last sync', 'linkauthority-partners' ); ?></dt>
+					<dd>
+						<?php
+						if ( $last_sync ) {
+							printf(
+								/* translators: %s: human-readable time difference, e.g. "5 mins". */
+								esc_html__( '%s ago', 'linkauthority-partners' ),
+								esc_html( human_time_diff( $last_sync, time() ) )
+							);
+						} else {
+							esc_html_e( 'Never', 'linkauthority-partners' );
+						}
+						?>
+					</dd>
+
+					<dt><?php esc_html_e( 'Partners page', 'linkauthority-partners' ); ?></dt>
+					<dd>
+						<?php if ( $page instanceof WP_Post ) : ?>
+							<a href="<?php echo esc_url( get_permalink( $page ) ); ?>"><?php echo esc_html( get_permalink( $page ) ); ?></a>
+						<?php else : ?>
+							<?php esc_html_e( 'Not created yet', 'linkauthority-partners' ); ?>
+						<?php endif; ?>
+					</dd>
+
+					<dt><?php esc_html_e( 'Your dashboard', 'linkauthority-partners' ); ?></dt>
+					<dd><a href="<?php echo esc_url( $dashboard ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $dashboard ); ?></a></dd>
+				</dl>
+
+				<p class="lap-actions">
+					<?php if ( ! $page instanceof WP_Post ) : ?>
+						<a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=linkauthority_partners_create_page' ), 'linkauthority_partners_create_page' ) ); ?>">
+							<?php esc_html_e( 'Create the Business Partners page', 'linkauthority-partners' ); ?>
+						</a>
+					<?php endif; ?>
+					<a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=linkauthority_partners_refresh' ), 'linkauthority_partners_refresh' ) ); ?>">
+						<?php esc_html_e( 'Refresh now', 'linkauthority-partners' ); ?>
 					</a>
-				<?php endif; ?>
-				<a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=linkauthority_partners_refresh' ), 'linkauthority_partners_refresh' ) ); ?>">
-					<?php esc_html_e( 'Refresh now', 'linkauthority-partners' ); ?>
-				</a>
-			</p>
+				</p>
 
-			<p class="description" style="max-width:640px">
-				<?php esc_html_e( 'You can also drop the [linkauthority_partners] shortcode onto any page or widget to show the directory there.', 'linkauthority-partners' ); ?>
-			</p>
+				<p class="lap-hint">
+					<?php
+					printf(
+						/* translators: %s: the [linkauthority_partners] shortcode. */
+						esc_html__( 'You can also drop %s onto any page or widget to show the directory there.', 'linkauthority-partners' ),
+						'<code class="lap-shortcode">[linkauthority_partners]</code>'
+					);
+					?>
+				</p>
+			</div>
 
-			<h2><?php esc_html_e( 'Settings', 'linkauthority-partners' ); ?></h2>
 			<form method="post" action="options.php">
-				<?php settings_fields( 'linkauthority_partners_settings_group' ); ?>
-				<table class="form-table" role="presentation">
-					<tr>
+				<div class="lap-card">
+					<h2><?php esc_html_e( 'Settings', 'linkauthority-partners' ); ?></h2>
+					<p class="lap-card-intro"><?php esc_html_e( 'Your site token connects this install to your LinkAuthority account.', 'linkauthority-partners' ); ?></p>
+
+					<?php settings_fields( 'linkauthority_partners_settings_group' ); ?>
+					<table class="form-table" role="presentation">
+					<tr class="lap-token-row">
 						<th scope="row">
 							<label for="linkauthority_partners_token"><?php esc_html_e( 'Site token', 'linkauthority-partners' ); ?></label>
 						</th>
@@ -276,10 +306,14 @@ class LinkAuthority_Partners_Admin {
 								name="<?php echo esc_attr( LINKAUTHORITY_PARTNERS_OPT_SETTINGS ); ?>[token]"
 								value="<?php echo esc_attr( $settings['token'] ); ?>"
 								autocomplete="off"
+								spellcheck="false"
 							>
-							<p class="description">
-								<?php esc_html_e( 'Found in your LinkAuthority dashboard under My Sites → Integration. Saving it connects this site to the network.', 'linkauthority-partners' ); ?>
+							<p class="lap-hint">
+								<?php esc_html_e( 'Open your dashboard, go to My Sites, click Integration on this site, and copy the site token. Saving it here connects the site to the network.', 'linkauthority-partners' ); ?>
 							</p>
+							<a class="button button-secondary lap-get-token" href="<?php echo esc_url( $dashboard ); ?>" target="_blank" rel="noopener">
+								<?php esc_html_e( 'Get my token from LinkAuthority', 'linkauthority-partners' ); ?>
+							</a>
 						</td>
 					</tr>
 					<tr>
@@ -313,8 +347,9 @@ class LinkAuthority_Partners_Admin {
 							</p>
 						</td>
 					</tr>
-				</table>
-				<?php submit_button(); ?>
+					</table>
+					<?php submit_button(); ?>
+				</div>
 			</form>
 		</div>
 		<?php

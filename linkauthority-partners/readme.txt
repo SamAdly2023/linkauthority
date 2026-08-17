@@ -1,10 +1,10 @@
-=== LinkAuthority Business Partners ===
-Contributors: linkauthority
+=== LinkAuthority Partners ===
+Contributors: samadly728
 Tags: backlinks, seo, link building, partners, directory
 Requires at least: 5.8
-Tested up to: 6.7
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,22 @@ Your site is marked inactive on the network and stops appearing in other members
 2. The LinkAuthority admin screen, showing connection status and the two opt-ins.
 
 == Changelog ==
+
+= 1.0.9 =
+* Redesign the admin screen and link straight through to the LinkAuthority dashboard where the site token is issued.
+
+= 1.0.8 =
+* Declare Tested up to as a major.minor branch, and drop the Domain Path header since no bundled translations ship with the plugin.
+
+= 1.0.7 =
+* Drop the duplicate Plugin URI header; the directory requires the plugin and author URIs to differ.
+
+= 1.0.6 =
+* Declare compatibility with WordPress 7.0.4.
+
+= 1.0.5 =
+* Rename to LinkAuthority Partners so the directory slug matches the text domain.
+* Set the correct WordPress.org contributor account.
 
 = 1.0.3 =
 * Namespace every function, class, constant and option under a unique `linkauthority_partners` prefix.

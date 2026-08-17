@@ -1,9 +1,8 @@
 <?php
 /**
- * Plugin Name:       LinkAuthority Business Partners
- * Plugin URI:        https://www.linkauthority.live/
+ * Plugin Name:       LinkAuthority Partners
  * Description:       Publishes a Business Partners page listing the sites you exchange links with on the LinkAuthority network, kept in sync automatically.
- * Version:           1.0.3
+ * Version:           1.0.9
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            LinkAuthority
@@ -11,14 +10,13 @@
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       linkauthority-partners
- * Domain Path:       /languages
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'LINKAUTHORITY_PARTNERS_VERSION', '1.0.3' );
+define( 'LINKAUTHORITY_PARTNERS_VERSION', '1.0.9' );
 define( 'LINKAUTHORITY_PARTNERS_PLUGIN_FILE', __FILE__ );
 define( 'LINKAUTHORITY_PARTNERS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'LINKAUTHORITY_PARTNERS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

@@ -1,0 +1,137 @@
+.lap-admin {
+	--lap-blue: #2563eb;
+	--lap-ink: #1e293b;
+	--lap-sub: #64748b;
+	--lap-border: #dcdfe4;
+	max-width: 780px;
+}
+
+.lap-card {
+	background: #fff;
+	border: 1px solid var(--lap-border);
+	border-radius: 8px;
+	padding: 20px 24px;
+	margin: 0 0 20px;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+}
+
+.lap-card h2 {
+	margin: 0 0 4px;
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--lap-ink);
+}
+
+.lap-card .lap-card-intro {
+	margin: 0 0 18px;
+	color: var(--lap-sub);
+	font-size: 13px;
+}
+
+/* Status rows */
+.lap-facts {
+	display: grid;
+	grid-template-columns: 160px 1fr;
+	gap: 10px 16px;
+	margin: 0;
+	font-size: 13px;
+}
+
+.lap-facts dt {
+	color: var(--lap-sub);
+	margin: 0;
+}
+
+.lap-facts dd {
+	margin: 0;
+	color: var(--lap-ink);
+	word-break: break-word;
+}
+
+.lap-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.8;
+}
+
+.lap-pill::before {
+	content: "";
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+.lap-pill.is-live {
+	background: #dcfce7;
+	color: #15803d;
+}
+
+.lap-pill.is-pending {
+	background: #fef3c7;
+	color: #a16207;
+}
+
+.lap-pill.is-off {
+	background: #f1f5f9;
+	color: #64748b;
+}
+
+.lap-actions {
+	margin: 20px 0 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+/* The token field is the one thing that must be filled in, so it gets the
+   emphasis and the link out to where the value actually lives. */
+.lap-token-row input[type="text"] {
+	font-family: Consolas, Monaco, monospace;
+}
+
+.lap-hint {
+	margin: 6px 0 0;
+	font-size: 12px;
+	color: var(--lap-sub);
+}
+
+.lap-get-token {
+	display: inline-block;
+	margin-top: 10px;
+}
+
+.lap-shortcode {
+	display: inline-block;
+	background: #f1f5f9;
+	border: 1px solid var(--lap-border);
+	border-radius: 4px;
+	padding: 2px 8px;
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+}
+
+.lap-admin .form-table th {
+	width: 160px;
+	padding-left: 0;
+}
+
+.lap-admin .form-table td {
+	padding-left: 0;
+}
+
+@media (max-width: 600px) {
+	.lap-facts {
+		grid-template-columns: 1fr;
+		gap: 4px 0;
+	}
+
+	.lap-facts dd {
+		margin-bottom: 10px;
+	}
+}
