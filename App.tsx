@@ -187,6 +187,13 @@ const App: React.FC = () => {
   const [editSiteCountry, setEditSiteCountry] = useState('');
   const [editSiteCity, setEditSiteCity] = useState('');
   const [editSiteLogo, setEditSiteLogo] = useState('');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyToken = (token: string, field: string) => {
+    navigator.clipboard.writeText(token);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
   const [editSiteDescription, setEditSiteDescription] = useState('');
 
   // Input States for Modals
@@ -571,9 +578,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDownloadPlugin = async (websiteId: string) => {
+  const handleDownloadPlugin = async () => {
     try {
-      const res = await fetch(`/api/wp/generate-plugin/${websiteId}`);
+      const res = await fetch('/api/wp/plugin');
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         setMessageModal({ isOpen: true, title: 'Error', message: err.error || 'Failed to download plugin. Please make sure you are logged in.', type: 'error' });
@@ -1087,17 +1094,35 @@ const App: React.FC = () => {
                   )}
                 </div>
                 <p className="text-xs text-slate-400 mb-4">
-                  Install &amp; activate our lightweight plugin. It instantly connects your site, lists you as an active partner, and creates a live <code>/business-partners</code> page with dofollow links to every other active site on the network. Deactivating or deleting the plugin automatically disconnects your site and removes your links from every other member's page.
+                  Install &amp; activate our lightweight plugin, then paste the site token below into its settings. It connects your site, lists you as an active partner, and gives you a live <code>/business-partners</code> page with dofollow links to every other active site on the network. Deactivating or deleting the plugin automatically disconnects your site and removes your links from every other member's page.
                 </p>
                 <button
-                  onClick={() => handleDownloadPlugin(domainVerificationModal.website!._id || domainVerificationModal.website!.id)}
+                  onClick={handleDownloadPlugin}
                   className="inline-flex w-full items-center justify-center bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-lg shadow-blue-500/20"
                 >
                   Download WP Plugin (.zip)
                 </button>
                 <p className="text-[11px] text-slate-500 mt-2">
-                  * Upload the .zip in Plugins &gt; Add New &gt; Upload Plugin, then activate it. Connection happens automatically&mdash;no manual verification needed.
+                  * One plugin for all your sites&mdash;download it once and reuse the same .zip everywhere. Upload it in Plugins &gt; Add New &gt; Upload Plugin, activate, then open the LinkAuthority menu in your sidebar.
                 </p>
+
+                <div className="mt-4">
+                  <label className="block text-xs text-slate-400 mb-1.5 font-medium">Site token for {domainVerificationModal.website.url}</label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-[11px] text-blue-300 font-mono break-all select-all">
+                      {domainVerificationModal.website.verificationToken}
+                    </code>
+                    <button
+                      onClick={() => copyToken(domainVerificationModal.website!.verificationToken || '', 'plugin')}
+                      className="shrink-0 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors"
+                    >
+                      {copiedField === 'plugin' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1.5">
+                    Each site has its own token &mdash; paste this one into the plugin on {domainVerificationModal.website.url}.
+                  </p>
+                </div>
                 <button
                   onClick={() => {
                     fetchUser();
@@ -1119,7 +1144,14 @@ const App: React.FC = () => {
                 <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-blue-300 break-all select-all whitespace-pre-line leading-relaxed mb-4">
                   {`<!-- Widget Container -->\n<div id="linkauthority-partners-widget"></div>\n\n<!-- LinkAuthority Widget Script -->\n<script src="https://www.linkauthority.live/widget.js" data-token="${domainVerificationModal.website.verificationToken}" async></script>`}
                 </div>
-                
+
+                <button
+                  onClick={() => copyToken(domainVerificationModal.website!.verificationToken || '', 'snippet')}
+                  className="mb-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors"
+                >
+                  {copiedField === 'snippet' ? 'Token copied' : 'Copy token only'}
+                </button>
+
                 <div className="mb-4">
                   <label className="block text-xs text-slate-400 mb-1.5 font-medium">Custom Page URL (if not /partners):</label>
                   <input

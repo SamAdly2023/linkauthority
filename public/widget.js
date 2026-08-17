@@ -50,10 +50,12 @@
         if (partners.length === 0) {
             html += '<p style="color: #64748b; font-size: 14px; margin: 0;">No businesses listed yet. Check back soon.</p>';
         } else {
-            html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">';
+            // Masonry, not a grid: descriptions vary in length and a grid would
+            // stretch every card to the tallest in its row.
+            html += '<div style="columns: 260px; column-gap: 20px;">';
             partners.forEach(function(partner) {
                 var title = escapeHtml(partner.title);
-                html += '<div class="partner-card" style="border: 1px solid #cbd5e1; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box;">';
+                html += '<div class="partner-card" style="border: 1px solid #cbd5e1; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); background: #ffffff; display: block; break-inside: avoid; -webkit-column-break-inside: avoid; margin: 0 0 20px; box-sizing: border-box;">';
                 html += '<div style="margin-bottom: 15px;">';
                 html += '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">';
                 if (partner.logo) {

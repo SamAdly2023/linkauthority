@@ -1,4 +1,6 @@
 const AdmZip = require('adm-zip');
+const fs = require('fs');
+const path = require('path');
 const requireLogin = require('../middlewares/requireLogin');
 const { db } = require('../services/firebase');
 const { broadcastRefresh } = require('../services/partnerSync');
@@ -180,7 +182,31 @@ module.exports = app => {
     }
   });
 
-  // Generates the installable WordPress plugin .zip for a given website (owner-only).
+  // The universal plugin: one build for every site, with the token entered in
+  // wp-admin after install rather than compiled in. No per-site data goes into
+  // it, so it needs no auth and can be handed out as a plain link.
+  app.get('/api/wp/plugin', (req, res) => {
+    try {
+      const pluginDir = path.resolve(__dirname, '../../linkauthority-partners');
+      if (!fs.existsSync(pluginDir)) {
+        console.error('Universal plugin directory missing at', pluginDir);
+        return res.status(500).send({ error: 'Plugin package is unavailable' });
+      }
+
+      const zip = new AdmZip();
+      zip.addLocalFolder(pluginDir, 'linkauthority-partners');
+
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename="linkauthority-partners.zip"');
+      res.send(zip.toBuffer());
+    } catch (err) {
+      console.error('Failed to package the universal plugin:', err);
+      res.status(500).send({ error: 'Failed to build the plugin package' });
+    }
+  });
+
+  // Legacy: generates a per-site plugin .zip with the token compiled in (owner-only).
+  // Superseded by /api/wp/plugin above; kept so sites still running it keep working.
   app.get('/api/wp/generate-plugin/:websiteId', requireLogin, async (req, res) => {
     try {
       const website = await getWebsiteById(req.params.websiteId);
@@ -194,7 +220,7 @@ module.exports = app => {
 /**
  * Plugin Name: LinkAuthority Business Partners
  * Description: Connects this site to the LinkAuthority network, syncs a live "Business Partners" page of dofollow links, and gives you an admin dashboard with connection status and stats.
- * Version: 4.2
+ * Version: 4.3
  * Author: LinkAuthority
  */
 
@@ -370,20 +396,24 @@ function linkauthority_partners_css() {
     return '
         .linkauthority-partners-silo{--la-blue:#2563eb;--la-blue-dark:#1d4ed8;--la-ink:#0f172a;--la-sub:#64748b;--la-border:#e5e7eb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
         .linkauthority-partners-silo .la-intro{margin:0 0 1.5rem;font-size:.95rem;line-height:1.6;color:var(--la-sub);max-width:640px;}
-        .linkauthority-partners-silo .la-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem;margin:0;}
-        .linkauthority-partners-silo .la-card{position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:1.5rem;border-radius:16px;border:1px solid var(--la-border);background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+        /* Masonry rather than a grid: descriptions vary a lot in length, and a grid
+           stretches every card to the tallest in its row, leaving dead space under
+           the short ones. Columns let each card end where its content ends. */
+        .linkauthority-partners-silo .la-grid{columns:260px;column-gap:1.25rem;margin:0;}
+        .linkauthority-partners-silo .la-card{display:block;break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;margin:0 0 1.25rem;padding:1.5rem;border-radius:16px;border:1px solid var(--la-border);background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+        .linkauthority-partners-silo p:empty{display:none;}
         .linkauthority-partners-silo .la-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px -8px rgba(37,99,235,.18);border-color:#c7d7fe;}
         .linkauthority-partners-silo .la-card-head{display:flex;align-items:center;gap:.75rem;margin-bottom:.85rem;}
         .linkauthority-partners-silo .la-logo{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--la-border);flex-shrink:0;background:#f8fafc;}
         .linkauthority-partners-silo .la-logo-fallback{width:44px;height:44px;border-radius:10px;flex-shrink:0;background:var(--la-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;}
         .linkauthority-partners-silo .la-card h3{margin:0;font-size:1.05rem;font-weight:700;color:var(--la-ink);line-height:1.3;}
         .linkauthority-partners-silo .la-card p{margin:0 0 1.25rem;font-size:.875rem;line-height:1.55;color:var(--la-sub);}
-        .linkauthority-partners-silo .la-btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;background:var(--la-blue);color:#fff !important;padding:.6rem 1rem;border-radius:10px;text-decoration:none !important;font-weight:600;font-size:.85rem;transition:background .15s ease;align-self:flex-start;}
+        .linkauthority-partners-silo .la-btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;background:var(--la-blue);color:#fff !important;padding:.6rem 1rem;border-radius:10px;text-decoration:none !important;font-weight:600;font-size:.85rem;transition:background .15s ease;}
         .linkauthority-partners-silo .la-btn:hover{background:var(--la-blue-dark);}
         .linkauthority-partners-silo .la-empty{padding:2rem;text-align:center;border:1px dashed var(--la-border);border-radius:16px;color:var(--la-sub);font-size:.9rem;}
         .linkauthority-partners-silo .la-footer{margin-top:1.25rem;text-align:right;font-size:.75rem;color:#94a3b8;}
         .linkauthority-partners-silo .la-footer a{color:var(--la-blue);text-decoration:none;font-weight:600;}
-        @media (max-width:480px){.linkauthority-partners-silo .la-grid{grid-template-columns:1fr;}}
+        @media (max-width:480px){.linkauthority-partners-silo .la-grid{columns:1;}}
     ';
 }
 
