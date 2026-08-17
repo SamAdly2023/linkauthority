@@ -1,7 +1,7 @@
-const axios = require('axios');
 const AdmZip = require('adm-zip');
 const requireLogin = require('../middlewares/requireLogin');
 const { db } = require('../services/firebase');
+const { broadcastRefresh } = require('../services/partnerSync');
 
 // Firestore helpers (kept local, matching the pattern used by the other route files)
 const getWebsiteById = async (id) => {
@@ -22,20 +22,6 @@ const hostname = (url) => {
   } catch {
     return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
   }
-};
-
-// Best-effort push: ask every other currently-active site's plugin to refresh its
-// cached partner directory immediately, instead of waiting for its own cron tick.
-const broadcastRefresh = async (excludeWebsiteId) => {
-  const snap = await db.collection('websites').where('isActive', '==', true).get();
-  const targets = snap.docs
-    .map(doc => ({ id: doc.id, ...doc.data() }))
-    .filter(site => site.id !== excludeWebsiteId && site.url && site.verificationToken);
-
-  await Promise.allSettled(targets.map(site => {
-    const restUrl = `${site.url.replace(/\/$/, '')}/wp-json/linkauthority/v1/update`;
-    return axios.post(restUrl, { token: site.verificationToken }, { timeout: 5000 });
-  }));
 };
 
 const notifyOwner = async (website, message) => {
@@ -139,10 +125,14 @@ module.exports = app => {
       // request, to make the network easier to validate end-to-end. Ownership-based
       // restrictions (e.g. excluding a user's own other sites) can be reintroduced
       // once the core flow is confirmed working.
+      // Exclude the caller by hostname as well as by document id: the same URL can
+      // end up registered as more than one website doc, and matching on id alone
+      // lets a site list itself among its own partners.
+      const requesterHost = hostname(requester.url);
       const snap = await db.collection('websites').where('isActive', '==', true).get();
       const partners = snap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(site => site.id !== requester.id && site.url)
+        .filter(site => site.id !== requester.id && site.url && hostname(site.url) !== requesterHost)
         .sort((a, b) => (b.domainAuthority || 0) - (a.domainAuthority || 0))
         .map(site => ({
           title: site.name || hostname(site.url),
@@ -204,7 +194,7 @@ module.exports = app => {
 /**
  * Plugin Name: LinkAuthority Business Partners
  * Description: Connects this site to the LinkAuthority network, syncs a live "Business Partners" page of dofollow links, and gives you an admin dashboard with connection status and stats.
- * Version: 4.0
+ * Version: 4.2
  * Author: LinkAuthority
  */
 
@@ -370,12 +360,14 @@ function linkauthority_deactivate() {
 
 add_action( 'linkauthority_cron_refresh', 'linkauthority_refresh_partners' );
 
-add_shortcode( 'linkauthority_partners', 'linkauthority_render_partners' );
-function linkauthority_render_partners() {
-    $partners = get_option( 'linkauthority_partners', array() );
-
-    $html = '<div class="linkauthority-partners-silo">';
-    $html .= '<style>
+// The card CSS is printed in <head>, NOT inside the rendered markup. Because
+// linkauthority_sync_page_content() writes that markup into post_content, and
+// wp_update_post() runs it through KSES (there is no logged-in user during a cron
+// or REST refresh, so 'unfiltered_html' is never granted), an inline <style> tag
+// gets stripped while its text survives - which is why the raw CSS was showing up
+// as body copy at the top of the page.
+function linkauthority_partners_css() {
+    return '
         .linkauthority-partners-silo{--la-blue:#2563eb;--la-blue-dark:#1d4ed8;--la-ink:#0f172a;--la-sub:#64748b;--la-border:#e5e7eb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
         .linkauthority-partners-silo .la-intro{margin:0 0 1.5rem;font-size:.95rem;line-height:1.6;color:var(--la-sub);max-width:640px;}
         .linkauthority-partners-silo .la-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem;margin:0;}
@@ -392,8 +384,31 @@ function linkauthority_render_partners() {
         .linkauthority-partners-silo .la-footer{margin-top:1.25rem;text-align:right;font-size:.75rem;color:#94a3b8;}
         .linkauthority-partners-silo .la-footer a{color:var(--la-blue);text-decoration:none;font-weight:600;}
         @media (max-width:480px){.linkauthority-partners-silo .la-grid{grid-template-columns:1fr;}}
-    </style>';
+    ';
+}
 
+// Print the card CSS on any page that actually renders the directory - the synced
+// Business Partners page, or any page still using the shortcode.
+add_action( 'wp_head', 'linkauthority_partners_styles' );
+function linkauthority_partners_styles() {
+    $post = get_post();
+    $content = $post ? $post->post_content : '';
+    $needed = is_page( 'business-partners' )
+        || ( $content && has_shortcode( $content, 'linkauthority_partners' ) )
+        || ( $content && false !== strpos( $content, 'linkauthority-partners-silo' ) );
+
+    if ( ! $needed ) {
+        return;
+    }
+
+    echo '<style id="linkauthority-partners-css">' . linkauthority_partners_css() . '</style>' . "\n";
+}
+
+add_shortcode( 'linkauthority_partners', 'linkauthority_render_partners' );
+function linkauthority_render_partners() {
+    $partners = get_option( 'linkauthority_partners', array() );
+
+    $html = '<div class="linkauthority-partners-silo">';
     $html .= '<p class="la-intro">We are proud to support the following businesses. Take a moment to check out what they do.</p>';
 
     if ( empty( $partners ) ) {
@@ -414,7 +429,7 @@ function linkauthority_render_partners() {
             $html .= '</div>';
             $html .= '<p>' . esc_html( $partner['description'] ) . '</p>';
             $html .= '</div>';
-            $html .= '<a class="la-btn" href="' . esc_url( $partner['url'] ) . '" target="_blank" rel="noopener">Visit ' . $title . ' &rarr;</a>';
+            $html .= '<a class="la-btn" href="' . esc_url( $partner['url'] ) . '">Visit ' . $title . ' &rarr;</a>';
             $html .= '</div>';
         }
         $html .= '</div>';

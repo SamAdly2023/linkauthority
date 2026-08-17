@@ -16,6 +16,7 @@ const {
 const { analyzeWebsite, getSEOAdvice } = require('../services/gemini');
 
 const { db } = require('../services/firebase');
+const { broadcastRefresh } = require('../services/partnerSync');
 
 // Firestore helpers
 const getWebsiteByUrl = async (url) => {
@@ -200,6 +201,12 @@ module.exports = app => {
         return res.status(404).send({ error: 'Website not found' });
       }
 
+      // The partner card other sites render is built from the logo + description,
+      // so a change to either has to be pushed out to every connected plugin.
+      const partnerCardChanged =
+        (logo !== undefined && logo !== website.logo) ||
+        (description !== undefined && description !== website.description);
+
       if (category) website.category = category;
       if (description !== undefined) website.description = description;
       if (serviceType) website.serviceType = serviceType;
@@ -208,6 +215,12 @@ module.exports = app => {
 
       await website.save();
       res.send(website);
+
+      // Without this the edit only reaches other sites on their next hourly cron,
+      // because each plugin caches the directory and bakes it into the page content.
+      if (partnerCardChanged && website.isActive) {
+        broadcastRefresh(website.id).catch(err => console.error('broadcastRefresh (website update) failed:', err.message));
+      }
     } catch (err) {
       res.status(422).send(err);
     }

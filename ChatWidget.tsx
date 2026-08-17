@@ -8,13 +8,17 @@ const ChatWidget: React.FC = () => {
     // using the page URL associated with the m.me link usually works for the plugin
     const pageUrl = "https://www.facebook.com/linkauthority2026"; 
     
+    // The container is as tall/wide as the chat window, which stays mounted even
+    // when closed, so it must not swallow clicks on the page underneath. Only the
+    // visible pieces (the toggle button, and the window while open) take pointer
+    // events back.
     return (
-        <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4 font-sans">
+        <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4 font-sans pointer-events-none">
             {/* Chat Window */}
             <div 
                 className={`
                     origin-bottom-right transition-all duration-300 ease-in-out
-                    ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-10 pointer-events-none'}
+                    ${isOpen ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto' : 'scale-95 opacity-0 translate-y-10 pointer-events-none'}
                     bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden w-[340px] h-[500px] flex flex-col
                 `}
             >
@@ -79,7 +83,7 @@ const ChatWidget: React.FC = () => {
             {/* Toggle Button */}
             <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className="group relative flex items-center justify-center"
+                className="group relative flex items-center justify-center pointer-events-auto"
             >
                 {/* High Tech Glow Effect */}
                 <div className={`absolute inset-0 bg-blue-500 rounded-full blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-500 ${isOpen ? 'animate-pulse' : ''}`}></div>

@@ -12,8 +12,15 @@
     return;
   }
 
-  var src = scriptTag.getAttribute('src');
-  var baseUrl = src ? new URL(src).origin : 'https://www.linkauthority.live';
+  // scriptTag.src is always resolved to an absolute URL; the raw attribute may be
+  // relative or protocol-relative, which would make new URL() throw and kill the
+  // whole widget.
+  var baseUrl = 'https://www.linkauthority.live';
+  try {
+    if (scriptTag.src) baseUrl = new URL(scriptTag.src).origin;
+  } catch (e) {
+    // Keep the default.
+  }
 
   var container = document.getElementById('linkauthority-partners-widget');
   if (!container) {
@@ -58,7 +65,7 @@
                 html += '</div>';
                 html += '<p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.5;">' + escapeHtml(partner.description) + '</p>';
                 html += '</div>';
-                html += '<a href="' + escapeHtml(partner.url) + '" target="_blank" rel="noopener" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px; text-align: center; transition: background 0.2s;">Visit ' + title + '</a>';
+                html += '<a href="' + escapeHtml(partner.url) + '" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px; text-align: center; transition: background 0.2s;">Visit ' + title + '</a>';
                 html += '</div>';
             });
             html += '</div>';
