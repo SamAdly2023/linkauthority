@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Previously an inline <style> in index.html, alongside the Tailwind CDN. */
+body {
+  font-family: 'Inter', sans-serif;
+}

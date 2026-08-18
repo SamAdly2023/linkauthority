@@ -1,9 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area
-} from 'recharts';
+
 import {
   LayoutDashboard,
   Globe,
@@ -47,18 +44,27 @@ import {
 } from 'lucide-react';
 import { Tab, User, Website, Transaction, AIReport, VisitorStat } from './types';
 import { getSEOAdvice } from './services/geminiService';
-import TermsOfService from './TermsOfService';
-import PrivacyPolicy from './PrivacyPolicy';
-import CitationsPage from './CitationsPage';
-import AdminAnalytics from './AdminAnalytics';
+
 import LandingPage from './LandingPage';
 import ChatWidget from './ChatWidget';
 import SEO from './SEO';
-import UserGuide from './UserGuide';
-import PricingSection from './PricingSection';
+
 import { PRICING_ENABLED } from './config';
-import AboutUs from './AboutUs';
-import ContactUs from './ContactUs';
+
+// Screens behind the login, plus the static content pages. Splitting these out
+// keeps them off the critical path for the landing page, which is all an
+// organic visitor ever sees - AdminAnalytics alone drags in the whole of
+// recharts for a screen only an admin can open.
+const TermsOfService = React.lazy(() => import('./TermsOfService'));
+const PrivacyPolicy = React.lazy(() => import('./PrivacyPolicy'));
+const CitationsPage = React.lazy(() => import('./CitationsPage'));
+const AdminAnalytics = React.lazy(() => import('./AdminAnalytics'));
+const AreaChartPanel = React.lazy(() => import('./AreaChartPanel'));
+const UserGuide = React.lazy(() => import('./UserGuide'));
+const PricingSection = React.lazy(() => import('./PricingSection'));
+const AboutUs = React.lazy(() => import('./AboutUs'));
+const ContactUs = React.lazy(() => import('./ContactUs'));
+
 import { auth, loginWithGoogle, logoutUser } from './firebase';
 import { getRedirectResult, onIdTokenChanged } from 'firebase/auth';
 
@@ -1601,29 +1607,22 @@ const App: React.FC = () => {
                   </select>
                 </div>
                 <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={[
-                      { name: 'Mon', pts: 100 },
-                      { name: 'Tue', pts: 120 },
-                      { name: 'Wed', pts: 110 },
-                      { name: 'Thu', pts: 140 },
-                      { name: 'Fri', pts: 125 },
-                      { name: 'Sat', pts: 135 },
-                      { name: 'Sun', pts: 125 },
-                    ]}>
-                      <defs>
-                        <linearGradient id="colorPts" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                      <XAxis dataKey="name" stroke="#64748b" axisLine={false} tickLine={false} />
-                      <YAxis hide />
-                      <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }} />
-                      <Area type="monotone" dataKey="pts" stroke="#3b82f6" fillOpacity={1} fill="url(#colorPts)" strokeWidth={3} />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <React.Suspense fallback={<div className="h-full flex items-center justify-center text-slate-600"><RefreshCw size={18} className="animate-spin" /></div>}>
+                    <AreaChartPanel
+                      gradientId="colorPts"
+                      labelKey="name"
+                      dataKey="pts"
+                      data={[
+                        { name: 'Mon', pts: 100 },
+                        { name: 'Tue', pts: 120 },
+                        { name: 'Wed', pts: 110 },
+                        { name: 'Thu', pts: 140 },
+                        { name: 'Fri', pts: 125 },
+                        { name: 'Sat', pts: 135 },
+                        { name: 'Sun', pts: 125 },
+                      ]}
+                    />
+                  </React.Suspense>
                 </div>
               </div>
 
@@ -2120,24 +2119,15 @@ const App: React.FC = () => {
                         Projected Growth
                       </h4>
                       <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={aiReport.monthlyGrowth}>
-                            <defs>
-                              <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                            <XAxis dataKey="month" stroke="#64748b" />
-                            <YAxis stroke="#64748b" />
-                            <Tooltip
-                              contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff' }}
-                              itemStyle={{ color: '#fff' }}
-                            />
-                            <Area type="monotone" dataKey="traffic" stroke="#3b82f6" fillOpacity={1} fill="url(#colorTraffic)" />
-                          </AreaChart>
-                        </ResponsiveContainer>
+                        <React.Suspense fallback={<div className="h-full flex items-center justify-center text-slate-600"><RefreshCw size={18} className="animate-spin" /></div>}>
+                          <AreaChartPanel
+                            gradientId="colorTraffic"
+                            labelKey="month"
+                            dataKey="traffic"
+                            data={aiReport.monthlyGrowth}
+                            showYAxis
+                          />
+                        </React.Suspense>
                       </div>
                     </div>
 
@@ -2231,7 +2221,7 @@ const App: React.FC = () => {
         )}
 
         {activeTab === Tab.Citations && (
-          <CitationsPage websites={user.websites} />
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><CitationsPage websites={user.websites} /></React.Suspense>
         )}
 
         {activeTab === Tab.Guide && (
@@ -2407,16 +2397,16 @@ const App: React.FC = () => {
         )}
 
         {activeTab === Tab.Terms && (
-          <TermsOfService onBack={() => setActiveTab(Tab.Dashboard)} />
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><TermsOfService onBack={() => setActiveTab(Tab.Dashboard)} /></React.Suspense>
         )}
 
         {activeTab === Tab.Privacy && (
-          <PrivacyPolicy onBack={() => setActiveTab(Tab.Dashboard)} />
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><PrivacyPolicy onBack={() => setActiveTab(Tab.Dashboard)} /></React.Suspense>
         )}
 
         {activeTab === Tab.UserGuide && (
           <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
-            <UserGuide />
+            <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><UserGuide /></React.Suspense>
           </div>
         )}
 
@@ -2424,7 +2414,7 @@ const App: React.FC = () => {
             its /pricing route stay reachable so existing links don't 404. */}
         {activeTab === Tab.Guide && (
           PRICING_ENABLED ? (
-            <PricingSection />
+            <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><PricingSection /></React.Suspense>
           ) : (
             <div className="max-w-2xl mx-auto text-center py-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider mb-6">
@@ -2448,16 +2438,16 @@ const App: React.FC = () => {
         )}
 
         {activeTab === Tab.About && (
-          <AboutUs />
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><AboutUs /></React.Suspense>
         )}
 
         {activeTab === Tab.Contact && (
-          <ContactUs />
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><ContactUs /></React.Suspense>
         )}
 
         {/* Admin Tabs */}
         {activeTab === Tab.AdminAnalytics && (
-          <AdminAnalytics users={adminUsers} websites={adminWebsites} transactions={adminTransactions} />
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><AdminAnalytics users={adminUsers} websites={adminWebsites} transactions={adminTransactions} /></React.Suspense>
         )}
 
         {activeTab === Tab.AdminVisitors && (
