@@ -137,7 +137,11 @@ if (process.env.NODE_ENV === 'production') {
   const { injectMeta } = require('./services/seo');
 
   const distDir = path.resolve(__dirname, '../dist');
-  app.use(express.static(distDir));
+  // index: false is load-bearing. By default express.static answers "/" with
+  // dist/index.html straight off disk, so the home page - the one page carrying
+  // the FAQ markup and the main keywords - never reached the metadata injector
+  // below while every other route did.
+  app.use(express.static(distDir, { index: false }));
 
   // The SPA shell is read once and kept in memory; only the per-route metadata
   // changes per request.
