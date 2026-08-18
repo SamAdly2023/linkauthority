@@ -748,12 +748,25 @@ module.exports = app => {
       }
 
       if (verified) {
+        // Activating here is what actually lists the site. The WordPress plugin
+        // does it through /connect, but sites using the JavaScript snippet had
+        // no route to it at all - they could verify successfully and still never
+        // appear on another member's page.
+        const wasActive = !!website.isActive;
+
         await db.collection('websites').doc(websiteId).update({
           isVerified: true,
           verificationMethod: integrationType,
           verificationDate: new Date(),
-          widgetActive: true
+          widgetActive: true,
+          isActive: true,
+          reciprocityFailures: 0,
+          reciprocityCheckedAt: new Date()
         });
+
+        if (!wasActive) {
+          broadcastRefresh(websiteId).catch(err => console.error('broadcastRefresh (verify-integration) failed:', err.message));
+        }
 
         const updatedWebsite = await getWebsiteById(websiteId);
         res.send({ success: true, website: updatedWebsite });

@@ -162,6 +162,29 @@ module.exports = app => {
     }
   });
 
+  // Traffic analytics reported by the Visitor Insights plugin. Distinct from
+  // /api/admin/visitors above, which only counts Business Partners page views.
+  app.get('/api/admin/visitor-insights', requireAdmin, async (req, res) => {
+    try {
+      const websitesSnap = await db.collection('websites').get();
+      const sites = websitesSnap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(site => site.visitorStats)
+        .map(site => ({
+          id: site.id,
+          url: site.url,
+          isActive: !!site.isActive,
+          stats: site.visitorStats
+        }))
+        .sort((a, b) => (b.stats?.totals?.sessions || 0) - (a.stats?.totals?.sessions || 0));
+
+      res.send(sites);
+    } catch (err) {
+      console.error('visitor-insights read failed:', err);
+      res.status(500).send({ error: 'Failed to load visitor insights' });
+    }
+  });
+
   // Verify Website
   app.post('/api/admin/websites/verify', requireAdmin, async (req, res) => {
     const { websiteId } = req.body;

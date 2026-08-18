@@ -133,10 +133,30 @@ app.use((err, req, res, next) => {
 
 if (process.env.NODE_ENV === 'production') {
   const path = require('path');
-  app.use(express.static(path.resolve(__dirname, '../dist')));
-  
+  const fs = require('fs');
+  const { injectMeta } = require('./services/seo');
+
+  const distDir = path.resolve(__dirname, '../dist');
+  app.use(express.static(distDir));
+
+  // The SPA shell is read once and kept in memory; only the per-route metadata
+  // changes per request.
+  let shell = null;
+  const readShell = () => {
+    if (null === shell) {
+      shell = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8');
+    }
+    return shell;
+  };
+
   app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../dist', 'index.html'));
+    try {
+      res.set('Content-Type', 'text/html; charset=utf-8');
+      res.send(injectMeta(readShell(), req.path));
+    } catch (err) {
+      console.error('SEO shell injection failed, serving raw index.html:', err.message);
+      res.sendFile(path.join(distDir, 'index.html'));
+    }
   });
 }
 

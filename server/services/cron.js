@@ -106,10 +106,17 @@ const verifyAndProcessCredits = async () => {
   }
 };
 
+const { checkReciprocity } = require('./reciprocity');
+
 const startCron = () => {
   // Trigger verification 2 minutes after start, then every 24 hours
   setTimeout(verifyAndProcessCredits, 120000);
   setInterval(verifyAndProcessCredits, 24 * 60 * 60 * 1000);
+
+  // Reciprocity sweep, offset from the credits run so the two don't crawl at
+  // the same time.
+  setTimeout(checkReciprocity, 10 * 60 * 1000);
+  setInterval(checkReciprocity, 24 * 60 * 60 * 1000);
 };
 
-module.exports = { startCron, verifyAndProcessCredits };
+module.exports = { startCron, verifyAndProcessCredits, checkReciprocity };

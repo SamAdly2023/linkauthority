@@ -43,6 +43,7 @@ import {
   Trash2,
   Plug,
   Eye,
+  Activity,
 } from 'lucide-react';
 import { Tab, User, Website, Transaction, AIReport, VisitorStat } from './types';
 import { getSEOAdvice } from './services/geminiService';
@@ -55,6 +56,7 @@ import ChatWidget from './ChatWidget';
 import SEO from './SEO';
 import UserGuide from './UserGuide';
 import PricingSection from './PricingSection';
+import { PRICING_ENABLED } from './config';
 import AboutUs from './AboutUs';
 import ContactUs from './ContactUs';
 import { auth, loginWithGoogle, logoutUser } from './firebase';
@@ -135,6 +137,8 @@ const App: React.FC = () => {
   const [adminWebsites, setAdminWebsites] = useState<Website[]>([]);
   const [adminTransactions, setAdminTransactions] = useState<Transaction[]>([]);
   const [adminVisitors, setAdminVisitors] = useState<VisitorStat[]>([]);
+  const [adminTraffic, setAdminTraffic] = useState<any[]>([]);
+  const [trafficSiteId, setTrafficSiteId] = useState<string>('');
   const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [addPointsModal, setAddPointsModal] = useState<{ isOpen: boolean, user: any | null }>({ isOpen: false, user: null });
   const [pointsToAdd, setPointsToAdd] = useState<number>(0);
@@ -419,17 +423,19 @@ const App: React.FC = () => {
 
   const fetchAdminData = async () => {
     try {
-      const [usersRes, sitesRes, txRes, visitorsRes] = await Promise.all([
+      const [usersRes, sitesRes, txRes, visitorsRes, trafficRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch('/api/admin/websites'),
         fetch('/api/admin/transactions'),
-        fetch('/api/admin/visitors')
+        fetch('/api/admin/visitors'),
+        fetch('/api/admin/visitor-insights')
       ]);
 
       if (usersRes.ok) setAdminUsers(await usersRes.json());
       if (sitesRes.ok) setAdminWebsites(await sitesRes.json());
       if (txRes.ok) setAdminTransactions(await txRes.json());
       if (visitorsRes.ok) setAdminVisitors(await visitorsRes.json());
+      if (trafficRes.ok) setAdminTraffic(await trafficRes.json());
     } catch (err) {
       console.error("Failed to fetch admin data", err);
     }
@@ -1425,7 +1431,7 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
               <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
               <SidebarItem tab={Tab.Citations} icon={MapPin} label="Citations & AI" />
-              <SidebarItem tab={Tab.Guide} icon={CreditCard} label="Pricing" />
+              {PRICING_ENABLED && <SidebarItem tab={Tab.Guide} icon={CreditCard} label="Pricing" />}
               <SidebarItem tab={Tab.UserGuide} icon={BookOpen} label="User Guide" />
               <SidebarItem tab={Tab.Profile} icon={UserIcon} label="My Profile" />
               <div className="pt-4 mt-2 border-t border-slate-800">
@@ -1439,6 +1445,7 @@ const App: React.FC = () => {
             <>
               <SidebarItem tab={Tab.AdminAnalytics} icon={BarChart2} label="Analytics" />
               <SidebarItem tab={Tab.AdminVisitors} icon={Eye} label="Visitors" />
+              <SidebarItem tab={Tab.AdminTraffic} icon={Activity} label="Site Traffic" />
               <SidebarItem tab={Tab.AdminUsers} icon={Users} label="All Users" />
               <SidebarItem tab={Tab.AdminWebsites} icon={Globe} label="All Websites" />
               <SidebarItem tab={Tab.AdminTransactions} icon={FileText} label="All Transactions" />
@@ -1762,7 +1769,7 @@ const App: React.FC = () => {
               )}
             </div>
 
-            {user.points < 1 && (
+            {PRICING_ENABLED && user.points < 1 && (
               <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-3xl flex items-center gap-4 text-red-400">
                 <Zap size={24} className="shrink-0" />
                 <div>
@@ -2404,9 +2411,31 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Updated Guide Tab to only show Pricing now, or rename component usage */}
+        {/* Pricing is hidden while the network is free - see config.ts. The tab and
+            its /pricing route stay reachable so existing links don't 404. */}
         {activeTab === Tab.Guide && (
-          <PricingSection />
+          PRICING_ENABLED ? (
+            <PricingSection />
+          ) : (
+            <div className="max-w-2xl mx-auto text-center py-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider mb-6">
+                <Zap size={12} />
+                Free while we grow
+              </div>
+              <h3 className="text-3xl font-black text-white mb-4">Everything is free right now</h3>
+              <p className="text-slate-400 leading-relaxed mb-8">
+                There are no plans to choose and nothing to pay. Unlimited websites, unlimited partner
+                links, the WordPress plugin and full support are included for every member while we build
+                the network out. We'll give you plenty of notice before that ever changes.
+              </p>
+              <button
+                onClick={() => setActiveTab(Tab.MySites)}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors"
+              >
+                Go to My Websites
+              </button>
+            </div>
+          )
         )}
 
         {activeTab === Tab.About && (
@@ -2490,6 +2519,131 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
+
+        {activeTab === Tab.AdminTraffic && (() => {
+          const sites = adminTraffic;
+          const selected = sites.find(s => s.id === trafficSiteId) || sites[0];
+          const stats = selected?.stats;
+          const network = sites.reduce((acc, s) => ({
+            sessions: acc.sessions + (s.stats?.totals?.sessions || 0),
+            pageviews: acc.pageviews + (s.stats?.totals?.pageviews || 0),
+          }), { sessions: 0, pageviews: 0 });
+          const peak = Math.max(1, ...(stats?.byDay || []).map((d: any) => d.sessions || 0));
+
+          return (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div>
+                <h3 className="text-2xl font-bold text-white">Site Traffic</h3>
+                <p className="text-slate-500 text-sm mt-1">
+                  Real visitor analytics reported by the Visitor Insights plugin &mdash; aggregates only, over the last {stats?.periodDays || 30} days.
+                </p>
+              </div>
+
+              {sites.length === 0 ? (
+                <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 text-center">
+                  <Activity size={32} className="text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400 font-medium">No site is reporting traffic yet.</p>
+                  <p className="text-slate-500 text-sm mt-1 max-w-md mx-auto">
+                    Install Visitor Insights on a site, then paste that site&apos;s token into Visitors &rarr; Settings &rarr; LinkAuthority site token. Reports arrive once a day.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
+                      <p className="text-slate-500 text-sm mb-1">Sessions (all sites)</p>
+                      <p className="text-3xl font-bold text-white">{network.sessions.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
+                      <p className="text-slate-500 text-sm mb-1">Pageviews (all sites)</p>
+                      <p className="text-3xl font-bold text-white">{network.pageviews.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
+                      <p className="text-slate-500 text-sm mb-1">Sites reporting</p>
+                      <p className="text-3xl font-bold text-white">{sites.length}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {sites.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => setTrafficSiteId(s.id)}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors border ${selected?.id === s.id ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'}`}
+                      >
+                        {s.url}
+                        <span className="ml-2 opacity-70">{(s.stats?.totals?.sessions || 0).toLocaleString()}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {stats && (
+                    <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 space-y-8">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        {[
+                          ['Sessions', stats.totals.sessions],
+                          ['Pageviews', stats.totals.pageviews],
+                          ['Countries', stats.totals.countries],
+                          ['Mobile', stats.totals.mobile],
+                          ['Identified', stats.totals.identified],
+                        ].map(([label, value]: any) => (
+                          <div key={label}>
+                            <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">{label}</p>
+                            <p className="text-2xl font-bold text-white">{(value || 0).toLocaleString()}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div>
+                        <p className="text-slate-400 text-sm font-semibold mb-3">Sessions per day</p>
+                        <div className="flex items-end gap-1 h-32">
+                          {(stats.byDay || []).map((d: any) => (
+                            <div
+                              key={d.day}
+                              title={`${d.day}: ${d.sessions} sessions, ${d.pageviews} pageviews`}
+                              className="flex-1 bg-blue-500/70 hover:bg-blue-400 rounded-t transition-colors min-w-[3px]"
+                              style={{ height: `${Math.max(2, (d.sessions / peak) * 100)}%` }}
+                            />
+                          ))}
+                        </div>
+                        {(stats.byDay || []).length === 0 && (
+                          <p className="text-slate-600 text-sm">No daily data in this report.</p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                          <p className="text-slate-400 text-sm font-semibold mb-3">Top countries</p>
+                          {(stats.byCountry || []).length === 0 && <p className="text-slate-600 text-sm">No country data.</p>}
+                          {(stats.byCountry || []).map((c: any) => (
+                            <div key={c.country} className="flex justify-between py-1.5 border-b border-slate-800/50 text-sm">
+                              <span className="text-slate-300">{c.country}</span>
+                              <span className="text-slate-500">{c.sessions.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div>
+                          <p className="text-slate-400 text-sm font-semibold mb-3">Top referrers</p>
+                          {(stats.byReferrer || []).length === 0 && <p className="text-slate-600 text-sm">No referrer data.</p>}
+                          {(stats.byReferrer || []).map((r: any) => (
+                            <div key={r.host} className="flex justify-between py-1.5 border-b border-slate-800/50 text-sm">
+                              <span className="text-slate-300">{r.host}</span>
+                              <span className="text-slate-500">{r.sessions.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <p className="text-slate-600 text-xs">
+                        Reported {stats.receivedAt ? new Date(stats.receivedAt._seconds ? stats.receivedAt._seconds * 1000 : stats.receivedAt).toLocaleString() : 'recently'}.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {activeTab === Tab.AdminUsers && (
           <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 animate-in fade-in slide-in-from-bottom-4 duration-500">

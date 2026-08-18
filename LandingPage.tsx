@@ -25,6 +25,7 @@ import {
 import ParticleNetwork from './ParticleNetwork';
 import Testimonials from './Testimonials';
 import PricingSection from './PricingSection';
+import { PRICING_ENABLED } from './config';
 import ChatWidget from './ChatWidget';
 import SEO from './SEO';
 
@@ -56,7 +57,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+            {PRICING_ENABLED && <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>}
           </div>
 
           <button onClick={onLogin} className="bg-white text-slate-900 px-4 py-2 md:px-6 md:py-2.5 rounded-full font-bold text-xs md:text-sm hover:bg-slate-200 transition-all transform hover:scale-105 shadow-xl shadow-white/5 whitespace-nowrap flex items-center gap-2">
@@ -74,16 +75,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <Zap size={12} />
-            The #1 Marketplace for High-Quality Backlinks
+            100% Free &mdash; Every Feature, No Card Required
           </div>
           
           <h1 className="text-5xl md:text-7xl font-black text-white tracking-tight mb-8 leading-tight animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-            Build High <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Authority Links</span><br />
-            Rank #1 on Google
+            Free Backlinks From <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Hundreds of Real Sites</span><br />
+            Activate Once. Stay Listed.
           </h1>
           
           <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-             Stop playing the guessing game. Connect with real website owners, exchange authority points, and boost your Domain Authority (DA) with our intelligent backlink marketplace.
+             Add your website, activate it, and you are automatically featured on the Business Partners page of every other site in the network &mdash; with a real dofollow link back to you. No credits to buy, no outreach emails, no waiting. The whole network is free while we grow.
           </p>
           
           <div className="flex flex-col md:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
@@ -125,7 +126,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 <div key={i} className="flex gap-16 items-center text-slate-400 font-mono text-sm">
                     <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> 423 Links Exchanged Today</span>
                     <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span> 1,204 New Websites Added</span>
-                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-purple-500"></span> $45 Average Link Value</span>
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Free Dofollow Links</span>
                     <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-amber-500"></span> 98% Customer Satisfaction</span>
                     <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500"></span> 24/7 AI Monitoring Active</span>
                 </div>
@@ -164,7 +165,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             <FeatureCard 
               icon={Users}
               title="Community Driven"
-              description="Earn points by hosting links, spend points to get links. A fair, circular economy for sustainable growth."
+              description="Host the network on your site and the network hosts you. Every active member links to every other member - no credits to earn or spend."
             />
             <FeatureCard 
               icon={Search}
@@ -174,7 +175,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             <FeatureCard 
               icon={Lock}
               title="Secure Transactions"
-              description="Links are verified automatically. Points are held in escrow until the backlink is confirmed live and dofollow."
+              description="Links are verified automatically. We check daily that every member is still hosting the directory, so the exchange stays honest."
             />
             <FeatureCard 
               icon={Award}
@@ -200,8 +201,33 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         <Testimonials />
       </div>
 
-      {/* Pricing Section */}
-      <PricingSection />
+      {/* Pricing Section - hidden while the network is free. See config.ts. */}
+      {PRICING_ENABLED ? (
+        <PricingSection />
+      ) : (
+        <section id="pricing" className="py-24 bg-slate-950 border-t border-slate-800">
+          <div className="max-w-3xl mx-auto px-6 text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider mb-8">
+              <Zap size={12} />
+              Free while we grow
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-6">
+              Everything is free. No plans, no credit card.
+            </h2>
+            <p className="text-lg text-slate-400 leading-relaxed mb-10">
+              LinkAuthority is free for every member while we build the network out. Unlimited websites,
+              unlimited partner links, the WordPress plugin, and full support &mdash; all of it, at no cost.
+              The more sites that join, the more links each member earns, so there is nothing to pay for yet.
+            </p>
+            <button
+              onClick={onLogin}
+              className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg shadow-blue-600/30"
+            >
+              Create Your Free Account
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Comparison Section */}
       <section className="py-24 bg-slate-950 border-t border-slate-800">
@@ -223,7 +249,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                     <tbody className="divide-y divide-slate-800">
                         <tr>
                             <td className="p-6 text-slate-300 font-medium">Cost Per Link</td>
-                            <td className="p-6 text-white font-bold bg-blue-900/10">$0 (with Points)</td>
+                            <td className="p-6 text-white font-bold bg-blue-900/10">Free</td>
                             <td className="p-6 text-slate-400">$300 - $500+</td>
                         </tr>
                         <tr>
@@ -257,16 +283,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                     answer="Yes, it is safe. We focus on high-quality, relevant content exchanges between real websites. We strictly prohibit spam farms, PBNs, and gambling/casino sites. Our AI monitors link patterns to ensure natural growth."
                 />
                 <FAQItem 
-                    question="How do I earn points?"
-                    answer="You earn points by accepting guest posts or link insertions on your own website. The amount of points you earn depends on your website's Domain Authority (DA). Higher DA = More Points."
+                    question="What does it cost?"
+                    answer="Nothing. LinkAuthority is completely free while we grow the network - unlimited websites, unlimited partner links, the WordPress plugin and support included. All you contribute is a Business Partners page on your own site."
                 />
                 <FAQItem 
                     question="Can I buy links without having a website?"
-                    answer="Yes! You can purchase points directly via PayPal and use them to acquire backlinks for your clients or new projects without needing to host links yourself."
+                    answer="Every active member is listed on every other active member's site automatically, so there is nothing to buy. Add a site, activate it, and the links appear."
                 />
                 <FAQItem 
                     question="Are the links permanent?"
-                    answer="Yes. Our terms of service require links to remain active for at least 12 months. We continually monitor all links. If a link is removed, the seller is penalized and points are refunded."
+                    answer="Yes. We check every member site daily. If a site stops hosting its Business Partners page, its own listing is paused across the network until the page is restored - so the links you receive are backed by members who are genuinely participating."
                 />
             </div>
         </div>
@@ -284,12 +310,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                         <Step 
                             number="1"
                             title="Connect Your Site"
-                            description="Add your website to our platform. Our AI verifies ownership and calculates your initial Domain Authority points."
+                            description="Add your website to the platform. Our AI verifies ownership and estimates your Domain Authority."
                         />
                         <Step 
                             number="2"
-                            title="Earn or Buy Points"
-                            description="Host high-quality content on your site to earn points, or simply purchase points to fast-track your campaign."
+                            title="Activate Your Site"
+                            description="Install the WordPress plugin or paste the snippet. The moment your site connects, you are listed on every other member's Business Partners page."
                         />
                         <Step 
                             number="3"

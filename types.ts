@@ -77,6 +77,7 @@ export enum Tab {
   Contact = 'contact',
   AdminAnalytics = 'admin_analytics',
   AdminVisitors = 'admin_visitors',
+  AdminTraffic = 'admin_traffic',
   AdminUsers = 'admin_users',
   AdminWebsites = 'admin_websites',
   AdminTransactions = 'admin_transactions',

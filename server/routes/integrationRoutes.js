@@ -182,6 +182,54 @@ module.exports = app => {
     }
   });
 
+  // Traffic aggregates pushed daily by the Visitor Insights plugin. Authenticated
+  // by the site token, same as the other integration routes. Aggregates only -
+  // the plugin never sends IPs or individual sessions, and anything beyond the
+  // shape below is dropped here rather than stored.
+  app.post('/api/integration/visitor-stats', async (req, res) => {
+    const { token, stats } = req.body || {};
+    if (!token) return res.status(400).send({ error: 'Token is required' });
+    if (!stats || typeof stats !== 'object') return res.status(400).send({ error: 'Stats payload is required' });
+
+    try {
+      const website = await getWebsiteByToken(token);
+      if (!website) return res.status(404).send({ error: 'Invalid token' });
+
+      const num = v => {
+        const n = parseInt(v, 10);
+        return Number.isFinite(n) && n >= 0 ? n : 0;
+      };
+      const series = (rows, keys, limit) => (Array.isArray(rows) ? rows : [])
+        .slice(0, limit)
+        .map(row => keys.reduce((out, [key, cast]) => {
+          out[key] = cast === 'int' ? num(row?.[key]) : String(row?.[key] ?? '').slice(0, 100);
+          return out;
+        }, {}));
+
+      const clean = {
+        periodDays: num(stats.period_days) || 30,
+        totals: {
+          sessions: num(stats.totals?.sessions),
+          pageviews: num(stats.totals?.pageviews),
+          countries: num(stats.totals?.countries),
+          identified: num(stats.totals?.identified),
+          mobile: num(stats.totals?.mobile)
+        },
+        byCountry: series(stats.by_country, [['country', 'str'], ['sessions', 'int']], 10),
+        byDay: series(stats.by_day, [['day', 'str'], ['sessions', 'int'], ['pageviews', 'int']], 62),
+        byReferrer: series(stats.by_referrer, [['host', 'str'], ['sessions', 'int']], 10),
+        receivedAt: new Date()
+      };
+
+      await db.collection('websites').doc(website.id).update({ visitorStats: clean });
+
+      res.send({ success: true });
+    } catch (err) {
+      console.error('visitor-stats ingest failed:', err);
+      res.status(500).send({ error: 'Failed to store visitor stats' });
+    }
+  });
+
   // The universal plugin: one build for every site, with the token entered in
   // wp-admin after install rather than compiled in. No per-site data goes into
   // it, so it needs no auth and can be handed out as a plain link.
