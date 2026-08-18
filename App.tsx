@@ -1426,7 +1426,7 @@ const App: React.FC = () => {
           {!isAdminMode ? (
             <>
               <SidebarItem tab={Tab.Dashboard} icon={LayoutDashboard} label="Dashboard" />
-              <SidebarItem tab={Tab.Marketplace} icon={Search} label="Marketplace" />
+              <SidebarItem tab={Tab.Marketplace} icon={Globe} label="Network" />
               <SidebarItem tab={Tab.MySites} icon={Globe} label="My Websites" />
               <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
               <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
@@ -1660,6 +1660,18 @@ const App: React.FC = () => {
 
         {activeTab === Tab.Marketplace && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800">
+              <p className="text-slate-500 text-sm uppercase tracking-wider font-bold mb-2">The Network</p>
+              <h3 className="text-3xl font-black text-white mb-2">
+                {marketplaceSites.filter(s => s.isActive).length.toLocaleString()} active {marketplaceSites.filter(s => s.isActive).length === 1 ? 'site is' : 'sites are'} linking to you
+              </h3>
+              <p className="text-slate-400 text-sm max-w-2xl">
+                Every site below carries a dofollow link to each of your active websites, and each of your
+                Business Partners pages carries a link back to them. Listings update automatically as
+                members join and leave &mdash; there is nothing to request.
+              </p>
+            </div>
+
             <div className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
               <div className="flex items-center gap-2 mb-4 text-slate-400 text-sm font-bold uppercase tracking-wider">
                 <Sliders size={16} />
@@ -1712,6 +1724,8 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {marketplaceSites.filter(s => {
+                // Only sites that are actually live are hosting your links.
+                if (!s.isActive) return false;
                 const matchesSearch = s.category.toLowerCase().includes(searchQuery.toLowerCase()) || s.url.includes(searchQuery);
                 const matchesType = filterServiceType === 'all' || s.serviceType === filterServiceType;
                 const matchesCountry = !filterCountry || s.location?.country?.toLowerCase().includes(filterCountry.toLowerCase());
@@ -1741,30 +1755,25 @@ const App: React.FC = () => {
                     </div>
                   </div>
                   <h4 className="text-lg font-bold text-white mb-2 truncate group-hover:text-blue-400 transition-colors">{site.url}</h4>
-                  <div className="flex items-center gap-2 text-slate-500 text-sm mb-6">
-                    <ShieldCheck size={16} className="text-green-500" />
-                    Verified Publisher
+                  {site.description && (
+                    <p className="text-slate-400 text-sm mb-4 line-clamp-3">{site.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 text-green-500 text-sm mb-6">
+                    <ShieldCheck size={16} />
+                    Linking to your sites
                   </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => openPurchaseModal(site)}
-                      className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
-                      disabled={user.points < site.domainAuthority}
-                    >
-                      Request Link ({site.domainAuthority} pts)
-                    </button>
-                    <button
-                      onClick={() => window.open(site.url, '_blank')}
-                      className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all"
-                    >
-                      <ExternalLink size={20} className="text-slate-400" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => window.open(site.url, '_blank', 'noopener')}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    Visit site
+                    <ExternalLink size={16} />
+                  </button>
                 </div>
               ))}
-              {marketplaceSites.length === 0 && (
+              {marketplaceSites.filter(s => s.isActive).length === 0 && (
                 <div className="col-span-full text-center py-10 text-slate-500">
-                  No websites available in the marketplace yet. Be the first to add one!
+                  No other sites are active yet. As soon as one activates, it appears here &mdash; and your links appear on it.
                 </div>
               )}
             </div>
