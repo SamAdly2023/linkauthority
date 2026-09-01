@@ -79,16 +79,65 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const citations = [
-    { name: 'Google Business Profile', status: 'synced', da: 98, consistency: '100%' },
-    { name: 'Bing Places', status: 'synced', da: 92, consistency: '100%' },
-    { name: 'Yelp', status: 'error', da: 94, consistency: '85%' },
-    { name: 'Apple Maps', status: 'pending', da: 99, consistency: 'Pending' },
-    { name: 'Facebook Local', status: 'synced', da: 96, consistency: '100%' },
-    { name: 'Foursquare', status: 'synced', da: 90, consistency: '100%' },
-    { name: 'YellowPages', status: 'pending', da: 85, consistency: 'Pending' },
-    { name: 'MapQuest', status: 'synced', da: 88, consistency: '100%' },
-  ];
+  // Real audit results. Nothing is shown until a scan has actually run - the
+  // previous version rendered a hardcoded list of "synced / 100% consistency"
+  // rows identically for every site, whether or not the business was listed
+  // anywhere.
+  const [report, setReport] = useState<any>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [bizName, setBizName] = useState('');
+  const [bizPhone, setBizPhone] = useState('');
+  const [bizAddress, setBizAddress] = useState('');
+
+  const selectedSite = websites.find(w => w.url === selectedSiteUrl) || websites[0];
+
+  const runScan = async () => {
+    if (!selectedSite) return;
+    if (!bizName.trim()) {
+      setScanError('Enter the business name exactly as it appears on your listings.');
+      return;
+    }
+
+    setScanning(true);
+    setScanError('');
+
+    try {
+      const res = await fetch(`/api/websites/${selectedSite._id || selectedSite.id}/citations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: bizName, phone: bizPhone, address: bizAddress })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setScanError(err.error || 'The scan could not be completed.');
+        return;
+      }
+
+      setReport(await res.json());
+    } catch (err) {
+      setScanError('The scan could not be completed. Check your connection and try again.');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const statusLabel: Record<string, string> = {
+    listed: 'Listed',
+    'not-found': 'Not found',
+    'not-configured': 'Not connected',
+    unsupported: 'Manual check',
+    error: 'Check failed'
+  };
+
+  const statusStyle: Record<string, string> = {
+    listed: 'bg-green-500/10 text-green-500',
+    'not-found': 'bg-amber-500/10 text-amber-500',
+    'not-configured': 'bg-slate-700/50 text-slate-400',
+    unsupported: 'bg-slate-700/50 text-slate-400',
+    error: 'bg-red-500/10 text-red-400'
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -298,71 +347,121 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
             </div>
           </div>
 
-          {/* Citation Manager Table */}
+          {/* Citation audit */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">Manual Citation Manager</h3>
-              <div className="flex gap-2">
-                <button onClick={showComingSoon} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-700">Filter</button>
-                <button onClick={showComingSoon} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 flex items-center gap-2">
-                  <Plus size={16} /> Add New
-                </button>
-              </div>
+            <h3 className="text-xl font-bold text-white mb-1">Citation audit</h3>
+            <p className="text-slate-400 text-sm mb-6">
+              We check the directories that publish a lookup API and report exactly what is found.
+              Directories without one are flagged for a manual check rather than guessed at.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <input
+                type="text"
+                placeholder="Business name (required)"
+                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                value={bizName}
+                onChange={e => setBizName(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Phone"
+                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                value={bizPhone}
+                onChange={e => setBizPhone(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Address"
+                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                value={bizAddress}
+                onChange={e => setBizAddress(e.target.value)}
+              />
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-500 text-sm uppercase tracking-wider">
-                    <th className="pb-4 font-semibold pl-4">Directory Name</th>
-                    <th className="pb-4 font-semibold">Status</th>
-                    <th className="pb-4 font-semibold">Domain Authority</th>
-                    <th className="pb-4 font-semibold">NAP Consistency</th>
-                    <th className="pb-4 font-semibold text-right pr-4">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/50">
-                  {citations.map((citation, i) => (
-                    <tr key={i} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-4 pl-4 font-medium text-white">{citation.name}</td>
-                      <td className="py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold capitalize
-                          ${citation.status === 'synced' ? 'bg-green-500/10 text-green-500' : 
-                            citation.status === 'error' ? 'bg-red-500/10 text-red-500' : 
-                            'bg-yellow-500/10 text-yellow-500'}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full 
-                            ${citation.status === 'synced' ? 'bg-green-500' : 
-                              citation.status === 'error' ? 'bg-red-500' : 
-                              'bg-yellow-500'}`}></span>
-                          {citation.status}
-                        </span>
-                      </td>
-                      <td className="py-4 text-slate-400">{citation.da}</td>
-                      <td className="py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full ${
-                                citation.consistency === '100%' ? 'bg-green-500' : 
-                                citation.consistency === 'Pending' ? 'bg-slate-600' : 'bg-yellow-500'
-                              }`} 
-                              style={{ width: citation.consistency === 'Pending' ? '0%' : citation.consistency }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-slate-400">{citation.consistency}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 pr-4 text-right">
-                        <button onClick={showComingSoon} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
-                          <ExternalLink size={16} />
-                        </button>
-                      </td>
-                    </tr>
+            <button
+              onClick={runScan}
+              disabled={scanning}
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors"
+            >
+              {scanning ? 'Scanning\u2026' : 'Run citation scan'}
+            </button>
+
+            {scanError && (
+              <p className="text-red-400 text-sm mt-3">{scanError}</p>
+            )}
+
+            {!report && !scanning && (
+              <div className="mt-6 border border-dashed border-slate-800 rounded-2xl p-8 text-center">
+                <Search size={28} className="text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400 font-medium">No scan has been run yet</p>
+                <p className="text-slate-500 text-sm mt-1 max-w-md mx-auto">
+                  Enter your business details above and run a scan to see which directories list you.
+                </p>
+              </div>
+            )}
+
+            {report && (
+              <div className="mt-6 space-y-5">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    ['Listed', report.totals.listed],
+                    ['Not found', report.totals.missing],
+                    ['NAP mismatches', report.totals.inconsistent],
+                    ['Manual check', report.totals.unsupported]
+                  ].map(([label, value]: any) => (
+                    <div key={label} className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
+                      <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">{label}</p>
+                      <p className="text-2xl font-bold text-white">{value}</p>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-500 text-xs uppercase tracking-wider">
+                        <th className="pb-3 font-semibold">Directory</th>
+                        <th className="pb-3 font-semibold">Status</th>
+                        <th className="pb-3 font-semibold">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {report.directories.map((d: any) => (
+                        <tr key={d.id} className="hover:bg-slate-800/30">
+                          <td className="py-3 font-medium text-white">{d.name}</td>
+                          <td className="py-3">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${statusStyle[d.status] || 'bg-slate-700/50 text-slate-400'}`}>
+                              {statusLabel[d.status] || d.status}
+                            </span>
+                          </td>
+                          <td className="py-3 text-sm text-slate-400">
+                            {d.status === 'listed' && (
+                              d.consistent
+                                ? <span className="text-green-500">Details match</span>
+                                : <span className="text-amber-500">Differs: {(d.napDiffers || []).join(', ')}</span>
+                            )}
+                            {d.status === 'not-found' && 'No listing found for this business'}
+                            {d.status === 'not-configured' && 'Connect an API key to check this directory'}
+                            {d.status === 'unsupported' && (d.note || 'No public lookup API')}
+                            {d.status === 'error' && (d.error || 'Lookup failed')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {report.totals.notConfigured > 0 && (
+                  <p className="text-slate-500 text-xs">
+                    {report.totals.notConfigured} director{report.totals.notConfigured === 1 ? 'y is' : 'ies are'} waiting on an API key,
+                    so {report.totals.notConfigured === 1 ? 'it was' : 'they were'} not checked.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
+
         </div>
       )}
 
