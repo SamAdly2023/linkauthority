@@ -27,3 +27,6 @@ dist-ssr
 
 # Firebase credentials
 server/config/firebase-service-account.json
+
+# Local scratch notes - has held credentials, must never be committed
+*.jtml

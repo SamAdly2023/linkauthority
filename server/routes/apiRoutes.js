@@ -3,7 +3,9 @@ const cheerio = require('cheerio');
 const crypto = require('crypto');
 const dns = require('dns').promises;
 const requireLogin = require('../middlewares/requireLogin');
-const { estimateAuthority } = require('../services/ai');
+const authority = require('../services/authority');
+const { refreshBacklinks } = require('../services/backlinks');
+const { auditCitations, configuredProviders } = require('../services/citations');
 const { sendNotification } = require('../services/notification');
 const {
   sendWebsiteAddedEmail,
@@ -151,8 +153,9 @@ module.exports = app => {
     const existing = await getWebsiteByUrl(url);
     if (existing) return res.status(400).send({ error: 'Website already exists' });
 
-    // AI Domain Authority calculation (Keep this)
-    const domainAuthority = await estimateAuthority(url);
+    // Measured from a real link graph. Null means "not measured" - it is shown
+    // as such rather than as a zero or an invented number.
+    const authorityResult = await authority.lookup(url);
 
     const isAdmin = req.user.email === 'samadly728@gmail.com';
     const verificationToken = crypto.randomBytes(16).toString('hex');
@@ -164,7 +167,8 @@ module.exports = app => {
       description: description || '',
       serviceType,
       location: serviceType === 'local' ? location : null,
-      domainAuthority,
+      domainAuthority: authorityResult ? authorityResult.score : null,
+      authority: authorityResult,
       ownerId: req.user.id,
       isVerified: isAdmin,
       verificationToken,
@@ -183,7 +187,7 @@ module.exports = app => {
 
       // Email Notification
       sendWebsiteAddedEmail(req.user, website).catch(console.error);
-      sendAdminNotification('New Website Added', `User ${req.user.name} added ${website.url} (DA: ${website.domainAuthority})`);
+      sendAdminNotification('New Website Added', `User ${req.user.name} added ${website.url} (authority: ${authorityResult ? authorityResult.score + '/10' : 'not measured'})`);
 
       res.send(website);
     } catch (err) {
@@ -224,6 +228,98 @@ module.exports = app => {
     } catch (err) {
       res.status(422).send(err);
     }
+  });
+
+  // Verified backlinks: which network members actually link to this site right
+  // now, checked by fetching their pages rather than assumed from our records.
+  app.get('/api/websites/:id/backlinks', requireLogin, async (req, res) => {
+    try {
+      const website = await getWebsiteById(req.params.id);
+      if (!website || website.ownerId !== req.user.id) {
+        return res.status(404).send({ error: 'Website not found' });
+      }
+
+      const cached = website.backlinkReport;
+      const age = cached?.checkedAt
+        ? Date.now() - new Date(cached.checkedAt._seconds ? cached.checkedAt._seconds * 1000 : cached.checkedAt).getTime()
+        : Infinity;
+
+      // Crawling every member is slow, so serve a cached report for a day
+      // unless the caller explicitly asks for a fresh one.
+      if (cached && age < 24 * 60 * 60 * 1000 && 'true' !== req.query.refresh) {
+        return res.send({ ...cached, cached: true });
+      }
+
+      const report = await refreshBacklinks(website);
+      res.send({ ...report, cached: false });
+    } catch (err) {
+      console.error('Backlink audit failed:', err);
+      res.status(500).send({ error: 'Failed to audit backlinks' });
+    }
+  });
+
+  // Re-measures authority from the link graph on demand.
+  app.post('/api/websites/:id/authority', requireLogin, async (req, res) => {
+    try {
+      const website = await getWebsiteById(req.params.id);
+      if (!website || website.ownerId !== req.user.id) {
+        return res.status(404).send({ error: 'Website not found' });
+      }
+
+      const result = await authority.lookup(website.url);
+
+      await db.collection('websites').doc(website.id).update({
+        authority: result,
+        domainAuthority: result ? result.score : null
+      });
+
+      res.send({
+        authority: result,
+        configured: authority.isConfigured(),
+        scale: authority.SCALE_MAX
+      });
+    } catch (err) {
+      console.error('Authority lookup failed:', err);
+      res.status(500).send({ error: 'Failed to measure authority' });
+    }
+  });
+
+  // Citation audit across the directories that expose a usable API.
+  app.post('/api/websites/:id/citations', requireLogin, async (req, res) => {
+    try {
+      const website = await getWebsiteById(req.params.id);
+      if (!website || website.ownerId !== req.user.id) {
+        return res.status(404).send({ error: 'Website not found' });
+      }
+
+      const { name, phone, address, city } = req.body || {};
+      if (!name) {
+        return res.status(400).send({ error: 'Business name is required' });
+      }
+
+      const report = await auditCitations({
+        name,
+        phone,
+        address,
+        city: city || website.location?.city
+      });
+
+      await db.collection('websites').doc(website.id).update({ citationReport: report });
+
+      res.send({ ...report, providers: configuredProviders() });
+    } catch (err) {
+      console.error('Citation audit failed:', err);
+      res.status(500).send({ error: 'Failed to audit citations' });
+    }
+  });
+
+  // Tells the dashboard which data sources are actually wired up, so it can say
+  // "not measured" honestly instead of rendering an empty result as a zero.
+  app.get('/api/data-sources', requireLogin, (req, res) => {
+    res.send({
+      authority: { configured: authority.isConfigured(), source: 'Open PageRank', scale: authority.SCALE_MAX },
+      citations: configuredProviders()
+    });
   });
 
   // Verify website ownership
