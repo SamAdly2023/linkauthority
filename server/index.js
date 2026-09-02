@@ -103,6 +103,12 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter); // Apply to API routes
 
+// Mounted before the JSON parser on purpose: the HMAC must be computed over the
+// exact bytes GitHub signed, and its push payloads far exceed the 10kb limit
+// the rest of the API uses.
+const { handleWebhook } = require('./services/deploy');
+app.post('/api/deploy', express.raw({ type: 'application/json', limit: '5mb' }), (req, res) => handleWebhook(req, res));
+
 app.use(express.json({ limit: '10kb' })); // Body limit is 10kb
 app.use(express.urlencoded({ extended: true, limit: '10kb' })); // wp_remote_post sends form-urlencoded bodies
 app.use(cors()); // Note: In production, you might want to restrict this to specific origins
