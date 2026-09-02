@@ -114,5 +114,5 @@ This project is licensed under the MIT License.
 
 # Deployment
 
-Pushing to main triggers a rebuild on the server via the GitHub webhook.
+Pushing to main triggers a rebuild on the server via the GitHub webhook, verified end to end.
 See server/services/deploy.js and RELEASE.md.
