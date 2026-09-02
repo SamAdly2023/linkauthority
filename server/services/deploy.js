@@ -95,7 +95,18 @@ const runDeploy = async () => {
     await run('git', ['fetch', '--all'], APP_DIR);
     await run('git', ['reset', '--hard', 'origin/main'], APP_DIR);
     const npm = 'win32' === process.platform ? 'npm.cmd' : 'npm';
-    await run(npm, ['install', '--no-audit', '--no-fund'], APP_DIR);
+
+    // Dependency installation is best-effort, not a gate. CloudLinux's Node
+    // selector owns server/node_modules as a symlink into a virtualenv and
+    // refuses an install that would shadow it, which would otherwise abort
+    // every deploy. Dependencies change rarely; a code change should still
+    // ship. When package.json does change, run npm install by hand.
+    try {
+      await run(npm, ['install', '--no-audit', '--no-fund'], APP_DIR);
+    } catch (err) {
+      log('npm install skipped - continuing with the dependencies already present');
+    }
+
     await run(npm, ['run', 'build'], APP_DIR);
 
     // Restart last, so a failed build leaves the previous version serving.
