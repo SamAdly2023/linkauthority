@@ -89,6 +89,8 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
   const [bizName, setBizName] = useState('');
   const [bizPhone, setBizPhone] = useState('');
   const [bizAddress, setBizAddress] = useState('');
+  const [bizVertical, setBizVertical] = useState('');
+  const [showChecklist, setShowChecklist] = useState(false);
 
   const selectedSite = websites.find(w => w.url === selectedSiteUrl) || websites[0];
 
@@ -106,7 +108,7 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
       const res = await fetch(`/api/websites/${selectedSite._id || selectedSite.id}/citations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: bizName, phone: bizPhone, address: bizAddress })
+        body: JSON.stringify({ name: bizName, phone: bizPhone, address: bizAddress, vertical: bizVertical })
       });
 
       if (!res.ok) {
@@ -379,6 +381,20 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
               />
             </div>
 
+            {/* The industry decides which vertical directories are relevant.
+                Without it, a remodeler would be told it is missing from Zillow. */}
+            <select
+              className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 mb-4 w-full md:w-1/3"
+              value={bizVertical}
+              onChange={e => setBizVertical(e.target.value)}
+            >
+              <option value="">Industry — general listings only</option>
+              <option value="home-services">Home services &amp; remodeling</option>
+              <option value="hospitality">Hospitality &amp; travel</option>
+              <option value="real-estate">Real estate</option>
+              <option value="b2b-industrial">B2B &amp; industrial</option>
+            </select>
+
             <button
               onClick={runScan}
               disabled={scanning}
@@ -408,7 +424,7 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                     ['Listed', report.totals.listed],
                     ['Not found', report.totals.missing],
                     ['NAP mismatches', report.totals.inconsistent],
-                    ['Manual check', report.totals.unsupported]
+                    ['To submit', report.totals.unsupported]
                   ].map(([label, value]: any) => (
                     <div key={label} className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
                       <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">{label}</p>
@@ -417,6 +433,9 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                   ))}
                 </div>
 
+                {/* Only what we actually looked up. Listing the seventy-odd
+                    directories we cannot query alongside these would bury the
+                    real findings in rows that all say the same thing. */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
@@ -427,9 +446,15 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
-                      {report.directories.map((d: any) => (
+                      {report.directories
+                        .filter((d: any) => d.status !== 'unsupported')
+                        .map((d: any) => (
                         <tr key={d.id} className="hover:bg-slate-800/30">
-                          <td className="py-3 font-medium text-white">{d.name}</td>
+                          <td className="py-3 font-medium text-white">
+                            {d.url
+                              ? <a href={d.url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">{d.name}</a>
+                              : d.name}
+                          </td>
                           <td className="py-3">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${statusStyle[d.status] || 'bg-slate-700/50 text-slate-400'}`}>
                               {statusLabel[d.status] || d.status}
@@ -443,7 +468,6 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                             )}
                             {d.status === 'not-found' && 'No listing found for this business'}
                             {d.status === 'not-configured' && 'Connect an API key to check this directory'}
-                            {d.status === 'unsupported' && (d.note || 'No public lookup API')}
                             {d.status === 'error' && (d.error || 'Lookup failed')}
                           </td>
                         </tr>
@@ -457,6 +481,71 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                     {report.totals.notConfigured} director{report.totals.notConfigured === 1 ? 'y is' : 'ies are'} waiting on an API key,
                     so {report.totals.notConfigured === 1 ? 'it was' : 'they were'} not checked.
                   </p>
+                )}
+
+                {/* The rest cannot be queried, so they are the to-do list
+                    rather than a result. Grouped by how much work each takes. */}
+                {report.totals.unsupported > 0 && (
+                  <div className="border-t border-slate-800 pt-5">
+                    <button
+                      onClick={() => setShowChecklist(!showChecklist)}
+                      className="flex items-center justify-between w-full text-left group"
+                    >
+                      <div>
+                        <p className="text-white font-bold">
+                          {report.totals.unsupported} directories to submit by hand
+                        </p>
+                        <p className="text-slate-500 text-sm mt-0.5">
+                          {report.totals.formSubmit} web forms, {report.totals.manualSubmit} needing
+                          identity or licence verification, {report.totals.automatable} with an official API
+                        </p>
+                      </div>
+                      <span className="text-slate-500 text-sm group-hover:text-white shrink-0 ml-4">
+                        {showChecklist ? 'Hide' : 'Show'}
+                      </span>
+                    </button>
+
+                    {showChecklist && (
+                      <div className="mt-5 space-y-5">
+                        {['A', 'B'].map(tier => {
+                          const rows = report.directories.filter(
+                            (d: any) => d.status === 'unsupported' && d.tier === tier
+                          );
+                          if (!rows.length) return null;
+
+                          return (
+                            <div key={tier}>
+                              <p className="text-slate-500 text-xs uppercase tracking-wider mb-2">
+                                {tier === 'A' ? 'Priority — do these first' : 'Worth doing'}
+                              </p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {rows.map((d: any) => (
+                                  <a
+                                    key={d.id}
+                                    href={d.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-start justify-between gap-3 bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3 transition-colors"
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="text-white text-sm font-medium truncate">{d.name}</p>
+                                      <p className="text-slate-500 text-xs mt-0.5">{d.note}</p>
+                                    </div>
+                                    <span className={`text-xs font-bold shrink-0 mt-0.5 ${
+                                      d.submit === 'api' ? 'text-blue-400'
+                                        : d.submit === 'manual' ? 'text-amber-500' : 'text-slate-500'
+                                    }`}>
+                                      {d.submit === 'api' ? 'API' : d.submit === 'manual' ? 'Verify' : 'Form'}
+                                    </span>
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}

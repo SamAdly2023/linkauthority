@@ -292,7 +292,7 @@ module.exports = app => {
         return res.status(404).send({ error: 'Website not found' });
       }
 
-      const { name, phone, address, city } = req.body || {};
+      const { name, phone, address, city, vertical } = req.body || {};
       if (!name) {
         return res.status(400).send({ error: 'Business name is required' });
       }
@@ -301,7 +301,10 @@ module.exports = app => {
         name,
         phone,
         address,
-        city: city || website.location?.city
+        city: city || website.location?.city,
+        // Without a vertical the audit reports only the directories that suit
+        // any business, so a remodeler is never told it is missing from Zillow.
+        vertical: vertical || website.vertical || null
       });
 
       await db.collection('websites').doc(website.id).update({ citationReport: report });
