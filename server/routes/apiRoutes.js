@@ -6,6 +6,7 @@ const requireLogin = require('../middlewares/requireLogin');
 const authority = require('../services/authority');
 const { refreshBacklinks } = require('../services/backlinks');
 const { auditCitations, configuredProviders } = require('../services/citations');
+const { buildProfile, renderFields, validateProfile } = require('../services/napProfile');
 const { sendNotification } = require('../services/notification');
 const {
   sendWebsiteAddedEmail,
@@ -313,6 +314,81 @@ module.exports = app => {
     } catch (err) {
       console.error('Citation audit failed:', err);
       res.status(500).send({ error: 'Failed to audit citations' });
+    }
+  });
+
+  // The business record every directory form is filled from. Stored raw and
+  // derived on read, so a change to the formatting rules reaches records that
+  // were saved before it.
+  const profileFor = (website) => {
+    const saved = website.businessProfile;
+    if (!saved?.name) return null;
+
+    const profile = buildProfile(saved);
+
+    return {
+      saved,
+      profile,
+      fields: renderFields(profile),
+      issues: validateProfile(profile)
+    };
+  };
+
+  app.get('/api/websites/:id/profile', requireLogin, async (req, res) => {
+    try {
+      const website = await getWebsiteById(req.params.id);
+      if (!website || website.ownerId !== req.user.id) {
+        return res.status(404).send({ error: 'Website not found' });
+      }
+
+      res.send(profileFor(website) || { saved: null, profile: null, fields: [], issues: [] });
+    } catch (err) {
+      console.error('Loading business profile failed:', err);
+      res.status(500).send({ error: 'Failed to load the business profile' });
+    }
+  });
+
+  app.put('/api/websites/:id/profile', requireLogin, async (req, res) => {
+    try {
+      const website = await getWebsiteById(req.params.id);
+      if (!website || website.ownerId !== req.user.id) {
+        return res.status(404).send({ error: 'Website not found' });
+      }
+
+      const body = req.body || {};
+      if (!body.name) {
+        return res.status(400).send({ error: 'Business name is required' });
+      }
+
+      const asList = (v) => Array.isArray(v)
+        ? v.map(s => String(s).trim()).filter(Boolean)
+        : String(v || '').split(',').map(s => s.trim()).filter(Boolean);
+
+      const saved = {
+        name: String(body.name).trim(),
+        phone: String(body.phone || '').trim(),
+        address: String(body.address || '').trim(),
+        email: String(body.email || '').trim(),
+        website: String(body.website || '').trim(),
+        description: String(body.description || '').trim(),
+        descriptions: body.descriptions || {},
+        categories: asList(body.categories),
+        services: asList(body.services),
+        social: body.social || {},
+        hours: String(body.hours || '').trim(),
+        vertical: body.vertical || null
+      };
+
+      // Reject before storing, so a record that cannot be built never lands in
+      // the database and breaks every later read.
+      buildProfile(saved);
+
+      await db.collection('websites').doc(website.id).update({ businessProfile: saved });
+
+      res.send(profileFor({ ...website, businessProfile: saved }));
+    } catch (err) {
+      console.error('Saving business profile failed:', err);
+      res.status(500).send({ error: 'Failed to save the business profile' });
     }
   });
 

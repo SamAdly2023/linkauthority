@@ -92,7 +92,104 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
   const [bizVertical, setBizVertical] = useState('');
   const [showChecklist, setShowChecklist] = useState(false);
 
+  // The canonical record every directory form is filled from.
+  const [profile, setProfile] = useState<any>(null);
+  const [profileForm, setProfileForm] = useState<any>({
+    name: '', phone: '', address: '', email: '', website: '',
+    description: '', categories: '', services: '', hours: ''
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState('');
+  const [copiedField, setCopiedField] = useState('');
+
   const selectedSite = websites.find(w => w.url === selectedSiteUrl) || websites[0];
+
+  // Load the saved record whenever the selected site changes, so the audit and
+  // the paste-ready fields both start from what was stored rather than blank.
+  useEffect(() => {
+    const site = websites.find(w => w.url === selectedSiteUrl) || websites[0];
+    const id = site && ((site as any)._id || (site as any).id);
+    if (!id) return;
+
+    let cancelled = false;
+
+    fetch(`/api/websites/${id}/profile`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (cancelled || !data) return;
+        setProfile(data.profile ? data : null);
+        if (data.saved) {
+          setProfileForm({
+            name: data.saved.name || '',
+            phone: data.saved.phone || '',
+            address: data.saved.address || '',
+            email: data.saved.email || '',
+            website: data.saved.website || '',
+            description: data.saved.description || '',
+            categories: (data.saved.categories || []).join(', '),
+            services: (data.saved.services || []).join(', '),
+            hours: data.saved.hours || ''
+          });
+          // The audit reads the same record, so it never disagrees with it.
+          setBizName(data.saved.name || '');
+          setBizPhone(data.saved.phone || '');
+          setBizAddress(data.saved.address || '');
+          setBizVertical(data.saved.vertical || '');
+        }
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [selectedSiteUrl, websites]);
+
+  const saveProfile = async () => {
+    const site = websites.find(w => w.url === selectedSiteUrl) || websites[0];
+    const id = site && ((site as any)._id || (site as any).id);
+    if (!id) return;
+
+    if (!profileForm.name.trim()) {
+      setProfileMsg('Business name is required.');
+      return;
+    }
+
+    setProfileSaving(true);
+    setProfileMsg('');
+
+    try {
+      const res = await fetch(`/api/websites/${id}/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...profileForm, vertical: bizVertical })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setProfileMsg(err.error || 'Could not save the business details.');
+        return;
+      }
+
+      const data = await res.json();
+      setProfile(data);
+      setBizName(data.saved.name || '');
+      setBizPhone(data.saved.phone || '');
+      setBizAddress(data.saved.address || '');
+      setProfileMsg('Saved.');
+    } catch (err) {
+      setProfileMsg('Could not save the business details. Check your connection.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const copyField = async (label: string, value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(label);
+      setTimeout(() => setCopiedField(''), 1500);
+    } catch (err) {
+      // Clipboard access can be refused; the value is on screen to copy by hand.
+    }
+  };
 
   const runScan = async () => {
     if (!selectedSite) return;
@@ -347,6 +444,143 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* The canonical business record. Sixty of these directories have no
+              API, so a person fills the form - and the expensive part is not
+              the clicking, it is retyping this and getting it subtly wrong. */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8">
+            <h3 className="text-xl font-bold text-white mb-1">Business details</h3>
+            <p className="text-slate-400 text-sm mb-6">
+              Enter these once. Every directory form is filled from this record, so the
+              name, address and phone stay identical everywhere &mdash; which is what
+              search engines are actually checking.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              {[
+                ['name', 'Business name (required)'],
+                ['phone', 'Phone'],
+                ['address', 'Full address, one line'],
+                ['email', 'Email'],
+                ['website', 'Website URL'],
+                ['hours', 'Hours, e.g. Mon-Fri 7am-5pm']
+              ].map(([key, placeholder]) => (
+                <input
+                  key={key}
+                  type="text"
+                  placeholder={placeholder}
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                  value={profileForm[key]}
+                  onChange={e => setProfileForm({ ...profileForm, [key]: e.target.value })}
+                />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <input
+                type="text"
+                placeholder="Categories, comma separated"
+                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                value={profileForm.categories}
+                onChange={e => setProfileForm({ ...profileForm, categories: e.target.value })}
+              />
+              <input
+                type="text"
+                placeholder="Services, comma separated"
+                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                value={profileForm.services}
+                onChange={e => setProfileForm({ ...profileForm, services: e.target.value })}
+              />
+            </div>
+
+            <textarea
+              rows={4}
+              placeholder="Description. Write around 750 characters &mdash; shorter versions are cut from this one."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500 mb-4 resize-y"
+              value={profileForm.description}
+              onChange={e => setProfileForm({ ...profileForm, description: e.target.value })}
+            />
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={saveProfile}
+                disabled={profileSaving}
+                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors"
+              >
+                {profileSaving ? 'Saving…' : 'Save business details'}
+              </button>
+              {profileMsg && (
+                <span className={`text-sm ${profileMsg === 'Saved.' ? 'text-green-500' : 'text-red-400'}`}>
+                  {profileMsg}
+                </span>
+              )}
+            </div>
+
+            {/* Problems worth knowing about before sixty forms have been filled
+                with them, rather than after. */}
+            {profile?.issues?.length > 0 && (
+              <div className="mt-5 space-y-2">
+                {profile.issues.map((issue: any) => (
+                  <div key={issue.field} className="flex items-start gap-2 text-sm">
+                    <AlertCircle
+                      size={16}
+                      className={`mt-0.5 shrink-0 ${issue.severity === 'error' ? 'text-red-400' : 'text-amber-500'}`}
+                    />
+                    <span className="text-slate-400">{issue.message}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {profile?.fields?.length > 0 && (
+              <div className="mt-6 border-t border-slate-800 pt-6">
+                <p className="text-white font-bold mb-1">Ready to paste</p>
+                <p className="text-slate-500 text-sm mb-4">
+                  Each field formatted the way directory forms ask for it. Click to copy.
+                </p>
+
+                <div className="space-y-1.5">
+                  {profile.fields.map((f: any) => (
+                    <button
+                      key={f.label}
+                      onClick={() => copyField(f.label, f.value)}
+                      className="w-full flex items-start gap-3 text-left bg-slate-950/60 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 transition-colors group"
+                    >
+                      <span className="text-slate-500 text-xs w-40 shrink-0 pt-0.5">{f.label}</span>
+                      <span className="text-slate-200 text-sm flex-1 break-words">{f.value}</span>
+                      {copiedField === f.label
+                        ? <Check size={15} className="text-green-500 shrink-0 mt-0.5" />
+                        : <Copy size={15} className="text-slate-600 group-hover:text-slate-400 shrink-0 mt-0.5" />}
+                    </button>
+                  ))}
+                </div>
+
+                {profile.profile?.description?.full && (
+                  <div className="mt-4">
+                    <p className="text-slate-500 text-xs mb-2">
+                      Description, cut to the limits these forms enforce
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                      {[80, 160, 250, 500, 750].map(limit => (
+                        <button
+                          key={limit}
+                          onClick={() => copyField(`desc-${limit}`, profile.profile.description[limit])}
+                          className="bg-slate-950/60 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-center transition-colors"
+                        >
+                          <span className="block text-white text-sm font-bold">
+                            {copiedField === `desc-${limit}` ? 'Copied' : limit}
+                          </span>
+                          <span className="block text-slate-500 text-xs">
+                            {profile.profile.description[limit].length} char
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Citation audit */}
