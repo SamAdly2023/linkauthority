@@ -95,6 +95,14 @@ const truncate = (text, limit) => {
   if (s.length <= limit) return s;
 
   const cut = s.slice(0, limit);
+
+  // Prefer ending on a complete sentence. Losing a clause to finish the
+  // thought reads far better than keeping every character and stopping at
+  // "our mission is to deliver exceptional". Only worth it when a sentence
+  // ends late enough that the result is not drastically shorter.
+  const sentenceEnd = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '));
+  if (sentenceEnd > limit * 0.6) return cut.slice(0, sentenceEnd + 1);
+
   const lastSpace = cut.lastIndexOf(' ');
 
   // Fall back to a hard cut only when there is no space to break on.
@@ -128,9 +136,17 @@ const buildProfile = (business) => {
   const address = splitAddress(business.address);
   const phone = phoneFormats(business.phone);
 
+  // Truncating a narrative paragraph gives you a fragment, not a description:
+  // cut a good 600-word opening to 80 characters and it ends mid-thought. The
+  // short fields want copy written for them, so a written variant always wins
+  // and truncation is only the fallback. Overrides are still capped, because a
+  // form that silently chops the paste is the problem we are avoiding.
+  const written = business.descriptions || {};
   const descriptions = {};
   for (const limit of DESCRIPTION_LIMITS) {
-    descriptions[limit] = truncate(business.description, limit);
+    descriptions[limit] = written[limit]
+      ? truncate(written[limit], limit)
+      : truncate(business.description, limit);
   }
 
   const website = String(business.website || '').trim().replace(/\/+$/, '');
@@ -238,6 +254,19 @@ const validateProfile = (profile) => {
       severity: 'warning',
       message: 'Description is under 160 characters, so the longer fields will look thin. Aim for 500 or more.'
     });
+  }
+
+  // A short variant that does not end on a sentence is a truncated fragment,
+  // which reads badly in the one field a lot of people actually see.
+  for (const limit of DESCRIPTION_LIMITS) {
+    const text = profile.description[limit];
+    if (text && profile.description.full.length > limit && !/[.!?]$/.test(text)) {
+      issues.push({
+        field: `description.${limit}`,
+        severity: 'warning',
+        message: `The ${limit}-character description is a truncated fragment. Write one for this length instead.`
+      });
+    }
   }
 
   if (!profile.categories.length) {
