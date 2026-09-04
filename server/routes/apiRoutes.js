@@ -370,6 +370,7 @@ module.exports = app => {
         address: String(body.address || '').trim(),
         email: String(body.email || '').trim(),
         website: String(body.website || '').trim(),
+        logo: String(body.logo || '').trim(),
         description: String(body.description || '').trim(),
         descriptions: body.descriptions || {},
         categories: asList(body.categories),

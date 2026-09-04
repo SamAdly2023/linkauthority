@@ -96,7 +96,7 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
   const [profile, setProfile] = useState<any>(null);
   const [profileForm, setProfileForm] = useState<any>({
     name: '', phone: '', address: '', email: '', website: '',
-    description: '', categories: '', services: '', hours: ''
+    description: '', categories: '', services: '', hours: '', logo: ''
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState('');
@@ -125,6 +125,7 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
             address: data.saved.address || '',
             email: data.saved.email || '',
             website: data.saved.website || '',
+            logo: data.saved.logo || '',
             description: data.saved.description || '',
             categories: (data.saved.categories || []).join(', '),
             services: (data.saved.services || []).join(', '),
@@ -464,6 +465,7 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                 ['address', 'Full address, one line'],
                 ['email', 'Email'],
                 ['website', 'Website URL'],
+                ['logo', 'Logo URL, square and at least 250x250'],
                 ['hours', 'Hours, e.g. Mon-Fri 7am-5pm']
               ].map(([key, placeholder]) => (
                 <input

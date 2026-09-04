@@ -160,6 +160,9 @@ const buildProfile = (business) => {
     address: { ...address, singleLine: String(business.address || '').trim() },
 
     email: String(business.email || '').trim(),
+    // Directory forms take a URL far more often than an upload, and the same
+    // URL everywhere is what makes the listings look like one business.
+    logo: String(business.logo || '').trim(),
     website,
     // Several forms want the domain without a scheme.
     domain: website.replace(/^https?:\/\//, '').replace(/^www\./, ''),
@@ -207,6 +210,7 @@ const renderFields = (profile, opts = {}) => {
     { label: 'Full address', value: profile.address.singleLine, note: 'For forms with one address field' },
     { label: 'Website', value: profile.website },
     { label: 'Email', value: profile.email },
+    { label: 'Logo URL', value: profile.logo, note: 'Square, at least 250x250, same URL everywhere' },
     { label: `Description (${limit} char)`, value: profile.description[limit] },
     { label: 'Categories', value: profile.categories.join(', ') },
     { label: 'Services', value: profile.services.join(', ') },
@@ -271,6 +275,14 @@ const validateProfile = (profile) => {
 
   if (!profile.categories.length) {
     issues.push({ field: 'categories', severity: 'warning', message: 'No category set. Most directories require one and will pick badly on your behalf.' });
+  }
+
+  if (!profile.logo) {
+    issues.push({
+      field: 'logo',
+      severity: 'warning',
+      message: 'No logo URL. Most directories ask for one, and a listing without it looks abandoned.'
+    });
   }
 
   if (!profile.email) {
