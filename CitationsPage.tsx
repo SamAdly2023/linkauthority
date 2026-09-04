@@ -22,7 +22,10 @@ interface CitationsPageProps {
 }
 
 const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
-  const [activeTab, setActiveTab] = useState<'audit' | 'builder' | 'schema'>('audit');
+  // Opens on the tab that does something. The audit tab led with two panels of
+  // invented numbers, so it was the first thing anyone saw and the only thing
+  // that was not real.
+  const [activeTab, setActiveTab] = useState<'audit' | 'builder' | 'schema'>('builder');
   const [selectedSiteUrl, setSelectedSiteUrl] = useState('');
 
   useEffect(() => {
@@ -295,107 +298,28 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
       {/* AI Assistant Audit Section */}
       {activeTab === 'audit' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Siri/Alexa Readiness */}
-            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Voice Search Readiness</h3>
-                  <p className="text-slate-400 text-sm">Optimization for Siri, Alexa, and Google Assistant</p>
-                </div>
-                <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl">
-                  <Bot size={24} />
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-6 mb-8">
-                <div className="relative w-24 h-24 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="48" cy="48" r="40" stroke="#1e293b" strokeWidth="8" fill="transparent" />
-                    <circle cx="48" cy="48" r="40" stroke="#3b82f6" strokeWidth="8" fill="transparent" strokeDasharray="251.2" strokeDashoffset="62.8" />
-                  </svg>
-                  <span className="absolute text-2xl font-bold text-white">75%</span>
-                </div>
-                <div className="space-y-2 flex-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-300">Siri</span>
-                    <span className="text-green-400 font-bold">Good</span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <div className="bg-green-500 h-full w-[80%]"></div>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-300">Alexa</span>
-                    <span className="text-yellow-400 font-bold">Fair</span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <div className="bg-yellow-500 h-full w-[60%]"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800/50">
-                <h4 className="text-sm font-bold text-white mb-2">Recommendations</h4>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-xs text-slate-400">
-                    <AlertCircle size={14} className="text-yellow-500 shrink-0 mt-0.5" />
-                    Ensure business hours are consistent across Yelp and Apple Maps.
-                  </li>
-                  <li className="flex items-start gap-2 text-xs text-slate-400">
-                    <CheckCircle2 size={14} className="text-green-500 shrink-0 mt-0.5" />
-                    Name and Address match perfectly on Google.
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Google SGE Optimization */}
-            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Google SGE Status</h3>
-                  <p className="text-slate-400 text-sm">Search Generative Experience Optimization</p>
-                </div>
-                <div className="p-3 bg-purple-500/20 text-purple-400 rounded-xl">
-                  <BrainCircuit size={24} />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-6 mb-8">
-                <div className="relative w-24 h-24 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="48" cy="48" r="40" stroke="#1e293b" strokeWidth="8" fill="transparent" />
-                    <circle cx="48" cy="48" r="40" stroke="#a855f7" strokeWidth="8" fill="transparent" strokeDasharray="251.2" strokeDashoffset="100.48" />
-                  </svg>
-                  <span className="absolute text-2xl font-bold text-white">60%</span>
-                </div>
-                <div className="space-y-2 flex-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-300">Entity Trust</span>
-                    <span className="text-purple-400 font-bold">High</span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <div className="bg-purple-500 h-full w-[85%]"></div>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-300">Review Sentiment</span>
-                    <span className="text-red-400 font-bold">Low</span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <div className="bg-red-500 h-full w-[40%]"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800/50">
-                <h4 className="text-sm font-bold text-white mb-2">AI Insights</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Google's AI connects your business with "affordable plumbing" but lacks recent positive reviews to confidently recommend you in top spots. Focus on getting 5 more detailed reviews.
-                </p>
-              </div>
-            </div>
+          {/* Voice Search Readiness and Google SGE Status used to sit here as
+              two dashboards of invented numbers - a fixed 75% and 60%, Siri
+              "Good", Alexa "Fair", and an insight telling every business it
+              was associated with "affordable plumbing". None of it was
+              measured, and none of it changed between sites. Nothing replaces
+              them because there is no data source behind them; the real audit
+              is one tab across. */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-10 text-center">
+            <Bot size={30} className="text-slate-600 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-white mb-2">Nothing measured here yet</h3>
+            <p className="text-slate-400 text-sm max-w-lg mx-auto mb-6">
+              Voice search and Google SGE visibility have no public API to measure them against,
+              so there is nothing honest to show on this tab. What we can check for real &mdash;
+              which directories actually list your business, and whether the details match &mdash;
+              is in the citation audit.
+            </p>
+            <button
+              onClick={() => setActiveTab('builder')}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors"
+            >
+              Go to the citation audit
+            </button>
           </div>
         </div>
       )}

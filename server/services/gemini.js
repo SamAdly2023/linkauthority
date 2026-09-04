@@ -6,6 +6,13 @@ const keys = require('../config/keys');
 // Initialize Gemini
 // Note: Ensure GEMINI_API_KEY is in your .env file
 const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+
+// Pinned in one place and overridable without a deploy. Google retires model
+// names on a schedule, and the last one was left hardcoded at two call sites
+// until it stopped answering - at which point the only symptom was a button
+// that did nothing.
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
 let ai;
 
 if (apiKey) {
@@ -83,14 +90,15 @@ const analyzeWebsite = async (url) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: MODEL,
       contents: prompt,
       config: {
         responseMimeType: 'application/json'
       }
     });
 
-    const text = response.text();
+    // text is a getter on this SDK; calling it threw on every request.
+    const text = response.text;
     // Clean up potential markdown code blocks if the model adds them despite mimeType
     const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
     
@@ -115,7 +123,13 @@ const analyzeWebsite = async (url) => {
 };
 
 const getSEOAdvice = async (siteUrl, da) => {
-  if (!ai) return null;
+  // Throwing rather than returning null. The old version returned null for
+  // every failure - no key, retired model, malformed JSON - the route turned
+  // that into a generic 500, and the page rendered nothing at all. The button
+  // appeared to do nothing, which is the hardest kind of bug to report.
+  if (!ai) {
+    throw new Error('The Gemini API key is not configured on the server.');
+  }
 
   const prompt = `Act as a senior SEO expert. Analyze the website "${siteUrl}" (DA: ${da}).
   Generate a highly detailed, dense, and professional SEO report in JSON format.
@@ -157,23 +171,42 @@ const getSEOAdvice = async (siteUrl, da) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: MODEL,
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
       }
     });
 
-    const text = response.text();
+    // text is a getter on this SDK; calling it threw on every request.
+    const text = response.text;
     const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
     
     const data = JSON.parse(jsonStr);
     data.screenshotUrl = `https://image.thum.io/get/width/1200/crop/800/noanimate/${siteUrl}`;
-    
+
     return data;
   } catch (error) {
-    console.error("Gemini SEO Advice Error:", error);
-    return null;
+    console.error(`Gemini SEO Advice Error (model ${MODEL}):`, error);
+
+    // Name the cause. A retired model and a rejected key both surfaced as the
+    // same blank screen before, so there was nothing to act on.
+    const raw = String(error?.message || error);
+
+    if (/not found|not supported|NOT_FOUND|404/i.test(raw)) {
+      throw new Error(`The model "${MODEL}" was rejected by Google. Set GEMINI_MODEL to a current model name.`);
+    }
+    if (/API key|401|PERMISSION_DENIED|UNAUTHENTICATED/i.test(raw)) {
+      throw new Error('Google rejected the API key. Check GEMINI_API_KEY on the server.');
+    }
+    if (/quota|429|RESOURCE_EXHAUSTED/i.test(raw)) {
+      throw new Error('The Gemini quota for this key is exhausted. Try again later.');
+    }
+    if (error instanceof SyntaxError) {
+      throw new Error('Gemini returned a response that was not valid JSON. Try generating again.');
+    }
+
+    throw new Error(`The report could not be generated: ${raw}`);
   }
 };
 

@@ -781,9 +781,22 @@ const App: React.FC = () => {
     if (!site) return;
 
     setLoadingAi(true);
-    const report = await getSEOAdvice(site.url, site.domainAuthority);
-    setAiReport(report);
-    setLoadingAi(false);
+
+    try {
+      setAiReport(await getSEOAdvice(site.url, site.domainAuthority));
+    } catch (err: any) {
+      // Say what actually went wrong. This used to fail silently: the report
+      // stayed empty and nothing explained why.
+      setMessageModal({
+        isOpen: true,
+        title: 'Report not generated',
+        message: err?.message || 'The report could not be generated.',
+        type: 'error'
+      });
+    } finally {
+      // In a finally, so a failure cannot leave the button spinning forever.
+      setLoadingAi(false);
+    }
   };
 
   if (!user) {

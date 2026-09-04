@@ -796,11 +796,13 @@ module.exports = app => {
 
     try {
       const advice = await getSEOAdvice(url, da || 1);
-      if (!advice) return res.status(500).send({ error: 'Failed to generate advice' });
       res.send(advice);
     } catch (err) {
-      console.error(err);
-      res.status(500).send({ error: 'Failed to generate advice' });
+      console.error('SEO advice failed:', err);
+      // Pass the real reason through. "Failed to generate advice" was true of
+      // a missing key, a retired model and an exhausted quota alike, which
+      // left nothing to act on.
+      res.status(502).send({ error: err.message || 'Failed to generate advice' });
     }
   });
 
