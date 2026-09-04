@@ -68,7 +68,10 @@ const DIRECTORIES = [
   { id: 'bark', name: 'Bark', url: 'https://www.bark.com/', tier: 'B', category: 'Vertical', vertical: 'home-services', submit: 'form', check: null },
   { id: 'guildquality', name: 'GuildQuality', url: 'https://www.guildquality.com/', tier: 'B', category: 'Vertical', vertical: 'home-services', submit: 'manual', check: null },
   { id: 'nari', name: 'NARI', url: 'https://www.nari.org/', tier: 'B', category: 'Industry', vertical: 'home-services', submit: 'manual', check: null, note: 'Paid membership.' },
-  { id: 'cslb', name: 'CSLB (California licence)', url: 'https://www.cslb.ca.gov/', tier: 'A', category: 'Licence', vertical: 'home-services', submit: 'manual', check: null, note: 'State licence board - a citation and a trust signal.' },
+  // Licence boards are per-state. Without the region filter these would tell
+  // an Arizona contractor to register with California.
+  { id: 'cslb', name: 'CSLB - California licence board', url: 'https://www.cslb.ca.gov/', tier: 'A', category: 'Licence', vertical: 'home-services', region: 'CA', submit: 'manual', check: null, note: 'State licence board - a citation and a trust signal.' },
+  { id: 'azroc', name: 'AZ ROC - Arizona licence board', url: 'https://roc.az.gov/', tier: 'A', category: 'Licence', vertical: 'home-services', region: 'AZ', submit: 'manual', check: null, note: 'State licence board - a citation and a trust signal.' },
   { id: 'tripadvisor', name: 'TripAdvisor', url: 'https://www.tripadvisor.com/', tier: 'A', category: 'Vertical', vertical: 'hospitality', submit: 'form', check: null },
   { id: 'zillow', name: 'Zillow', url: 'https://www.zillow.com/', tier: 'A', category: 'Vertical', vertical: 'real-estate', submit: 'form', check: null },
   { id: 'thomasnet', name: 'Thomasnet', url: 'https://www.thomasnet.com/', tier: 'A', category: 'Vertical', vertical: 'b2b-industrial', submit: 'form', check: null },
@@ -309,6 +312,19 @@ const CHECKERS = {
   wikidata: searchWikidata
 };
 
+/**
+ * Two-letter state code for the business, from an explicit field or parsed off
+ * the end of a US address. Returns null when there is nothing to go on, which
+ * hides every state-scoped directory rather than guessing at one.
+ */
+const stateOf = (business) => {
+  if (business.state) return String(business.state).trim().toUpperCase().slice(0, 2);
+
+  // "3180 W El Camino Del Cerro, Tucson, AZ 85745" -> AZ
+  const m = String(business.address || '').match(/,\s*([A-Za-z]{2})\s+\d{5}(?:-\d{4})?\s*$/);
+  return m ? m[1].toUpperCase() : null;
+};
+
 /** The fields the audit result carries through from the registry. */
 const describe = (dir) => ({
   id: dir.id,
@@ -340,10 +356,14 @@ const auditCitations = async (business) => {
     throw new Error('Business name is required to run a citation audit');
   }
 
-  // A remodeler should not be told it is missing from Zillow. Directories tied
-  // to a vertical only appear when the business is in that vertical; with no
-  // vertical set, none of them are shown rather than all of them.
-  const relevant = DIRECTORIES.filter(d => !d.vertical || d.vertical === business.vertical);
+  // A remodeler should not be told it is missing from Zillow, and an Arizona
+  // contractor should not be sent to California's licence board. Directories
+  // tied to a vertical or a state only appear on a match; with neither set,
+  // none of them are shown rather than all of them.
+  const state = stateOf(business);
+  const relevant = DIRECTORIES.filter(
+    d => (!d.vertical || d.vertical === business.vertical) && (!d.region || d.region === state)
+  );
 
   // The checkable ones hit the network, so run them together - serially, the
   // audit would take as long as the sum of every timeout.
