@@ -7,6 +7,7 @@ const authority = require('../services/authority');
 const { refreshBacklinks } = require('../services/backlinks');
 const { auditCitations, configuredProviders } = require('../services/citations');
 const { buildProfile, renderFields, validateProfile } = require('../services/napProfile');
+const { buildBookmarklet } = require('../services/autofill');
 const { sendNotification } = require('../services/notification');
 const {
   sendWebsiteAddedEmail,
@@ -330,7 +331,11 @@ module.exports = app => {
       saved,
       profile,
       fields: renderFields(profile),
-      issues: validateProfile(profile)
+      issues: validateProfile(profile),
+      // The autofill bookmarklet, with this business baked in. It cannot be
+      // fetched at run time: a bookmarklet running on a directory's own
+      // domain is blocked from reading our API.
+      autofill: buildBookmarklet(profile)
     };
   };
 

@@ -558,6 +558,36 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
                   ))}
                 </div>
 
+                {/* Autofill. The link has to be dragged to the bookmarks bar -
+                    clicking it here does nothing, because the point is to run
+                    it on someone else's page. */}
+                {profile.autofill?.href && (
+                  <div className="mt-5 bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5">
+                    <p className="text-white font-bold mb-1">Fill directory forms automatically</p>
+                    <p className="text-slate-400 text-sm mb-4">
+                      Drag this button to your bookmarks bar. On any directory signup form, click it
+                      and every matching field fills from the details above. It never submits and never
+                      overwrites something you have typed &mdash; you review and click submit yourself.
+                    </p>
+
+                    <a
+                      href={profile.autofill.href}
+                      onClick={e => e.preventDefault()}
+                      draggable
+                      title="Drag me to your bookmarks bar"
+                      className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-bold cursor-grab active:cursor-grabbing"
+                    >
+                      <Zap size={15} />
+                      Fill with {profile.saved?.name || 'my details'}
+                    </a>
+
+                    <p className="text-slate-500 text-xs mt-3">
+                      Carries {profile.autofill.fieldCount} fields. Rebuild it by dragging again
+                      whenever you change the details above &mdash; the old one keeps the old values.
+                    </p>
+                  </div>
+                )}
+
                 {profile.profile?.description?.full && (
                   <div className="mt-4">
                     <p className="text-slate-500 text-xs mb-2">
