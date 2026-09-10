@@ -94,13 +94,11 @@ const DIRECTORIES = [
   { id: 'bunity', name: 'Bunity', url: 'https://www.bunity.com/add-your-business', tier: 'B', category: 'Directory', submit: 'form', check: null },
   { id: 'callupcontact', name: 'CallUpContact', url: 'https://www.callupcontact.com/', tier: 'B', category: 'Directory', submit: 'form', check: null },
   { id: 'fonolive', name: 'Fonolive', url: 'https://fonolive.com/', tier: 'B', category: 'Directory', submit: 'form', check: null },
-  { id: 'globalcatalog', name: 'GlobalCatalog', url: 'https://globalcatalog.com/', tier: 'B', category: 'Directory', submit: 'form', check: null },
   { id: 'azbusinessfinder', name: 'A-Z Business Finder', url: 'https://www.a-zbusinessfinder.com/', tier: 'B', category: 'Directory', submit: 'form', check: null },
   { id: 'localstack', name: 'LocalStack', url: 'https://localstack.com/claim-business', tier: 'B', category: 'Directory', submit: 'form', check: null },
   { id: 'discoverourtown', name: 'DiscoverOurTown', url: 'https://www.discoverourtown.com/', tier: 'B', category: 'Directory', submit: 'form', check: null },
-  { id: 'yasabe', name: 'Yasabe', url: 'https://accounts.yasabe.com/', tier: 'B', category: 'Directory', submit: 'form', check: null, note: 'Strong reach in the Hispanic market.' },
+  { id: 'yasabe', name: 'Yasabe', url: 'https://www.yasabe.com/', tier: 'B', category: 'Directory', submit: 'form', check: null, note: 'Strong reach in the Hispanic market.' },
   { id: 'lacartes', name: 'LaCartes', url: 'http://www.lacartes.com/', tier: 'B', category: 'Directory', submit: 'form', check: null },
-  { id: 'cylex', name: 'Cylex', url: 'https://www.cylex.us.com/', tier: 'B', category: 'Directory', submit: 'form', check: null },
   { id: 'storeboard', name: 'Storeboard', url: 'https://www.storeboard.com/', tier: 'B', category: 'Directory', submit: 'form', check: null },
   { id: 'tuugo', name: 'Tuugo', url: 'https://www.tuugo.us/', tier: 'B', category: 'Directory', submit: 'form', check: null },
   { id: 'yellowplace', name: 'Yellow.place', url: 'https://yellow.place/', tier: 'B', category: 'Directory', submit: 'form', check: null },
@@ -126,7 +124,7 @@ const DIRECTORIES = [
   { id: 'youtube', name: 'YouTube', url: 'https://www.youtube.com/', tier: 'B', category: 'Social', submit: 'form', check: null },
   { id: 'instagram', name: 'Instagram', url: 'https://www.instagram.com/', tier: 'B', category: 'Social', submit: 'form', check: null },
   { id: 'pinterest', name: 'Pinterest', url: 'https://www.pinterest.com/', tier: 'B', category: 'Social', submit: 'form', check: null, note: 'Unusually strong for visual trades - before and after boards.' },
-  { id: 'gravatar', name: 'Gravatar', url: 'https://gravatar.com/', tier: 'B', category: 'Profile', submit: 'form', check: null },
+  { id: 'gravatar', name: 'Gravatar', url: 'https://www.gravatar.com/', tier: 'B', category: 'Profile', submit: 'form', check: null },
   { id: 'aboutme', name: 'About.me', url: 'https://about.me/', tier: 'B', category: 'Profile', submit: 'form', check: null }
 ];
 
