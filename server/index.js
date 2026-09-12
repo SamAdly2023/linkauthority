@@ -109,6 +109,22 @@ app.use('/api', limiter); // Apply to API routes
 const { handleWebhook } = require('./services/deploy');
 app.post('/api/deploy', express.raw({ type: 'application/json', limit: '5mb' }), (req, res) => handleWebhook(req, res));
 
+// OAuth relay for the Auto Blogger plugin: customers' WordPress sites connect
+// Facebook, Instagram, Pinterest and LinkedIn through our developer apps, so
+// they never need apps of their own. Mounted here, ahead of the global
+// parsers, because it carries its own body limits and must not have xss-clean
+// rewriting OAuth codes and state in the query string.
+//
+// createConnect() throws without CONNECT_SECRET and BASE_URL. Guarded so a
+// missing variable disables this one feature rather than taking the site down.
+if (process.env.CONNECT_SECRET && process.env.BASE_URL) {
+  app.use('/connect', require('./la-connect')());
+  console.log('Auto Blogger connect relay mounted at /connect');
+} else {
+  app.all('/connect/*', (req, res) => res.status(503).json({ ok: false, message: 'The connect relay is not configured on this server.' }));
+  console.warn('Auto Blogger connect relay NOT mounted: set CONNECT_SECRET and BASE_URL to enable it');
+}
+
 app.use(express.json({ limit: '10kb' })); // Body limit is 10kb
 app.use(express.urlencoded({ extended: true, limit: '10kb' })); // wp_remote_post sends form-urlencoded bodies
 app.use(cors()); // Note: In production, you might want to restrict this to specific origins
