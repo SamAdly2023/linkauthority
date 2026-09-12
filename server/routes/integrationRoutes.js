@@ -4,6 +4,8 @@ const path = require('path');
 const requireLogin = require('../middlewares/requireLogin');
 const { db } = require('../services/firebase');
 const { broadcastRefresh } = require('../services/partnerSync');
+const { refreshBacklinks, valueReport } = require('../services/backlinks');
+const authority = require('../services/authority');
 
 // Firestore helpers (kept local, matching the pattern used by the other route files)
 const getWebsiteById = async (id) => {
@@ -170,7 +172,8 @@ module.exports = app => {
         url: site.url,
         isActive: !!site.isActive,
         isVerified: !!site.isVerified,
-        domainAuthority: site.domainAuthority || 0,
+        // null, not 0: an unmeasured site is not a site with zero authority.
+        domainAuthority: Number.isFinite(site.domainAuthority) ? site.domainAuthority : null,
         category: site.category || null,
         activePartnerCount,
         pluginConnectedAt: site.pluginConnectedAt || null,
@@ -179,6 +182,67 @@ module.exports = app => {
     } catch (err) {
       console.error(err);
       res.status(500).send({ error: 'Failed to retrieve status' });
+    }
+  });
+
+  // A fresh audit fetches every member's page, so it is not a free button.
+  // Once an hour per site is plenty for links that change on a cron cadence.
+  const BACKLINK_REFRESH_MS = 60 * 60 * 1000;
+
+  // The site's authority and verified backlinks, for the plugin dashboard.
+  // Reads the cached report and only re-crawls on ?refresh=1, rate limited.
+  //
+  // Everything here is measured or null. The old status route sent
+  // `domainAuthority || 0`, which is the same lie the dashboard used to tell:
+  // a site that was never measured is not a site with zero authority.
+  app.get('/api/integration/backlinks', async (req, res) => {
+    const { token, refresh } = req.query;
+    if (!token) return res.status(400).send({ error: 'Token is required' });
+
+    try {
+      let site = await getWebsiteByToken(token);
+      if (!site) return res.status(404).send({ error: 'Invalid token' });
+
+      let refreshedNow = false;
+      let nextRefreshAt = null;
+
+      const lastAt = site.backlinkReport?.checkedAt;
+      const lastMs = lastAt ? new Date(lastAt.toDate ? lastAt.toDate() : lastAt).getTime() : 0;
+      const dueAt = lastMs + BACKLINK_REFRESH_MS;
+
+      if ('1' === String(refresh)) {
+        if (Date.now() >= dueAt) {
+          await refreshBacklinks(site);
+          site = await getWebsiteByToken(token);
+          refreshedNow = true;
+        } else {
+          nextRefreshAt = new Date(dueAt).toISOString();
+        }
+      } else if (!site.backlinkReport) {
+        // First visit and nothing cached: run once so the page has something
+        // real to show rather than an empty state asking for a click.
+        await refreshBacklinks(site);
+        site = await getWebsiteByToken(token);
+        refreshedNow = true;
+      }
+
+      const measured = Number.isFinite(site.domainAuthority);
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.send({
+        url: site.url,
+        category: site.category || null,
+        authority: measured
+          ? { score: site.domainAuthority, scale: authority.SCALE_MAX, source: 'Open PageRank', measuredAt: site.authority?.measuredAt || null }
+          : null,
+        authorityConfigured: authority.isConfigured(),
+        report: valueReport(site.backlinkReport || null, site.category || null),
+        refreshedNow,
+        nextRefreshAt
+      });
+    } catch (err) {
+      console.error('Integration backlinks failed:', err);
+      res.status(500).send({ error: 'Failed to load backlinks' });
     }
   });
 

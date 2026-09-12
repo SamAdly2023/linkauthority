@@ -17,6 +17,7 @@ class LinkAuthority_Partners_Admin {
 		add_action( 'admin_notices', array( $this, 'setup_notice' ) );
 		add_action( 'admin_post_linkauthority_partners_create_page', array( $this, 'handle_create_page' ) );
 		add_action( 'admin_post_linkauthority_partners_refresh', array( $this, 'handle_refresh' ) );
+		add_action( 'admin_post_linkauthority_partners_backlinks', array( $this, 'handle_backlinks' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( LINKAUTHORITY_PARTNERS_PLUGIN_FILE ), array( $this, 'action_links' ) );
 	}
 
@@ -162,6 +163,30 @@ class LinkAuthority_Partners_Admin {
 	}
 
 	/**
+	 * Re-runs the backlink audit on the server and reloads the cached result.
+	 */
+	public function handle_backlinks() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to do that.', 'linkauthority-partners' ) );
+		}
+
+		check_admin_referer( 'linkauthority_partners_backlinks' );
+
+		if ( '' === linkauthority_partners_get_token() ) {
+			$this->redirect_back( 'no-token' );
+		}
+
+		$data = LinkAuthority_Partners_API::get_backlinks( true );
+
+		if ( ! is_array( $data ) ) {
+			$this->redirect_back( 'backlinks-failed' );
+		}
+
+		// The server rate limits the crawl. Say so rather than pretend it ran.
+		$this->redirect_back( ! empty( $data['refreshedNow'] ) ? 'backlinks-refreshed' : 'backlinks-limited' );
+	}
+
+	/**
 	 * @param string $notice Notice key.
 	 */
 	private function redirect_back( $notice ) {
@@ -183,6 +208,9 @@ class LinkAuthority_Partners_Admin {
 			'refreshed'      => array( 'success', __( 'Partner directory updated.', 'linkauthority-partners' ) ),
 			'refresh-failed' => array( 'error', __( 'LinkAuthority could not be reached. Try again in a moment.', 'linkauthority-partners' ) ),
 			'no-token'       => array( 'error', __( 'Add your site token first.', 'linkauthority-partners' ) ),
+			'backlinks-refreshed' => array( 'success', __( 'Backlinks re-checked across the network.', 'linkauthority-partners' ) ),
+			'backlinks-limited'   => array( 'info', __( 'Backlinks were checked recently. The network is re-crawled at most once an hour; the report below is the latest.', 'linkauthority-partners' ) ),
+			'backlinks-failed'    => array( 'error', __( 'LinkAuthority could not be reached. Try again in a moment.', 'linkauthority-partners' ) ),
 		);
 
 		return $notices[ $key ] ?? array();
@@ -198,6 +226,14 @@ class LinkAuthority_Partners_Admin {
 		$last_sync = (int) get_option( LINKAUTHORITY_PARTNERS_OPT_LAST_SYNC, 0 );
 		$status    = get_option( LINKAUTHORITY_PARTNERS_OPT_STATUS, array() );
 		$page      = get_page_by_path( LINKAUTHORITY_PARTNERS_PAGE_SLUG );
+		$backlinks = get_option( LINKAUTHORITY_PARTNERS_OPT_BACKLINKS, array() );
+
+		// First visit with a token and nothing cached: fetch once so the section
+		// shows real figures rather than a button asking to be clicked.
+		if ( '' !== $settings['token'] && empty( $backlinks ) ) {
+			$fetched   = LinkAuthority_Partners_API::get_backlinks( false );
+			$backlinks = is_array( $fetched ) ? $fetched : array();
+		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only notice key from our own redirect.
 		$notice_key = isset( $_GET['linkauthority_partners_notice'] ) ? sanitize_key( wp_unslash( $_GET['linkauthority_partners_notice'] ) ) : '';
@@ -286,6 +322,162 @@ class LinkAuthority_Partners_Admin {
 					?>
 				</p>
 			</div>
+
+			<?php if ( '' !== $settings['token'] ) : ?>
+			<div class="lap-card lap-backlinks">
+				<h2><?php esc_html_e( 'Link authority and backlinks', 'linkauthority-partners' ); ?></h2>
+				<p class="lap-card-intro">
+					<?php esc_html_e( 'Your measured authority, and every link the network is actually sending you - fetched from the partner pages themselves, with each link\'s rel attribute read rather than assumed.', 'linkauthority-partners' ); ?>
+				</p>
+
+				<?php
+				$auth   = isset( $backlinks['authority'] ) && is_array( $backlinks['authority'] ) ? $backlinks['authority'] : null;
+				$report = isset( $backlinks['report'] ) && is_array( $backlinks['report'] ) ? $backlinks['report'] : null;
+				$totals = $report && isset( $report['totals'] ) ? $report['totals'] : array();
+				$by     = $report && isset( $report['byValue'] ) ? $report['byValue'] : array();
+				$links  = $report && isset( $report['links'] ) && is_array( $report['links'] ) ? $report['links'] : array();
+				?>
+
+				<div class="lap-stats">
+					<div class="lap-stat lap-stat-authority">
+						<span class="lap-stat-label"><?php esc_html_e( 'Link authority', 'linkauthority-partners' ); ?></span>
+						<?php if ( $auth && isset( $auth['score'] ) ) : ?>
+							<span class="lap-stat-value"><?php echo esc_html( number_format_i18n( (float) $auth['score'], 1 ) ); ?><small>/<?php echo esc_html( (int) $auth['scale'] ); ?></small></span>
+							<span class="lap-stat-note"><?php echo esc_html( $auth['source'] ); ?></span>
+						<?php else : ?>
+							<span class="lap-stat-value lap-stat-none"><?php esc_html_e( 'Not measured', 'linkauthority-partners' ); ?></span>
+							<span class="lap-stat-note">
+								<?php empty( $backlinks['authorityConfigured'] )
+									? esc_html_e( 'Authority lookups are not enabled on the server yet.', 'linkauthority-partners' )
+									: esc_html_e( 'No score has been recorded for this domain.', 'linkauthority-partners' ); ?>
+							</span>
+						<?php endif; ?>
+					</div>
+					<div class="lap-stat">
+						<span class="lap-stat-label"><?php esc_html_e( 'Live backlinks', 'linkauthority-partners' ); ?></span>
+						<span class="lap-stat-value"><?php echo esc_html( (int) ( $totals['live'] ?? 0 ) ); ?></span>
+						<span class="lap-stat-note"><?php printf( esc_html__( 'of %d partners checked', 'linkauthority-partners' ), (int) ( $report['networkSize'] ?? 0 ) ); ?></span>
+					</div>
+					<div class="lap-stat">
+						<span class="lap-stat-label"><?php esc_html_e( 'Dofollow', 'linkauthority-partners' ); ?></span>
+						<span class="lap-stat-value"><?php echo esc_html( (int) ( $totals['dofollow'] ?? 0 ) ); ?></span>
+						<span class="lap-stat-note"><?php esc_html_e( 'pass ranking equity', 'linkauthority-partners' ); ?></span>
+					</div>
+					<div class="lap-stat">
+						<span class="lap-stat-label"><?php esc_html_e( 'Nofollow', 'linkauthority-partners' ); ?></span>
+						<span class="lap-stat-value"><?php echo esc_html( (int) ( $totals['nofollow'] ?? 0 ) ); ?></span>
+						<span class="lap-stat-note"><?php esc_html_e( 'mentions only', 'linkauthority-partners' ); ?></span>
+					</div>
+					<div class="lap-stat">
+						<span class="lap-stat-label"><?php esc_html_e( 'Strong', 'linkauthority-partners' ); ?></span>
+						<span class="lap-stat-value"><?php echo esc_html( (int) ( $by['strong'] ?? 0 ) ); ?></span>
+						<span class="lap-stat-note"><?php esc_html_e( 'from well-linked domains', 'linkauthority-partners' ); ?></span>
+					</div>
+				</div>
+
+				<?php if ( empty( $links ) ) : ?>
+					<p class="lap-empty">
+						<?php $report
+							? esc_html_e( 'No partner pages to check yet. As members join the network, their links to you will appear here.', 'linkauthority-partners' )
+							: esc_html_e( 'The report could not be loaded. Use the button below to try again.', 'linkauthority-partners' ); ?>
+					</p>
+				<?php else : ?>
+					<table class="widefat striped lap-links">
+						<thead>
+							<tr>
+								<th><?php esc_html_e( 'Linking site', 'linkauthority-partners' ); ?></th>
+								<th><?php esc_html_e( 'Status', 'linkauthority-partners' ); ?></th>
+								<th><?php esc_html_e( 'Type', 'linkauthority-partners' ); ?></th>
+								<th><?php esc_html_e( 'Their authority', 'linkauthority-partners' ); ?></th>
+								<th><?php esc_html_e( 'Value to you', 'linkauthority-partners' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+						<?php foreach ( $links as $link ) :
+							$value  = isset( $link['value'] ) && is_array( $link['value'] ) ? $link['value'] : array( 'label' => 'none', 'reason' => '' );
+							$label  = sanitize_key( $value['label'] ?? 'none' );
+							$status = sanitize_key( $link['status'] ?? '' );
+							$labels = array(
+								'strong'   => __( 'Strong', 'linkauthority-partners' ),
+								'useful'   => __( 'Useful', 'linkauthority-partners' ),
+								'modest'   => __( 'Modest', 'linkauthority-partners' ),
+								'citation' => __( 'Citation', 'linkauthority-partners' ),
+								'none'     => __( 'None', 'linkauthority-partners' ),
+							);
+							$statuses = array(
+								'live'         => __( 'Live', 'linkauthority-partners' ),
+								'missing'      => __( 'Missing', 'linkauthority-partners' ),
+								'unreachable'  => __( 'Unreachable', 'linkauthority-partners' ),
+								'no-directory' => __( 'No page', 'linkauthority-partners' ),
+							);
+							?>
+							<tr>
+								<td>
+									<?php if ( ! empty( $link['page'] ) ) : ?>
+										<a href="<?php echo esc_url( $link['page'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( wp_parse_url( $link['from'], PHP_URL_HOST ) ?: $link['from'] ); ?></a>
+									<?php else : ?>
+										<?php echo esc_html( wp_parse_url( $link['from'], PHP_URL_HOST ) ?: $link['from'] ); ?>
+									<?php endif; ?>
+									<?php if ( ! empty( $link['anchor'] ) ) : ?>
+										<span class="lap-anchor"><?php echo esc_html( $link['anchor'] ); ?></span>
+									<?php endif; ?>
+								</td>
+								<td><span class="lap-pill lap-status-<?php echo esc_attr( $status ); ?>"><?php echo esc_html( $statuses[ $status ] ?? $status ); ?></span></td>
+								<td>
+									<?php if ( 'live' !== $status ) : ?>
+										&mdash;
+									<?php elseif ( ! empty( $link['dofollow'] ) ) : ?>
+										<span class="lap-pill lap-follow"><?php esc_html_e( 'Dofollow', 'linkauthority-partners' ); ?></span>
+									<?php else : ?>
+										<span class="lap-pill lap-nofollow"><?php echo esc_html( ! empty( $link['rel'] ) ? $link['rel'] : 'nofollow' ); ?></span>
+									<?php endif; ?>
+								</td>
+								<td class="lap-num">
+									<?php echo isset( $link['fromAuthority'] ) && is_numeric( $link['fromAuthority'] )
+										? esc_html( number_format_i18n( (float) $link['fromAuthority'], 1 ) ) . '<small>/10</small>'
+										: '<span class="lap-muted">' . esc_html__( 'not measured', 'linkauthority-partners' ) . '</span>'; ?>
+								</td>
+								<td>
+									<span class="lap-pill lap-value-<?php echo esc_attr( $label ); ?>"><?php echo esc_html( $labels[ $label ] ?? $label ); ?></span>
+									<?php if ( ! empty( $value['reason'] ) ) : ?>
+										<span class="lap-reason"><?php echo esc_html( $value['reason'] ); ?></span>
+									<?php endif; ?>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+						</tbody>
+					</table>
+				<?php endif; ?>
+
+				<div class="lap-actions">
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
+						<input type="hidden" name="action" value="linkauthority_partners_backlinks">
+						<?php wp_nonce_field( 'linkauthority_partners_backlinks' ); ?>
+						<?php submit_button( __( 'Re-check backlinks now', 'linkauthority-partners' ), 'secondary', 'submit', false ); ?>
+					</form>
+					<?php if ( ! empty( $report['checkedAt'] ) ) : ?>
+						<span class="lap-muted">
+							<?php
+							// Firestore timestamps arrive as {_seconds}, fresh ones as an ISO string.
+							$checked_ts = 0;
+							if ( is_array( $report['checkedAt'] ) && isset( $report['checkedAt']['_seconds'] ) ) {
+								$checked_ts = (int) $report['checkedAt']['_seconds'];
+							} elseif ( is_string( $report['checkedAt'] ) ) {
+								$checked_ts = (int) strtotime( $report['checkedAt'] );
+							}
+							if ( $checked_ts ) {
+								printf( esc_html__( 'Last checked %s ago.', 'linkauthority-partners' ), esc_html( human_time_diff( $checked_ts ) ) );
+							}
+							?>
+						</span>
+					<?php endif; ?>
+				</div>
+
+				<p class="lap-scope">
+					<?php esc_html_e( 'This covers links from LinkAuthority members - the ones we can verify by fetching the page. It is not a crawl of the whole web; a full backlink index needs a commercial data source, and nothing here is estimated to fill that gap.', 'linkauthority-partners' ); ?>
+				</p>
+			</div>
+			<?php endif; ?>
 
 			<form method="post" action="options.php">
 				<div class="lap-card">

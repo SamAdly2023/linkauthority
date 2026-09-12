@@ -81,9 +81,19 @@ const auditBacklinks = async (website) => {
   for (const source of others) {
     const pageUrl = await findLiveDirectory(source);
 
+    // What the source is worth as a linker travels with the link, so the
+    // report can be valued without a second lookup per row. Authority is the
+    // source's own measured score, or null when it was never measured - never
+    // a zero standing in for "unknown".
+    const origin = {
+      from: source.url,
+      fromAuthority: Number.isFinite(source.domainAuthority) ? source.domainAuthority : null,
+      fromCategory: source.category || null
+    };
+
     if (!pageUrl) {
       links.push({
-        from: source.url,
+        ...origin,
         page: null,
         status: 'no-directory',
         anchor: null,
@@ -102,7 +112,7 @@ const auditBacklinks = async (website) => {
       const hit = findLinkTo(res.data, website.url);
 
       links.push({
-        from: source.url,
+        ...origin,
         page: pageUrl,
         status: hit.found ? 'live' : 'missing',
         anchor: hit.anchor,
@@ -111,7 +121,7 @@ const auditBacklinks = async (website) => {
       });
     } catch (err) {
       links.push({
-        from: source.url,
+        ...origin,
         page: pageUrl,
         status: 'unreachable',
         anchor: null,
@@ -147,4 +157,88 @@ const refreshBacklinks = async (website) => {
   return report;
 };
 
-module.exports = { auditBacklinks, refreshBacklinks, findLinkTo, hostOf };
+/**
+ * What one backlink is worth to the site receiving it.
+ *
+ * This is a label with its reasoning, not a score. The inputs are all real -
+ * whether the link is live, whether it passes equity, the measured authority
+ * of the domain sending it, and whether that domain is in the same line of
+ * business - and the label says which of them drove it. The thresholds are
+ * on Open PageRank's 0-10 scale, where most small-business sites sit between
+ * one and three and anything at four or above is genuinely well linked.
+ *
+ * Nothing here estimates traffic, guesses a "link juice" figure, or invents a
+ * number where the authority was never measured.
+ *
+ * @param {object} link           One entry from a report's `links`.
+ * @param {string|null} category  The receiving site's category.
+ * @returns {{label: 'strong'|'useful'|'modest'|'citation'|'none', reason: string, relevant: boolean}}
+ */
+const valueOf = (link, category) => {
+  const relevant = Boolean(category && link.fromCategory && link.fromCategory === category);
+  const relevance = relevant ? ' Same category as you, which search engines weight.' : '';
+
+  if ('live' !== link.status) {
+    const why = {
+      missing: 'The partner page is up but the link to you is not on it.',
+      unreachable: 'The partner page could not be fetched, so nothing can be confirmed.',
+      'no-directory': 'The partner has no Business Partners page live.'
+    }[link.status] || 'No live link.';
+    return { label: 'none', reason: why, relevant };
+  }
+
+  if (false === link.dofollow) {
+    return {
+      label: 'citation',
+      reason: 'Nofollow. Counts as a mention of your business but passes no ranking equity.' + relevance,
+      relevant
+    };
+  }
+
+  const auth = link.fromAuthority;
+
+  if (null === auth || undefined === auth) {
+    return {
+      label: 'useful',
+      reason: 'Dofollow. The source domain has not been measured yet, so its weight is unknown.' + relevance,
+      relevant
+    };
+  }
+  if (auth >= 4) {
+    return { label: 'strong', reason: `Dofollow from a well-linked domain (${auth}/10).` + relevance, relevant };
+  }
+  if (auth >= 2) {
+    return { label: 'useful', reason: `Dofollow from an established domain (${auth}/10).` + relevance, relevant };
+  }
+  return {
+    label: 'modest',
+    reason: `Dofollow, but the source has little authority of its own yet (${auth}/10). It will grow as they do.` + relevance,
+    relevant
+  };
+};
+
+/**
+ * A report with every link valued, plus counts by value. Applied at read time
+ * so reports cached before valuation existed are covered too.
+ */
+const valueReport = (report, category) => {
+  if (!report) return null;
+
+  const links = (report.links || []).map(l => ({ ...l, value: valueOf(l, category) }));
+  const count = (label) => links.filter(l => l.value.label === label).length;
+
+  return {
+    ...report,
+    links,
+    byValue: {
+      strong: count('strong'),
+      useful: count('useful'),
+      modest: count('modest'),
+      citation: count('citation'),
+      none: count('none'),
+      relevant: links.filter(l => l.value.relevant && 'live' === l.status).length
+    }
+  };
+};
+
+module.exports = { auditBacklinks, refreshBacklinks, findLinkTo, hostOf, valueOf, valueReport };

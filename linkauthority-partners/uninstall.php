@@ -14,6 +14,7 @@ $linkauthority_partners_options = array(
 	'linkauthority_partners_last_sync',
 	'linkauthority_partners_page_views',
 	'linkauthority_partners_status',
+	'linkauthority_partners_backlinks',
 );
 
 foreach ( $linkauthority_partners_options as $linkauthority_partners_option ) {

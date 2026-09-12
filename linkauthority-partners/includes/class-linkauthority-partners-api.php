@@ -96,6 +96,46 @@ class LinkAuthority_Partners_API {
 	}
 
 	/**
+	 * This site's authority score and verified backlinks from the network.
+	 *
+	 * Everything in the response was measured or is null. The score comes from
+	 * Open PageRank, and each backlink is a partner page that was actually
+	 * fetched and found to carry (or not carry) a link to this site, with its
+	 * rel attribute read rather than assumed. Nothing is estimated.
+	 *
+	 * The audit crawls every partner page, so a forced refresh is rate limited
+	 * on the server; the response says when the next one is allowed.
+	 *
+	 * @param bool $refresh Ask the server to re-crawl now if it is allowed to.
+	 * @return array|false Decoded response, or false when unreachable.
+	 */
+	public static function get_backlinks( $refresh = false ) {
+		$token = linkauthority_partners_get_token();
+		if ( '' === $token ) {
+			return false;
+		}
+
+		$args = array( 'token' => rawurlencode( $token ) );
+		if ( $refresh ) {
+			$args['refresh'] = '1';
+		}
+
+		$response = wp_remote_get(
+			add_query_arg( $args, self::base_url() . '/backlinks' ),
+			// A first audit crawls the whole network before answering.
+			array( 'timeout' => $refresh ? 60 : 30 )
+		);
+
+		$data = self::decode( $response );
+		if ( is_array( $data ) && isset( $data['url'] ) ) {
+			update_option( LINKAUTHORITY_PARTNERS_OPT_BACKLINKS, $data, false );
+			return $data;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Pulls the partner directory and caches it.
 	 *
 	 * The result is stored, not written into any post: the page renders from

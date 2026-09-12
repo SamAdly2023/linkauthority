@@ -135,3 +135,134 @@
 		margin-bottom: 10px;
 	}
 }
+
+/* ---- Link authority and backlinks ---- */
+
+.lap-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 12px;
+	margin: 18px 0 20px;
+}
+
+.lap-stat {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 14px 16px;
+	border: 1px solid var(--lap-border);
+	border-radius: 10px;
+	background: #fff;
+}
+
+.lap-stat-authority {
+	border-color: var(--lap-blue);
+	background: #eff6ff;
+}
+
+.lap-stat-label {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--lap-sub);
+}
+
+.lap-stat-value {
+	font-size: 26px;
+	font-weight: 700;
+	line-height: 1.1;
+	color: var(--lap-ink);
+	font-variant-numeric: tabular-nums;
+}
+
+.lap-stat-value small {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--lap-sub);
+	margin-left: 1px;
+}
+
+.lap-stat-value.lap-stat-none {
+	font-size: 16px;
+	color: var(--lap-sub);
+}
+
+.lap-stat-note {
+	font-size: 12px;
+	color: var(--lap-sub);
+}
+
+.lap-links {
+	margin-top: 4px;
+}
+
+.lap-links th,
+.lap-links td {
+	vertical-align: top;
+}
+
+.lap-links .lap-num {
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.lap-links .lap-num small {
+	color: var(--lap-sub);
+}
+
+.lap-anchor {
+	display: block;
+	font-size: 12px;
+	color: var(--lap-sub);
+	margin-top: 2px;
+}
+
+.lap-anchor::before {
+	content: "\201C";
+}
+
+.lap-anchor::after {
+	content: "\201D";
+}
+
+.lap-reason {
+	display: block;
+	font-size: 12px;
+	color: var(--lap-sub);
+	margin-top: 4px;
+	max-width: 44ch;
+}
+
+.lap-muted {
+	color: var(--lap-sub);
+}
+
+.lap-empty,
+.lap-scope {
+	color: var(--lap-sub);
+	font-size: 13px;
+}
+
+.lap-scope {
+	margin-top: 14px;
+	padding-top: 12px;
+	border-top: 1px solid var(--lap-border);
+}
+
+/* Status of the partner page itself. */
+.lap-pill.lap-status-live { background: #dcfce7; color: #15803d; }
+.lap-pill.lap-status-missing { background: #fef3c7; color: #a16207; }
+.lap-pill.lap-status-unreachable,
+.lap-pill.lap-status-no-directory { background: #f1f5f9; color: #64748b; }
+
+/* Whether the link passes equity. Not the same axis as value. */
+.lap-pill.lap-follow { background: #dbeafe; color: #1d4ed8; }
+.lap-pill.lap-nofollow { background: #f1f5f9; color: #64748b; }
+
+/* What the link is worth. Semantic scale, separate from the accent. */
+.lap-pill.lap-value-strong { background: #dcfce7; color: #15803d; }
+.lap-pill.lap-value-useful { background: #dbeafe; color: #1d4ed8; }
+.lap-pill.lap-value-modest { background: #fef3c7; color: #a16207; }
+.lap-pill.lap-value-citation { background: #ede9fe; color: #6d28d9; }
+.lap-pill.lap-value-none { background: #f1f5f9; color: #94a3b8; }

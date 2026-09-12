@@ -4,7 +4,7 @@ Tags: backlinks, seo, link building, partners, directory
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.9
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,11 @@ Your site is marked inactive on the network and stops appearing in other members
 2. The LinkAuthority admin screen, showing connection status and the two opt-ins.
 
 == Changelog ==
+
+= 1.1.0 =
+* New "Link authority and backlinks" section on the admin screen: your measured authority score, every backlink the network is sending you, whether each is dofollow or nofollow, the linking site's own authority, and what each link is worth to you - with the reasoning shown, not a made-up score.
+* Nothing in the new section is estimated. Links are found by fetching the partner pages; authority comes from Open PageRank and shows "Not measured" rather than zero when no score exists.
+* Re-check button re-crawls the network, rate limited to once an hour.
 
 = 1.0.9 =
 * Redesign the admin screen and link straight through to the LinkAuthority dashboard where the site token is issued.
