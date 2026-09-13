@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Docs: https://www.pexels.com/api/documentation/
  */
-class MAB_Pexels_Client {
+class LAPUB_Pexels_Client {
 
 	const PHOTOS_URL = 'https://api.pexels.com/v1/search';
 	const VIDEOS_URL = 'https://api.pexels.com/videos/search';
@@ -17,7 +17,7 @@ class MAB_Pexels_Client {
 	private $api_key;
 
 	public function __construct( $api_key = null ) {
-		$this->api_key = null === $api_key ? MAB_Options::get( 'pexels_api_key' ) : $api_key;
+		$this->api_key = null === $api_key ? LAPUB_Options::get( 'pexels_api_key' ) : $api_key;
 	}
 
 	public function has_key() {
@@ -130,7 +130,7 @@ class MAB_Pexels_Client {
 	 */
 	public function test_key() {
 		if ( ! $this->has_key() ) {
-			return new WP_Error( 'mab_no_key', __( 'No Pexels API key entered.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_no_key', __( 'No Pexels API key entered.', 'linkauthority-publisher' ) );
 		}
 		$res = $this->search_photos( 'nature', 1 );
 		return is_wp_error( $res ) ? $res : true;
@@ -138,7 +138,7 @@ class MAB_Pexels_Client {
 
 	private function request( $url, array $query ) {
 		if ( ! $this->has_key() ) {
-			return new WP_Error( 'mab_no_key', __( 'Pexels API key is missing.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_no_key', __( 'Pexels API key is missing.', 'linkauthority-publisher' ) );
 		}
 		$response = wp_remote_get(
 			add_query_arg( array_map( 'rawurlencode', $query ), $url ),
@@ -156,11 +156,11 @@ class MAB_Pexels_Client {
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( $code >= 400 ) {
-			$msg = is_array( $body ) && isset( $body['error'] ) ? $body['error'] : sprintf( __( 'Pexels API error (HTTP %d).', 'manus-auto-blogger' ), $code );
+			$msg = is_array( $body ) && isset( $body['error'] ) ? $body['error'] : sprintf( __( 'Pexels API error (HTTP %d).', 'linkauthority-publisher' ), $code );
 			return new WP_Error( 'pexels_http_' . $code, $msg );
 		}
 		if ( ! is_array( $body ) ) {
-			return new WP_Error( 'pexels_bad_json', __( 'Pexels returned an unreadable response.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'pexels_bad_json', __( 'Pexels returned an unreadable response.', 'linkauthority-publisher' ) );
 		}
 		return $body;
 	}

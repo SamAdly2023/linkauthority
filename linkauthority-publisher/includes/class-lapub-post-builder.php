@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Turns the structured article returned by Manus into a styled WordPress post.
  */
-class MAB_Post_Builder {
+class LAPUB_Post_Builder {
 
 	/** @var array Structured article data. */
 	private $data;
@@ -17,12 +17,12 @@ class MAB_Post_Builder {
 	/** @var array Attribution list for the footer. */
 	private $credits = array();
 
-	/** @var MAB_Pexels_Client */
+	/** @var LAPUB_Pexels_Client */
 	private $pexels;
 
 	public function __construct( array $data ) {
 		$this->data   = $data;
-		$this->pexels = new MAB_Pexels_Client();
+		$this->pexels = new LAPUB_Pexels_Client();
 	}
 
 	/**
@@ -111,12 +111,12 @@ class MAB_Post_Builder {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 
-		$o = MAB_Options::all();
+		$o = LAPUB_Options::all();
 		$d = $this->data;
 
 		$title = isset( $d['title'] ) ? sanitize_text_field( $d['title'] ) : '';
 		if ( ! $title ) {
-			return new WP_Error( 'mab_no_title', __( 'Manus returned an article without a title.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_no_title', __( 'Manus returned an article without a title.', 'linkauthority-publisher' ) );
 		}
 
 		$author = (int) $o['post_author'];
@@ -146,7 +146,7 @@ class MAB_Post_Builder {
 		if ( $featured_image_url ) {
 			$thumb_id = $this->sideload_remote_file( $featured_image_url, $post_id, $title );
 			if ( is_wp_error( $thumb_id ) ) {
-				MAB_Logger::warning( 'Featured image could not be saved: ' . $thumb_id->get_error_message() );
+				LAPUB_Logger::warning( 'Featured image could not be saved: ' . $thumb_id->get_error_message() );
 			} else {
 				set_post_thumbnail( $post_id, $thumb_id );
 				update_post_meta( $thumb_id, '_wp_attachment_image_alt', $title );
@@ -165,7 +165,7 @@ class MAB_Post_Builder {
 				if ( ! is_wp_error( $thumb_id ) ) {
 					set_post_thumbnail( $post_id, $thumb_id );
 					$this->add_credit( $photos[0] );
-					MAB_Logger::info( 'Used a Pexels photo as the featured image fallback.' );
+					LAPUB_Logger::info( 'Used a Pexels photo as the featured image fallback.' );
 				}
 			}
 		}
@@ -176,16 +176,16 @@ class MAB_Post_Builder {
 		// 6. Meta for SEO plugins + our own bookkeeping.
 		$meta_desc = isset( $d['meta_description'] ) ? sanitize_text_field( $d['meta_description'] ) : '';
 		$focus_kw  = isset( $d['focus_keyword'] ) ? sanitize_text_field( $d['focus_keyword'] ) : '';
-		update_post_meta( $post_id, '_mab_generated', 1 );
-		update_post_meta( $post_id, '_mab_meta_description', $meta_desc );
-		update_post_meta( $post_id, '_mab_focus_keyword', $focus_kw );
-		update_post_meta( $post_id, '_mab_faq', $this->faq_for_schema() );
-		update_post_meta( $post_id, '_mab_word_count', $this->word_count() );
+		update_post_meta( $post_id, '_lapub_generated', 1 );
+		update_post_meta( $post_id, '_lapub_meta_description', $meta_desc );
+		update_post_meta( $post_id, '_lapub_focus_keyword', $focus_kw );
+		update_post_meta( $post_id, '_lapub_faq', $this->faq_for_schema() );
+		update_post_meta( $post_id, '_lapub_word_count', $this->word_count() );
 		if ( ! empty( $d['social'] ) && is_array( $d['social'] ) ) {
-			update_post_meta( $post_id, '_mab_social_copy', array_map( 'sanitize_textarea_field', $d['social'] ) );
+			update_post_meta( $post_id, '_lapub_social_copy', array_map( 'sanitize_textarea_field', $d['social'] ) );
 		}
 		foreach ( $meta as $k => $v ) {
-			update_post_meta( $post_id, '_mab_' . sanitize_key( $k ), $v );
+			update_post_meta( $post_id, '_lapub_' . sanitize_key( $k ), $v );
 		}
 		if ( $meta_desc ) {
 			update_post_meta( $post_id, '_yoast_wpseo_metadesc', $meta_desc );
@@ -217,7 +217,7 @@ class MAB_Post_Builder {
 	 * Full article HTML wrapped in a Custom HTML block so wpautop leaves it alone.
 	 */
 	private function build_html( $post_id ) {
-		$o        = MAB_Options::all();
+		$o        = LAPUB_Options::all();
 		$d        = $this->data;
 		$sections = (array) ( isset( $d['sections'] ) ? $d['sections'] : array() );
 		$media_ok = $this->pexels->has_key();
@@ -226,18 +226,18 @@ class MAB_Post_Builder {
 		$videos   = 0;
 
 		$h   = array();
-		$h[] = '<div class="mab-post">';
+		$h[] = '<div class="lapub-post">';
 
 		// Intro.
 		if ( ! empty( $d['intro_html'] ) ) {
-			$h[] = '<div class="mab-intro">' . $this->frag( $d['intro_html'] ) . '</div>';
+			$h[] = '<div class="lapub-intro">' . $this->frag( $d['intro_html'] ) . '</div>';
 		}
 
 		// Key takeaways.
 		$takeaways = array_filter( array_map( 'trim', (array) ( isset( $d['key_takeaways'] ) ? $d['key_takeaways'] : array() ) ) );
 		if ( $takeaways ) {
-			$h[] = '<aside class="mab-takeaways">';
-			$h[] = '<div class="mab-takeaways__head"><span class="mab-icon">&#9889;</span><h2>' . esc_html__( 'Key Takeaways', 'manus-auto-blogger' ) . '</h2></div>';
+			$h[] = '<aside class="lapub-takeaways">';
+			$h[] = '<div class="lapub-takeaways__head"><span class="lapub-icon">&#9889;</span><h2>' . esc_html__( 'Key Takeaways', 'linkauthority-publisher' ) . '</h2></div>';
 			$h[] = '<ul>';
 			foreach ( $takeaways as $t ) {
 				$h[] = '<li>' . esc_html( $t ) . '</li>';
@@ -247,10 +247,10 @@ class MAB_Post_Builder {
 
 		// Table of contents.
 		if ( count( $sections ) > 2 ) {
-			$h[] = '<nav class="mab-toc" aria-label="' . esc_attr__( 'Table of contents', 'manus-auto-blogger' ) . '">';
-			$h[] = '<div class="mab-toc__head"><span class="mab-icon">&#128203;</span><h2>' . esc_html__( 'In this article', 'manus-auto-blogger' ) . '</h2></div><ol>';
+			$h[] = '<nav class="lapub-toc" aria-label="' . esc_attr__( 'Table of contents', 'linkauthority-publisher' ) . '">';
+			$h[] = '<div class="lapub-toc__head"><span class="lapub-icon">&#128203;</span><h2>' . esc_html__( 'In this article', 'linkauthority-publisher' ) . '</h2></div><ol>';
 			foreach ( $sections as $i => $s ) {
-				$h[] = '<li><a href="#mab-section-' . ( $i + 1 ) . '">' . esc_html( isset( $s['heading'] ) ? $s['heading'] : '' ) . '</a></li>';
+				$h[] = '<li><a href="#lapub-section-' . ( $i + 1 ) . '">' . esc_html( isset( $s['heading'] ) ? $s['heading'] : '' ) . '</a></li>';
 			}
 			$h[] = '</ol></nav>';
 		}
@@ -259,8 +259,8 @@ class MAB_Post_Builder {
 		foreach ( $sections as $i => $s ) {
 			$n       = $i + 1;
 			$heading = isset( $s['heading'] ) ? sanitize_text_field( $s['heading'] ) : '';
-			$h[]     = '<section class="mab-section" id="mab-section-' . $n . '">';
-			$h[]     = '<h2 class="mab-section__title"><span class="mab-section__num">' . str_pad( $n, 2, '0', STR_PAD_LEFT ) . '</span>' . esc_html( $heading ) . '</h2>';
+			$h[]     = '<section class="lapub-section" id="lapub-section-' . $n . '">';
+			$h[]     = '<h2 class="lapub-section__title"><span class="lapub-section__num">' . str_pad( $n, 2, '0', STR_PAD_LEFT ) . '</span>' . esc_html( $heading ) . '</h2>';
 
 			// Media.
 			$mtype = isset( $s['media_type'] ) ? $s['media_type'] : 'none';
@@ -282,17 +282,17 @@ class MAB_Post_Builder {
 				}
 			}
 
-			$h[] = '<div class="mab-section__body">' . $this->frag( isset( $s['html'] ) ? $s['html'] : '' ) . '</div>';
+			$h[] = '<div class="lapub-section__body">' . $this->frag( isset( $s['html'] ) ? $s['html'] : '' ) . '</div>';
 
 			$stat_v = isset( $s['stat_value'] ) ? trim( $s['stat_value'] ) : '';
 			$stat_l = isset( $s['stat_label'] ) ? trim( $s['stat_label'] ) : '';
 			if ( $stat_v && $stat_l ) {
-				$h[] = '<div class="mab-stat"><span class="mab-stat__value">' . esc_html( $stat_v ) . '</span><span class="mab-stat__label">' . esc_html( $stat_l ) . '</span></div>';
+				$h[] = '<div class="lapub-stat"><span class="lapub-stat__value">' . esc_html( $stat_v ) . '</span><span class="lapub-stat__label">' . esc_html( $stat_l ) . '</span></div>';
 			}
 
 			$callout = isset( $s['callout'] ) ? trim( $s['callout'] ) : '';
 			if ( $callout ) {
-				$h[] = '<div class="mab-callout"><span class="mab-callout__icon">&#128161;</span><div class="mab-callout__body"><strong>' . esc_html__( 'Pro tip', 'manus-auto-blogger' ) . '</strong><p>' . esc_html( $callout ) . '</p></div></div>';
+				$h[] = '<div class="lapub-callout"><span class="lapub-callout__icon">&#128161;</span><div class="lapub-callout__body"><strong>' . esc_html__( 'Pro tip', 'linkauthority-publisher' ) . '</strong><p>' . esc_html( $callout ) . '</p></div></div>';
 			}
 
 			$h[] = '</section>';
@@ -301,8 +301,8 @@ class MAB_Post_Builder {
 		// FAQ.
 		$faq = (array) ( isset( $d['faq'] ) ? $d['faq'] : array() );
 		if ( $faq ) {
-			$h[] = '<section class="mab-faq" id="mab-faq">';
-			$h[] = '<h2 class="mab-section__title"><span class="mab-section__num">?</span>' . esc_html__( 'Frequently Asked Questions', 'manus-auto-blogger' ) . '</h2>';
+			$h[] = '<section class="lapub-faq" id="lapub-faq">';
+			$h[] = '<h2 class="lapub-section__title"><span class="lapub-section__num">?</span>' . esc_html__( 'Frequently Asked Questions', 'linkauthority-publisher' ) . '</h2>';
 			foreach ( $faq as $k => $f ) {
 				$q = isset( $f['question'] ) ? sanitize_text_field( $f['question'] ) : '';
 				$a = isset( $f['answer_html'] ) ? $this->frag( $f['answer_html'] ) : '';
@@ -312,14 +312,14 @@ class MAB_Post_Builder {
 				if ( false === strpos( $a, '<p' ) ) {
 					$a = '<p>' . $a . '</p>';
 				}
-				$h[] = '<details class="mab-faq__item"' . ( 0 === $k ? ' open' : '' ) . '><summary>' . esc_html( $q ) . '<span class="mab-faq__chev" aria-hidden="true"></span></summary><div class="mab-faq__answer">' . $a . '</div></details>';
+				$h[] = '<details class="lapub-faq__item"' . ( 0 === $k ? ' open' : '' ) . '><summary>' . esc_html( $q ) . '<span class="lapub-faq__chev" aria-hidden="true"></span></summary><div class="lapub-faq__answer">' . $a . '</div></details>';
 			}
 			$h[] = '</section>';
 		}
 
 		// Conclusion.
 		if ( ! empty( $d['conclusion_html'] ) ) {
-			$h[] = '<section class="mab-conclusion"><h2 class="mab-section__title"><span class="mab-section__num">&#10003;</span>' . esc_html__( 'Final Thoughts', 'manus-auto-blogger' ) . '</h2>' . $this->frag( $d['conclusion_html'] ) . '</section>';
+			$h[] = '<section class="lapub-conclusion"><h2 class="lapub-section__title"><span class="lapub-section__num">&#10003;</span>' . esc_html__( 'Final Thoughts', 'linkauthority-publisher' ) . '</h2>' . $this->frag( $d['conclusion_html'] ) . '</section>';
 		}
 
 		// CTA + social.
@@ -327,7 +327,7 @@ class MAB_Post_Builder {
 
 		// Credits.
 		if ( $this->credits ) {
-			$h[] = '<div class="mab-credits"><span>' . esc_html__( 'Media credits:', 'manus-auto-blogger' ) . '</span> ' . implode( ' &middot; ', $this->credits ) . '</div>';
+			$h[] = '<div class="lapub-credits"><span>' . esc_html__( 'Media credits:', 'linkauthority-publisher' ) . '</span> ' . implode( ' &middot; ', $this->credits ) . '</div>';
 		}
 
 		$h[] = '</div>';
@@ -337,10 +337,10 @@ class MAB_Post_Builder {
 	}
 
 	private function photo_figure( $query, $post_id, $alt, $align = 'left' ) {
-		$o      = MAB_Options::all();
+		$o      = LAPUB_Options::all();
 		$photos = $this->pexels->search_photos( $query, 6 );
 		if ( is_wp_error( $photos ) ) {
-			MAB_Logger::warning( 'Pexels photo search failed: ' . $photos->get_error_message(), array( 'query' => $query ) );
+			LAPUB_Logger::warning( 'Pexels photo search failed: ' . $photos->get_error_message(), array( 'query' => $query ) );
 			return '';
 		}
 		$photo = null;
@@ -363,24 +363,24 @@ class MAB_Post_Builder {
 			$att_id = $this->sideload_remote_file( $photo['src'], $post_id, $alt );
 			if ( ! is_wp_error( $att_id ) ) {
 				update_post_meta( $att_id, '_wp_attachment_image_alt', $alt );
-				update_post_meta( $att_id, '_mab_pexels_credit', 'Photo by ' . $photo['photographer'] . ' on Pexels' );
+				update_post_meta( $att_id, '_lapub_pexels_credit', 'Photo by ' . $photo['photographer'] . ' on Pexels' );
 				$local = wp_get_attachment_image_src( $att_id, 'large' );
 				if ( $local ) {
 					$src    = $local[0];
 					$srcset = (string) wp_get_attachment_image_srcset( $att_id, 'large' );
 				}
 			} else {
-				MAB_Logger::warning( 'Could not store Pexels photo locally, hotlinking instead: ' . $att_id->get_error_message() );
+				LAPUB_Logger::warning( 'Could not store Pexels photo locally, hotlinking instead: ' . $att_id->get_error_message() );
 			}
 		}
 
 		$this->add_credit( $photo );
 
-		$fig  = '<figure class="mab-media mab-media--photo mab-media--' . esc_attr( $align ) . '">';
+		$fig  = '<figure class="lapub-media lapub-media--photo lapub-media--' . esc_attr( $align ) . '">';
 		$fig .= '<img src="' . esc_url( $src ) . '"' . ( $srcset ? ' srcset="' . esc_attr( $srcset ) . '" sizes="(max-width: 782px) 100vw, 800px"' : '' ) . ' alt="' . esc_attr( $alt ) . '" loading="lazy" decoding="async" />';
 		$fig .= '<figcaption>' . sprintf(
 			/* translators: 1: photographer link, 2: Pexels link */
-			esc_html__( 'Photo by %1$s on %2$s', 'manus-auto-blogger' ),
+			esc_html__( 'Photo by %1$s on %2$s', 'linkauthority-publisher' ),
 			'<a href="' . esc_url( $photo['photographer_url'] ) . '" target="_blank" rel="noopener nofollow">' . esc_html( $photo['photographer'] ) . '</a>',
 			'<a href="' . esc_url( $photo['url'] ) . '" target="_blank" rel="noopener nofollow">Pexels</a>'
 		) . '</figcaption></figure>';
@@ -390,7 +390,7 @@ class MAB_Post_Builder {
 	private function video_figure( $query ) {
 		$videos = $this->pexels->search_videos( $query, 5 );
 		if ( is_wp_error( $videos ) ) {
-			MAB_Logger::warning( 'Pexels video search failed: ' . $videos->get_error_message(), array( 'query' => $query ) );
+			LAPUB_Logger::warning( 'Pexels video search failed: ' . $videos->get_error_message(), array( 'query' => $query ) );
 			return '';
 		}
 		$video = null;
@@ -409,13 +409,13 @@ class MAB_Post_Builder {
 		$this->used_media[ 'v' . $video['id'] ] = true;
 		$this->add_credit( $video );
 
-		$fig  = '<figure class="mab-media mab-media--video">';
+		$fig  = '<figure class="lapub-media lapub-media--video">';
 		$fig .= '<video controls muted loop playsinline preload="metadata" poster="' . esc_url( $video['poster'] ) . '">';
 		$fig .= '<source src="' . esc_url( $video['file'] ) . '" type="video/mp4" />';
 		$fig .= '</video>';
 		$fig .= '<figcaption>' . sprintf(
 			/* translators: 1: videographer link, 2: Pexels link */
-			esc_html__( 'Video by %1$s on %2$s', 'manus-auto-blogger' ),
+			esc_html__( 'Video by %1$s on %2$s', 'linkauthority-publisher' ),
 			'<a href="' . esc_url( $video['user_url'] ) . '" target="_blank" rel="noopener nofollow">' . esc_html( $video['user'] ) . '</a>',
 			'<a href="' . esc_url( $video['url'] ) . '" target="_blank" rel="noopener nofollow">Pexels</a>'
 		) . '</figcaption></figure>';
@@ -431,15 +431,15 @@ class MAB_Post_Builder {
 	}
 
 	private function cta_html() {
-		$o    = MAB_Options::all();
+		$o    = LAPUB_Options::all();
 		$d    = $this->data;
 		$cta  = isset( $d['cta'] ) && is_array( $d['cta'] ) ? $d['cta'] : array();
 		$site = $o['site_url'] ? $o['site_url'] : home_url( '/' );
 		$name = $o['site_name'] ? $o['site_name'] : get_bloginfo( 'name' );
 
-		$heading = ! empty( $cta['heading'] ) ? $cta['heading'] : sprintf( __( 'Ready to take the next step with %s?', 'manus-auto-blogger' ), $name );
+		$heading = ! empty( $cta['heading'] ) ? $cta['heading'] : sprintf( __( 'Ready to take the next step with %s?', 'linkauthority-publisher' ), $name );
 		$text    = ! empty( $cta['text'] ) ? $cta['text'] : '';
-		$label   = ! empty( $cta['button_label'] ) ? $cta['button_label'] : __( 'Visit our website', 'manus-auto-blogger' );
+		$label   = ! empty( $cta['button_label'] ) ? $cta['button_label'] : __( 'Visit our website', 'linkauthority-publisher' );
 		$url     = ! empty( $cta['button_url'] ) ? $cta['button_url'] : $site;
 		// Never let the CTA button point somewhere odd.
 		$home_host = wp_parse_url( $site, PHP_URL_HOST );
@@ -459,18 +459,18 @@ class MAB_Post_Builder {
 		);
 
 		$h   = array();
-		$h[] = '<div class="mab-cta">';
-		$h[] = '<div class="mab-cta__glow"></div>';
+		$h[] = '<div class="lapub-cta">';
+		$h[] = '<div class="lapub-cta__glow"></div>';
 		$h[] = '<h2>' . esc_html( $heading ) . '</h2>';
 		if ( $text ) {
 			$h[] = '<p>' . esc_html( $text ) . '</p>';
 		}
-		$h[] = '<a class="mab-btn" href="' . esc_url( $url ) . '">' . esc_html( $label ) . ' <span aria-hidden="true">&rarr;</span></a>';
-		$socials = MAB_Options::social_links();
+		$h[] = '<a class="lapub-btn" href="' . esc_url( $url ) . '">' . esc_html( $label ) . ' <span aria-hidden="true">&rarr;</span></a>';
+		$socials = LAPUB_Options::social_links();
 		if ( $socials ) {
-			$h[] = '<div class="mab-social"><span class="mab-social__label">' . esc_html__( 'Follow us', 'manus-auto-blogger' ) . '</span>';
+			$h[] = '<div class="lapub-social"><span class="lapub-social__label">' . esc_html__( 'Follow us', 'linkauthority-publisher' ) . '</span>';
 			foreach ( $socials as $key => $s ) {
-				$h[] = '<a class="mab-social__link mab-social__link--' . esc_attr( $key ) . '" href="' . esc_url( $s['url'] ) . '" target="_blank" rel="noopener" title="' . esc_attr( $s['label'] ) . '"><span class="mab-social__icon">' . $icons[ $key ] . '</span><span class="mab-social__name">' . esc_html( $s['label'] ) . '</span></a>';
+				$h[] = '<a class="lapub-social__link lapub-social__link--' . esc_attr( $key ) . '" href="' . esc_url( $s['url'] ) . '" target="_blank" rel="noopener" title="' . esc_attr( $s['label'] ) . '"><span class="lapub-social__icon">' . $icons[ $key ] . '</span><span class="lapub-social__name">' . esc_html( $s['label'] ) . '</span></a>';
 			}
 			$h[] = '</div>';
 		}
@@ -493,7 +493,7 @@ class MAB_Post_Builder {
 	}
 
 	private function assign_terms( $post_id ) {
-		$o = MAB_Options::all();
+		$o = LAPUB_Options::all();
 		$d = $this->data;
 
 		$cat_id = (int) $o['post_category'];
@@ -531,7 +531,7 @@ class MAB_Post_Builder {
 		}
 
 		$path = wp_parse_url( $url, PHP_URL_PATH );
-		$name = $path ? wp_basename( $path ) : 'mab-image';
+		$name = $path ? wp_basename( $path ) : 'lapub-image';
 		$name = sanitize_file_name( $name );
 		if ( ! preg_match( '/\.(jpe?g|png|webp|gif)$/i', $name ) ) {
 			$type = wp_get_image_mime( $tmp );
@@ -545,7 +545,7 @@ class MAB_Post_Builder {
 			}
 			$name = preg_replace( '/[^a-z0-9\-_]+/i', '-', $name ) . '.' . $ext;
 		}
-		$name = 'mab-' . substr( md5( $url ), 0, 8 ) . '-' . $name;
+		$name = 'lapub-' . substr( md5( $url ), 0, 8 ) . '-' . $name;
 
 		$file_array = array(
 			'name'     => $name,

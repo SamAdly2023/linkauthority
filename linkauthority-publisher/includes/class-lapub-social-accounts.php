@@ -6,14 +6,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Storage for connected social accounts (tokens + selected page/board/author).
  *
- * Option layout (mab_social_accounts):
+ * Option layout (lapub_social_accounts):
  *   meta      => { user_token, expires, user_name, pages[] {id,name,access_token,ig_id,ig_username}, fb_page_id, ig_page_id }
  *   pinterest => { access_token, refresh_token, expires, username, boards[] {id,name}, board_id, board_name }
  *   linkedin  => { access_token, expires, person_urn, name, orgs[] {urn,name}, author_urn, author_name }
  */
-class MAB_Social_Accounts {
+class LAPUB_Social_Accounts {
 
-	const OPTION_KEY = 'mab_social_accounts';
+	const OPTION_KEY = 'lapub_social_accounts';
 
 	public static function all() {
 		$a = get_option( self::OPTION_KEY, array() );

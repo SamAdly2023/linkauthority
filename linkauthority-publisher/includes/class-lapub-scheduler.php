@@ -7,21 +7,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Cron scheduling + the asynchronous job state machine.
  *
  * Flow:
- *   mab_generate_post (recurring)  -> start_job()        creates the Manus article task
- *   mab_poll_job      (every 60s)  -> poll_job()         waits for the article, then creates the image task,
+ *   lapub_generate_post (recurring)  -> start_job()        creates the Manus article task
+ *   lapub_poll_job      (every 60s)  -> poll_job()         waits for the article, then creates the image task,
  *                                                        waits for the image, then builds the WordPress post.
  */
-class MAB_Scheduler {
+class LAPUB_Scheduler {
 
-	const HOOK_GENERATE = 'mab_generate_post';
-	const HOOK_POLL     = 'mab_poll_job';
-	const JOB_OPTION    = 'mab_job';
-	const LAST_RUN      = 'mab_last_run';
+	const HOOK_GENERATE = 'lapub_generate_post';
+	const HOOK_POLL     = 'lapub_poll_job';
+	const JOB_OPTION    = 'lapub_job';
+	const LAST_RUN      = 'lapub_last_run';
 
 	const CONTENT_TIMEOUT = 75 * MINUTE_IN_SECONDS;
 	const IMAGE_TIMEOUT   = 30 * MINUTE_IN_SECONDS;
 
-	/** @var MAB_Scheduler */
+	/** @var LAPUB_Scheduler */
 	private static $instance;
 
 	public static function instance() {
@@ -48,7 +48,7 @@ class MAB_Scheduler {
 	public static function deactivate() {
 		wp_clear_scheduled_hook( self::HOOK_GENERATE );
 		wp_clear_scheduled_hook( self::HOOK_POLL );
-		wp_unschedule_hook( 'mab_distribute_post' );
+		wp_unschedule_hook( 'lapub_distribute_post' );
 	}
 
 	/**
@@ -57,19 +57,19 @@ class MAB_Scheduler {
 	public static function reschedule() {
 		wp_clear_scheduled_hook( self::HOOK_GENERATE );
 
-		$o = MAB_Options::all();
+		$o = LAPUB_Options::all();
 		if ( empty( $o['enabled'] ) ) {
 			return;
 		}
 
-		$frequency = array_key_exists( $o['frequency'], MAB_Options::frequencies() ) ? $o['frequency'] : 'daily';
+		$frequency = array_key_exists( $o['frequency'], LAPUB_Options::frequencies() ) ? $o['frequency'] : 'daily';
 		$first     = self::next_run_timestamp( (int) $o['run_hour'] );
 
 		wp_schedule_event( $first, $frequency, self::HOOK_GENERATE );
-		MAB_Logger::info(
+		LAPUB_Logger::info(
 			sprintf(
 				'Schedule updated: %s, next run %s.',
-				MAB_Options::frequencies()[ $frequency ],
+				LAPUB_Options::frequencies()[ $frequency ],
 				wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $first )
 			)
 		);
@@ -168,41 +168,41 @@ class MAB_Scheduler {
 		if ( $existing ) {
 			$age = time() - (int) $existing['started'];
 			if ( $age < self::CONTENT_TIMEOUT + self::IMAGE_TIMEOUT ) {
-				$msg = __( 'A generation job is already in progress. Wait for it to finish (or cancel it) before starting another.', 'manus-auto-blogger' );
-				MAB_Logger::warning( $msg );
-				return new WP_Error( 'mab_job_running', $msg );
+				$msg = __( 'A generation job is already in progress. Wait for it to finish (or cancel it) before starting another.', 'linkauthority-publisher' );
+				LAPUB_Logger::warning( $msg );
+				return new WP_Error( 'lapub_job_running', $msg );
 			}
-			MAB_Logger::warning( 'A stale job was found and discarded.' );
+			LAPUB_Logger::warning( 'A stale job was found and discarded.' );
 			self::clear_job();
 		}
 
-		$manus = new MAB_Manus_Client();
+		$manus = new LAPUB_Manus_Client();
 		if ( ! $manus->has_key() ) {
-			$msg = __( 'Cannot generate: Manus API key is missing.', 'manus-auto-blogger' );
-			MAB_Logger::error( $msg );
+			$msg = __( 'Cannot generate: Manus API key is missing.', 'linkauthority-publisher' );
+			LAPUB_Logger::error( $msg );
 			self::set_last_run( 'error', $msg );
-			return new WP_Error( 'mab_no_key', $msg );
+			return new WP_Error( 'lapub_no_key', $msg );
 		}
 
-		$prompt = MAB_Prompts::content_prompt( $topic );
+		$prompt = LAPUB_Prompts::content_prompt( $topic );
 		$result = $manus->create_task(
 			$prompt,
 			array(
-				'title'                    => 'Blog post for ' . ( MAB_Options::get( 'site_name' ) ? MAB_Options::get( 'site_name' ) : get_bloginfo( 'name' ) ) . ' - ' . wp_date( 'Y-m-d' ),
-				'structured_output_schema' => MAB_Prompts::content_schema(),
+				'title'                    => 'Blog post for ' . ( LAPUB_Options::get( 'site_name' ) ? LAPUB_Options::get( 'site_name' ) : get_bloginfo( 'name' ) ) . ' - ' . wp_date( 'Y-m-d' ),
+				'structured_output_schema' => LAPUB_Prompts::content_schema(),
 				'hide_in_task_list'        => false,
 			)
 		);
 
 		if ( is_wp_error( $result ) ) {
 			$msg = 'Manus task creation failed: ' . $result->get_error_message();
-			MAB_Logger::error( $msg, array( 'code' => $result->get_error_code() ) );
+			LAPUB_Logger::error( $msg, array( 'code' => $result->get_error_code() ) );
 			self::set_last_run( 'error', $msg );
 			return $result;
 		}
 
 		$job = array(
-			'id'               => uniqid( 'mab_', true ),
+			'id'               => uniqid( 'lapub_', true ),
 			'trigger'          => $trigger,
 			'topic'            => $topic,
 			'stage'            => 'content',
@@ -221,7 +221,7 @@ class MAB_Scheduler {
 		self::save_job( $job );
 		$this->schedule_poll( 90 );
 
-		MAB_Logger::info( $topic ? 'Manus article task created for topic "' . $topic . '". Waiting for the agent to research and write.' : 'Manus article task created. Waiting for the agent to finish researching and writing.', array( 'task_id' => $result['task_id'], 'task_url' => $result['task_url'] ) );
+		LAPUB_Logger::info( $topic ? 'Manus article task created for topic "' . $topic . '". Waiting for the agent to research and write.' : 'Manus article task created. Waiting for the agent to finish researching and writing.', array( 'task_id' => $result['task_id'], 'task_url' => $result['task_url'] ) );
 		return true;
 	}
 
@@ -241,15 +241,15 @@ class MAB_Scheduler {
 		}
 
 		// Simple lock so overlapping cron runs do not double-process.
-		if ( get_transient( 'mab_poll_lock' ) ) {
+		if ( get_transient( 'lapub_poll_lock' ) ) {
 			$this->schedule_poll( 60 );
 			return $job;
 		}
-		set_transient( 'mab_poll_lock', 1, 4 * MINUTE_IN_SECONDS );
+		set_transient( 'lapub_poll_lock', 1, 4 * MINUTE_IN_SECONDS );
 
 		try {
 			$job['polls'] = (int) $job['polls'] + 1;
-			$manus        = new MAB_Manus_Client();
+			$manus        = new LAPUB_Manus_Client();
 
 			if ( 'content' === $job['stage'] ) {
 				$this->poll_content_stage( $job, $manus );
@@ -259,17 +259,17 @@ class MAB_Scheduler {
 				$this->finalize( $job );
 			}
 		} finally {
-			delete_transient( 'mab_poll_lock' );
+			delete_transient( 'lapub_poll_lock' );
 		}
 
 		return self::get_job();
 	}
 
-	private function poll_content_stage( array $job, MAB_Manus_Client $manus ) {
+	private function poll_content_stage( array $job, LAPUB_Manus_Client $manus ) {
 		$res = $manus->poll( $job['content_task_id'] );
 
 		if ( is_wp_error( $res ) ) {
-			MAB_Logger::warning( 'Polling article task failed (will retry): ' . $res->get_error_message() );
+			LAPUB_Logger::warning( 'Polling article task failed (will retry): ' . $res->get_error_message() );
 			self::save_job( $job );
 			$this->schedule_poll( 90 );
 			return;
@@ -291,27 +291,27 @@ class MAB_Scheduler {
 					return;
 				}
 				$job['article']       = $article;
-				$builder              = new MAB_Post_Builder( $article );
+				$builder              = new LAPUB_Post_Builder( $article );
 				$words                = $builder->word_count();
-				$min                  = (int) MAB_Options::get( 'min_words' );
-				MAB_Logger::success( sprintf( 'Article received: "%s" (%d words, %d sections).', $article['title'], $words, count( $article['sections'] ) ), array( 'task_id' => $job['content_task_id'] ) );
+				$min                  = (int) LAPUB_Options::get( 'min_words' );
+				LAPUB_Logger::success( sprintf( 'Article received: "%s" (%d words, %d sections).', $article['title'], $words, count( $article['sections'] ) ), array( 'task_id' => $job['content_task_id'] ) );
 
 				if ( $words < $min * 0.8 && (int) $job['nudges'] < 1 ) {
 					// One attempt to lengthen a short article.
 					$job['nudges'] = (int) $job['nudges'] + 1;
 					$manus->send_message(
 						$job['content_task_id'],
-						sprintf( 'The article is only about %d words. Expand every section with more specific, useful detail (examples, steps, data) so the total is between %d and %d words, keep the same structure, and return the complete result again as structured output.', $words, $min, (int) MAB_Options::get( 'max_words' ) )
+						sprintf( 'The article is only about %d words. Expand every section with more specific, useful detail (examples, steps, data) so the total is between %d and %d words, keep the same structure, and return the complete result again as structured output.', $words, $min, (int) LAPUB_Options::get( 'max_words' ) )
 					);
 					$job['stage_started'] = time();
 					$job['after_ts']      = (int) ( microtime( true ) * 1000 );
 					self::save_job( $job );
-					MAB_Logger::warning( sprintf( 'Article shorter than the %d-word minimum. Asked Manus to expand it.', $min ) );
+					LAPUB_Logger::warning( sprintf( 'Article shorter than the %d-word minimum. Asked Manus to expand it.', $min ) );
 					$this->schedule_poll( 90 );
 					return;
 				}
 				if ( $words < $min ) {
-					MAB_Logger::warning( sprintf( 'Article is %d words (minimum %d). Proceeding anyway.', $words, $min ) );
+					LAPUB_Logger::warning( sprintf( 'Article is %d words (minimum %d). Proceeding anyway.', $words, $min ) );
 				}
 
 				$this->begin_image_stage( $job, $manus );
@@ -329,7 +329,7 @@ class MAB_Scheduler {
 				if ( time() - (int) $job['stage_started'] > self::CONTENT_TIMEOUT ) {
 					if ( ! empty( $job['article'] ) ) {
 						// The expansion follow-up never finished; use the article we already have.
-						MAB_Logger::warning( 'Manus did not finish expanding the article in time - using the original version.' );
+						LAPUB_Logger::warning( 'Manus did not finish expanding the article in time - using the original version.' );
 						$this->begin_image_stage( $job, $manus );
 						return;
 					}
@@ -341,8 +341,8 @@ class MAB_Scheduler {
 		}
 	}
 
-	private function begin_image_stage( array $job, MAB_Manus_Client $manus ) {
-		if ( empty( MAB_Options::get( 'generate_featured' ) ) ) {
+	private function begin_image_stage( array $job, LAPUB_Manus_Client $manus ) {
+		if ( empty( LAPUB_Options::get( 'generate_featured' ) ) ) {
 			$job['stage'] = 'finalize';
 			self::save_job( $job );
 			$this->finalize( $job );
@@ -350,7 +350,7 @@ class MAB_Scheduler {
 		}
 
 		$result = $manus->create_task(
-			MAB_Prompts::image_prompt( $job['article'] ),
+			LAPUB_Prompts::image_prompt( $job['article'] ),
 			array(
 				'title'             => 'Featured image: ' . mb_substr( $job['article']['title'], 0, 80 ),
 				'hide_in_task_list' => false,
@@ -358,7 +358,7 @@ class MAB_Scheduler {
 		);
 
 		if ( is_wp_error( $result ) ) {
-			MAB_Logger::warning( 'Could not create the featured-image task, continuing without it: ' . $result->get_error_message() );
+			LAPUB_Logger::warning( 'Could not create the featured-image task, continuing without it: ' . $result->get_error_message() );
 			$job['stage'] = 'finalize';
 			self::save_job( $job );
 			$this->finalize( $job );
@@ -372,15 +372,15 @@ class MAB_Scheduler {
 		$job['nudges']         = 0;
 		$job['after_ts']       = 0;
 		self::save_job( $job );
-		MAB_Logger::info( 'Featured-image task created. Waiting for Manus to generate the image.', array( 'task_id' => $result['task_id'] ) );
+		LAPUB_Logger::info( 'Featured-image task created. Waiting for Manus to generate the image.', array( 'task_id' => $result['task_id'] ) );
 		$this->schedule_poll( 60 );
 	}
 
-	private function poll_image_stage( array $job, MAB_Manus_Client $manus ) {
+	private function poll_image_stage( array $job, LAPUB_Manus_Client $manus ) {
 		$res = $manus->poll( $job['image_task_id'] );
 
 		if ( is_wp_error( $res ) ) {
-			MAB_Logger::warning( 'Polling image task failed (will retry): ' . $res->get_error_message() );
+			LAPUB_Logger::warning( 'Polling image task failed (will retry): ' . $res->get_error_message() );
 			self::save_job( $job );
 			$this->schedule_poll( 90 );
 			return;
@@ -395,9 +395,9 @@ class MAB_Scheduler {
 				$url = $this->pick_image_attachment( $res['attachments'] );
 				if ( $url ) {
 					$job['image_url'] = $url;
-					MAB_Logger::success( 'Featured image generated by Manus.' );
+					LAPUB_Logger::success( 'Featured image generated by Manus.' );
 				} else {
-					MAB_Logger::warning( 'Manus finished the image task but no image attachment was found. A Pexels photo will be used instead.' );
+					LAPUB_Logger::warning( 'Manus finished the image task but no image attachment was found. A Pexels photo will be used instead.' );
 				}
 				$job['stage'] = 'finalize';
 				self::save_job( $job );
@@ -405,7 +405,7 @@ class MAB_Scheduler {
 				return;
 
 			case 'error':
-				MAB_Logger::warning( 'Manus image task failed: ' . $res['error'] . ' - falling back to Pexels.' );
+				LAPUB_Logger::warning( 'Manus image task failed: ' . $res['error'] . ' - falling back to Pexels.' );
 				$job['stage'] = 'finalize';
 				self::save_job( $job );
 				$this->finalize( $job );
@@ -417,7 +417,7 @@ class MAB_Scheduler {
 
 			default:
 				if ( time() - (int) $job['stage_started'] > self::IMAGE_TIMEOUT ) {
-					MAB_Logger::warning( 'Timed out waiting for the featured image - falling back to Pexels.' );
+					LAPUB_Logger::warning( 'Timed out waiting for the featured image - falling back to Pexels.' );
 					$job['stage'] = 'finalize';
 					self::save_job( $job );
 					$this->finalize( $job );
@@ -438,7 +438,7 @@ class MAB_Scheduler {
 			return;
 		}
 
-		$builder = new MAB_Post_Builder( $job['article'] );
+		$builder = new LAPUB_Post_Builder( $job['article'] );
 		$post_id = $builder->create_post(
 			$job['image_url'],
 			array(
@@ -455,18 +455,18 @@ class MAB_Scheduler {
 
 		$status = get_post_status( $post_id );
 		$msg    = sprintf( 'Post #%d "%s" created (%s).', $post_id, get_the_title( $post_id ), $status );
-		MAB_Logger::success( $msg, array( 'post_id' => $post_id, 'url' => get_permalink( $post_id ) ) );
+		LAPUB_Logger::success( $msg, array( 'post_id' => $post_id, 'url' => get_permalink( $post_id ) ) );
 		self::set_last_run( 'success', $msg, $post_id );
 		self::clear_job();
 
-		do_action( 'mab_post_generated', $post_id, $job );
+		do_action( 'lapub_post_generated', $post_id, $job );
 	}
 
 	/* ------------------------------------------------------------------ */
 	/* Helpers                                                             */
 	/* ------------------------------------------------------------------ */
 
-	private function nudge( array $job, MAB_Manus_Client $manus, $task_id, $waiting_desc ) {
+	private function nudge( array $job, LAPUB_Manus_Client $manus, $task_id, $waiting_desc ) {
 		if ( (int) $job['nudges'] >= 3 ) {
 			$this->fail( $job, 'Manus keeps waiting for input: ' . $waiting_desc );
 			return;
@@ -474,13 +474,13 @@ class MAB_Scheduler {
 		$job['nudges']   = (int) $job['nudges'] + 1;
 		$job['after_ts'] = (int) ( microtime( true ) * 1000 );
 		$manus->send_message( $task_id, 'Do not ask questions or wait for confirmation. Proceed autonomously using your best judgement and complete the task fully.' );
-		MAB_Logger::info( 'Manus asked for input ("' . $waiting_desc . '"). Told it to continue autonomously.' );
+		LAPUB_Logger::info( 'Manus asked for input ("' . $waiting_desc . '"). Told it to continue autonomously.' );
 		self::save_job( $job );
 		$this->schedule_poll( 60 );
 	}
 
 	private function fail( array $job, $message ) {
-		MAB_Logger::error( $message, array( 'job' => $job['id'] ) );
+		LAPUB_Logger::error( $message, array( 'job' => $job['id'] ) );
 		self::set_last_run( 'error', $message );
 		self::clear_job();
 	}

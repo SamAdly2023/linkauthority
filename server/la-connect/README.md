@@ -1,6 +1,6 @@
 # LinkAuthority Connect
 
-OAuth relay for the **Manus Auto Blogger** WordPress plugin. Customers click *Connect via LinkAuthority* in the plugin, authorise Facebook/Instagram, Pinterest or LinkedIn against **your** developer apps, and the resulting tokens are handed to their own WordPress site. Your server keeps nothing after the hand-off (temporary payloads expire in 10 minutes and are encrypted at rest).
+OAuth relay for the **LinkAuthority Publisher** WordPress plugin. Customers click *Connect via LinkAuthority* in the plugin, authorise Facebook/Instagram, Pinterest or LinkedIn against **your** developer apps, and the resulting tokens are handed to their own WordPress site. Your server keeps nothing after the hand-off (temporary payloads expire in 10 minutes and are encrypted at rest).
 
 ## How it works
 
@@ -62,12 +62,12 @@ Because *other people* will connect through these apps they must be public:
 `licenses.json` (path in `LICENSES_FILE`):
 
 ```json
-{ "MAB-XXXX-YYYY": { "label": "Customer name", "sites": 3, "active": true } }
+{ "LAP-XXXX-YYYY": { "label": "Customer name", "sites": 3, "active": true } }
 ```
 
 `sites` = how many distinct site origins may use the key (0 = unlimited). Usage is recorded in `STORE_DIR`. Set `"active": false` to revoke. Leave `LICENSES_FILE` unset for open mode while testing.
 
-Customers paste the key in **Auto Blogger → Social Sharing → LinkAuthority licence key**.
+Customers paste the key in **Publisher → Social Sharing → LinkAuthority licence key**.
 
 ## Security notes
 

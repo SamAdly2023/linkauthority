@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * LinkedIn publishing (personal profile or Company Page) through the versioned Posts API.
  */
-class MAB_Platform_LinkedIn {
+class LAPUB_Platform_LinkedIn {
 
 	const API    = 'https://api.linkedin.com';
 	const DIALOG = 'https://www.linkedin.com/oauth/v2/authorization';
@@ -14,7 +14,7 @@ class MAB_Platform_LinkedIn {
 
 	private static function scopes() {
 		$scopes = array( 'openid', 'profile', 'w_member_social' );
-		if ( MAB_Options::get( 'linkedin_org_scopes' ) ) {
+		if ( LAPUB_Options::get( 'linkedin_org_scopes' ) ) {
 			$scopes[] = 'r_organization_admin';
 			$scopes[] = 'w_organization_social';
 		}
@@ -22,7 +22,7 @@ class MAB_Platform_LinkedIn {
 	}
 
 	private static function version() {
-		$v = preg_replace( '/[^0-9]/', '', (string) MAB_Options::get( 'linkedin_api_version' ) );
+		$v = preg_replace( '/[^0-9]/', '', (string) LAPUB_Options::get( 'linkedin_api_version' ) );
 		return $v ? $v : '202601';
 	}
 
@@ -30,7 +30,7 @@ class MAB_Platform_LinkedIn {
 		return add_query_arg(
 			array(
 				'response_type' => 'code',
-				'client_id'     => MAB_Options::get( 'linkedin_client_id' ),
+				'client_id'     => LAPUB_Options::get( 'linkedin_client_id' ),
 				'redirect_uri'  => rawurlencode( $redirect_uri ),
 				'state'         => $state,
 				'scope'         => rawurlencode( self::scopes() ),
@@ -40,7 +40,7 @@ class MAB_Platform_LinkedIn {
 	}
 
 	/**
-	 * @return array|WP_Error Account data for MAB_Social_Accounts::set('linkedin').
+	 * @return array|WP_Error Account data for LAPUB_Social_Accounts::set('linkedin').
 	 */
 	public static function handle_callback( $code, $redirect_uri ) {
 		$res = wp_remote_post(
@@ -52,8 +52,8 @@ class MAB_Platform_LinkedIn {
 					'grant_type'    => 'authorization_code',
 					'code'          => $code,
 					'redirect_uri'  => $redirect_uri,
-					'client_id'     => MAB_Options::get( 'linkedin_client_id' ),
-					'client_secret' => MAB_Options::get( 'linkedin_client_secret' ),
+					'client_id'     => LAPUB_Options::get( 'linkedin_client_id' ),
+					'client_secret' => LAPUB_Options::get( 'linkedin_client_secret' ),
 				),
 			)
 		);
@@ -62,14 +62,14 @@ class MAB_Platform_LinkedIn {
 			return $token;
 		}
 		if ( empty( $token['access_token'] ) ) {
-			return new WP_Error( 'mab_li_token', __( 'LinkedIn did not return an access token.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_li_token', __( 'LinkedIn did not return an access token.', 'linkauthority-publisher' ) );
 		}
 		$access  = $token['access_token'];
 		$expires = time() + ( isset( $token['expires_in'] ) ? (int) $token['expires_in'] : 60 * DAY_IN_SECONDS );
 
 		$me = self::request( 'GET', '/v2/userinfo', array(), $access, false );
 		if ( is_wp_error( $me ) || empty( $me['sub'] ) ) {
-			return is_wp_error( $me ) ? $me : new WP_Error( 'mab_li_userinfo', __( 'Could not read your LinkedIn profile (is the "Sign In with LinkedIn using OpenID Connect" product added to your app?).', 'manus-auto-blogger' ) );
+			return is_wp_error( $me ) ? $me : new WP_Error( 'lapub_li_userinfo', __( 'Could not read your LinkedIn profile (is the "Sign In with LinkedIn using OpenID Connect" product added to your app?).', 'linkauthority-publisher' ) );
 		}
 		$person_urn = 'urn:li:person:' . $me['sub'];
 		$name       = trim( ( isset( $me['given_name'] ) ? $me['given_name'] : '' ) . ' ' . ( isset( $me['family_name'] ) ? $me['family_name'] : '' ) );
@@ -78,7 +78,7 @@ class MAB_Platform_LinkedIn {
 		}
 
 		$orgs = array();
-		if ( MAB_Options::get( 'linkedin_org_scopes' ) ) {
+		if ( LAPUB_Options::get( 'linkedin_org_scopes' ) ) {
 			$acl = self::request(
 				'GET',
 				'/rest/organizationAcls',
@@ -120,12 +120,12 @@ class MAB_Platform_LinkedIn {
 	 * @return array|WP_Error { id, url }
 	 */
 	public static function publish( $commentary, $link, $title, $description ) {
-		$acct = MAB_Social_Accounts::linkedin_author();
+		$acct = LAPUB_Social_Accounts::linkedin_author();
 		if ( ! $acct ) {
-			return new WP_Error( 'mab_li_not_connected', __( 'LinkedIn is not connected.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_li_not_connected', __( 'LinkedIn is not connected.', 'linkauthority-publisher' ) );
 		}
 		if ( (int) $acct['expires'] < time() ) {
-			return new WP_Error( 'mab_li_expired', __( 'LinkedIn token has expired - reconnect LinkedIn in the settings.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_li_expired', __( 'LinkedIn token has expired - reconnect LinkedIn in the settings.', 'linkauthority-publisher' ) );
 		}
 
 		$body = array(

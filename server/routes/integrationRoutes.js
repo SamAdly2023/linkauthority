@@ -318,26 +318,29 @@ module.exports = app => {
   });
 
   // Legacy: generates a per-site plugin .zip with the token compiled in (owner-only).
-  // The Auto Blogger plugin, zipped from source on request like Partners above.
-  app.get('/api/wp/auto-blogger', (req, res) => {
+  // The Publisher plugin, zipped from source on request like Partners above.
+  // The old path is kept because the dashboard linked it for a while.
+  const servePublisher = (req, res) => {
     try {
-      const pluginDir = path.resolve(__dirname, '../../manus-auto-blogger');
+      const pluginDir = path.resolve(__dirname, '../../linkauthority-publisher');
       if (!fs.existsSync(pluginDir)) {
-        console.error('Auto Blogger plugin directory missing at', pluginDir);
+        console.error('Publisher plugin directory missing at', pluginDir);
         return res.status(500).send({ error: 'Plugin package is unavailable' });
       }
 
       const zip = new AdmZip();
-      zip.addLocalFolder(pluginDir, 'manus-auto-blogger');
+      zip.addLocalFolder(pluginDir, 'linkauthority-publisher');
 
       res.setHeader('Content-Type', 'application/zip');
-      res.setHeader('Content-Disposition', 'attachment; filename="manus-auto-blogger.zip"');
+      res.setHeader('Content-Disposition', 'attachment; filename="linkauthority-publisher.zip"');
       res.send(zip.toBuffer());
     } catch (err) {
-      console.error('Failed to package the Auto Blogger plugin:', err);
+      console.error('Failed to package the Publisher plugin:', err);
       res.status(500).send({ error: 'Failed to build the plugin package' });
     }
-  });
+  };
+  app.get('/api/wp/publisher', servePublisher);
+  app.get('/api/wp/auto-blogger', servePublisher);
 
   // Superseded by /api/wp/plugin above; kept so sites still running it keep working.
   app.get('/api/wp/generate-plugin/:websiteId', requireLogin, async (req, res) => {

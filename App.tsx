@@ -806,7 +806,7 @@ const App: React.FC = () => {
   }
 
   // `accent` marks an item as a distinct product rather than another view of
-  // the same one. Auto Blogger is a second plugin with its own purpose, and
+  // the same one. Publisher is a second plugin with its own purpose, and
   // the pink keeps it from reading as one more page of the backlink network.
   const SidebarItem = ({ tab, icon: Icon, label, accent, badge }: { tab: Tab, icon: any, label: string, accent?: 'pink', badge?: string }) => {
     const active = activeTab === tab;
@@ -1460,7 +1460,7 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
               <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
               <SidebarItem tab={Tab.Citations} icon={MapPin} label="Citations & AI" />
-              <SidebarItem tab={Tab.AutoBlogger} icon={Share2} label="Auto Blogger & Social" accent="pink" badge="New" />
+              <SidebarItem tab={Tab.AutoBlogger} icon={Share2} label="Publisher & Social" accent="pink" badge="New" />
               {PRICING_ENABLED && <SidebarItem tab={Tab.Guide} icon={CreditCard} label="Pricing" />}
               <SidebarItem tab={Tab.UserGuide} icon={BookOpen} label="User Guide" />
               <SidebarItem tab={Tab.Profile} icon={UserIcon} label="My Profile" />

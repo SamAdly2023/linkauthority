@@ -6,9 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Front-end output for generated posts: styles, schema.org JSON-LD and meta description.
  */
-class MAB_Frontend {
+class LAPUB_Frontend {
 
-	/** @var MAB_Frontend */
+	/** @var LAPUB_Frontend */
 	private static $instance;
 
 	public static function instance() {
@@ -28,15 +28,15 @@ class MAB_Frontend {
 		if ( ! is_singular( 'post' ) ) {
 			return false;
 		}
-		return (bool) get_post_meta( get_queried_object_id(), '_mab_generated', true );
+		return (bool) get_post_meta( get_queried_object_id(), '_lapub_generated', true );
 	}
 
 	public function enqueue() {
 		if ( ! $this->is_generated_post() ) {
 			return;
 		}
-		wp_enqueue_style( 'mab-frontend', MAB_URL . 'assets/css/frontend.css', array(), MAB_VERSION );
-		wp_add_inline_style( 'mab-frontend', self::accent_css() );
+		wp_enqueue_style( 'lapub-frontend', LAPUB_URL . 'assets/css/frontend.css', array(), LAPUB_VERSION );
+		wp_add_inline_style( 'lapub-frontend', self::accent_css() );
 	}
 
 	/**
@@ -46,17 +46,17 @@ class MAB_Frontend {
 		if ( ! is_admin() ) {
 			return;
 		}
-		wp_enqueue_style( 'mab-frontend-editor', MAB_URL . 'assets/css/frontend.css', array(), MAB_VERSION );
-		wp_add_inline_style( 'mab-frontend-editor', self::accent_css() );
+		wp_enqueue_style( 'lapub-frontend-editor', LAPUB_URL . 'assets/css/frontend.css', array(), LAPUB_VERSION );
+		wp_add_inline_style( 'lapub-frontend-editor', self::accent_css() );
 	}
 
 	public static function accent_css() {
-		$o  = MAB_Options::all();
-		$c1 = MAB_Options::hex( $o['accent_color'] );
-		$c2 = MAB_Options::hex( $o['accent_color_2'] );
+		$o  = LAPUB_Options::all();
+		$c1 = LAPUB_Options::hex( $o['accent_color'] );
+		$c2 = LAPUB_Options::hex( $o['accent_color_2'] );
 		$c1 = $c1 ? $c1 : '#6d28d9';
 		$c2 = $c2 ? $c2 : '#0ea5e9';
-		return ':root{--mab-accent:' . $c1 . ';--mab-accent-2:' . $c2 . ';--mab-accent-rgb:' . self::hex_to_rgb( $c1 ) . ';--mab-accent-2-rgb:' . self::hex_to_rgb( $c2 ) . ';}';
+		return ':root{--lapub-accent:' . $c1 . ';--lapub-accent-2:' . $c2 . ';--lapub-accent-rgb:' . self::hex_to_rgb( $c1 ) . ';--lapub-accent-2-rgb:' . self::hex_to_rgb( $c2 ) . ';}';
 	}
 
 	private static function hex_to_rgb( $hex ) {
@@ -78,12 +78,12 @@ class MAB_Frontend {
 			return;
 		}
 		$post_id = get_queried_object_id();
-		$o       = MAB_Options::all();
+		$o       = LAPUB_Options::all();
 
 		$seo_plugin_active = defined( 'WPSEO_VERSION' ) || defined( 'RANK_MATH_VERSION' ) || defined( 'AIOSEO_VERSION' ) || defined( 'SEOPRESS_VERSION' );
 
 		if ( ! empty( $o['add_meta_description'] ) && ! $seo_plugin_active ) {
-			$desc = get_post_meta( $post_id, '_mab_meta_description', true );
+			$desc = get_post_meta( $post_id, '_lapub_meta_description', true );
 			if ( $desc ) {
 				echo '<meta name="description" content="' . esc_attr( $desc ) . '" />' . "\n";
 			}
@@ -101,7 +101,7 @@ class MAB_Frontend {
 			'@context'         => 'https://schema.org',
 			'@type'            => 'BlogPosting',
 			'headline'         => wp_strip_all_tags( get_the_title( $post_id ) ),
-			'description'      => get_post_meta( $post_id, '_mab_meta_description', true ),
+			'description'      => get_post_meta( $post_id, '_lapub_meta_description', true ),
 			'datePublished'    => get_the_date( 'c', $post_id ),
 			'dateModified'     => get_the_modified_date( 'c', $post_id ),
 			'mainEntityOfPage' => get_permalink( $post_id ),
@@ -118,11 +118,11 @@ class MAB_Frontend {
 		if ( $image ) {
 			$article['image'] = $image;
 		}
-		$socials = MAB_Options::social_links();
+		$socials = LAPUB_Options::social_links();
 		if ( $socials ) {
 			$article['publisher']['sameAs'] = wp_list_pluck( $socials, 'url' );
 		}
-		$words = (int) get_post_meta( $post_id, '_mab_word_count', true );
+		$words = (int) get_post_meta( $post_id, '_lapub_word_count', true );
 		if ( $words ) {
 			$article['wordCount'] = $words;
 		}
@@ -130,7 +130,7 @@ class MAB_Frontend {
 		echo '<script type="application/ld+json">' . wp_json_encode( $article, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
 
 		// FAQPage rich result (skip if an SEO plugin may already output one).
-		$faq = get_post_meta( $post_id, '_mab_faq', true );
+		$faq = get_post_meta( $post_id, '_lapub_faq', true );
 		if ( is_array( $faq ) && $faq && ! $seo_plugin_active ) {
 			$entities = array();
 			foreach ( $faq as $item ) {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Download, Share2, CheckCircle2, AlertCircle, ExternalLink, Facebook, Instagram, Linkedin, RefreshCw } from 'lucide-react';
 
 /**
- * Auto Blogger: the second plugin, and the social-sharing relay behind it.
+ * LinkAuthority Publisher: the second plugin, and the social-sharing relay behind it.
  *
  * The connect buttons live inside the plugin, not here, and that is a design
  * choice worth keeping: the OAuth tokens for someone's Facebook Page or
@@ -64,7 +64,7 @@ const AutoBloggerPage: React.FC = () => {
       <div>
         <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
           <Share2 className="text-pink-400" size={30} />
-          Auto Blogger &amp; Social Sharing
+          Publisher &amp; Social Sharing
         </h2>
         <p className="text-slate-400 max-w-2xl">
           A second plugin that researches, writes and publishes long-form posts on a schedule,
@@ -86,11 +86,11 @@ const AutoBloggerPage: React.FC = () => {
             </p>
           </div>
           <a
-            href="/api/wp/auto-blogger"
+            href="/api/wp/publisher"
             className="inline-flex items-center gap-2 bg-pink-600 hover:bg-pink-500 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-pink-600/20 shrink-0"
           >
             <Download size={18} />
-            Download Auto Blogger
+            Download LinkAuthority Publisher
           </a>
         </div>
       </div>
@@ -178,7 +178,7 @@ const AutoBloggerPage: React.FC = () => {
         <ol className="space-y-4">
           {[
             ['Install and activate', 'Upload the zip above in WordPress under Plugins → Add New → Upload.'],
-            ['Open Auto Blogger → Social Sharing', 'In the WordPress admin menu. Paste your LinkAuthority licence key if one is required.'],
+            ['Open Publisher → Social Sharing', 'In the WordPress admin menu. Paste your LinkAuthority licence key if one is required.'],
             ['Click Connect on a network', 'A popup takes you to Facebook, LinkedIn or Pinterest to log in and approve. Pick the Page, board or profile to post to.'],
             ['Done', 'Every post the plugin publishes is shared there automatically, with a caption written for that network. Reconnect from the same screen if a token expires.']
           ].map(([title, body], i) => (

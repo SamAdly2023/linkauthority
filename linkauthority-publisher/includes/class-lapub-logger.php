@@ -6,9 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Lightweight activity log stored in a single option (last 300 entries).
  */
-class MAB_Logger {
+class LAPUB_Logger {
 
-	const OPTION_KEY  = 'mab_log';
+	const OPTION_KEY  = 'lapub_log';
 	const MAX_ENTRIES = 300;
 
 	public static function log( $message, $level = 'info', $context = array() ) {
@@ -28,7 +28,7 @@ class MAB_Logger {
 		update_option( self::OPTION_KEY, $entries, false );
 
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( '[Manus Auto Blogger][' . $level . '] ' . $message . ( $context ? ' ' . wp_json_encode( $context ) : '' ) );
+			error_log( '[LinkAuthority Publisher][' . $level . '] ' . $message . ( $context ? ' ' . wp_json_encode( $context ) : '' ) );
 		}
 	}
 

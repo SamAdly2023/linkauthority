@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Tasks run asynchronously: create a task, then poll task.listMessages until the
  * latest status_update reports agent_status = "stopped" (success) or "error".
  */
-class MAB_Manus_Client {
+class LAPUB_Manus_Client {
 
 	const BASE_URL = 'https://api.manus.ai';
 
@@ -19,7 +19,7 @@ class MAB_Manus_Client {
 	private $api_key;
 
 	public function __construct( $api_key = null ) {
-		$this->api_key = null === $api_key ? MAB_Options::get( 'manus_api_key' ) : $api_key;
+		$this->api_key = null === $api_key ? LAPUB_Options::get( 'manus_api_key' ) : $api_key;
 	}
 
 	public function has_key() {
@@ -38,7 +38,7 @@ class MAB_Manus_Client {
 			'message'           => array(
 				'content' => (string) $prompt,
 			),
-			'agent_profile'     => ! empty( $args['agent_profile'] ) ? $args['agent_profile'] : MAB_Options::get( 'manus_agent_profile', 'standard' ),
+			'agent_profile'     => ! empty( $args['agent_profile'] ) ? $args['agent_profile'] : LAPUB_Options::get( 'manus_agent_profile', 'standard' ),
 			'interactive_mode'  => false,
 			'hide_in_task_list' => isset( $args['hide_in_task_list'] ) ? (bool) $args['hide_in_task_list'] : false,
 			'share_visibility'  => 'private',
@@ -50,7 +50,7 @@ class MAB_Manus_Client {
 		if ( ! empty( $args['structured_output_schema'] ) ) {
 			$body['structured_output_schema'] = $args['structured_output_schema'];
 		}
-		$locale = ! empty( $args['locale'] ) ? $args['locale'] : MAB_Options::get( 'manus_locale' );
+		$locale = ! empty( $args['locale'] ) ? $args['locale'] : LAPUB_Options::get( 'manus_locale' );
 		if ( ! empty( $locale ) ) {
 			$body['locale'] = $locale;
 		}
@@ -60,7 +60,7 @@ class MAB_Manus_Client {
 			return $response;
 		}
 		if ( empty( $response['task_id'] ) ) {
-			return new WP_Error( 'mab_manus_no_task', __( 'Manus did not return a task id.', 'manus-auto-blogger' ), $response );
+			return new WP_Error( 'lapub_manus_no_task', __( 'Manus did not return a task id.', 'linkauthority-publisher' ), $response );
 		}
 		return array(
 			'task_id'    => $response['task_id'],
@@ -209,9 +209,9 @@ class MAB_Manus_Client {
 	 */
 	public function test_key() {
 		if ( ! $this->has_key() ) {
-			return new WP_Error( 'mab_no_key', __( 'No Manus API key entered.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_no_key', __( 'No Manus API key entered.', 'linkauthority-publisher' ) );
 		}
-		$response = $this->request( 'GET', '/v2/task.detail', array( 'task_id' => 'mab-key-check-000000' ) );
+		$response = $this->request( 'GET', '/v2/task.detail', array( 'task_id' => 'lapub-key-check-000000' ) );
 		if ( is_wp_error( $response ) ) {
 			$code = $response->get_error_code();
 			if ( in_array( $code, array( 'not_found', 'invalid_argument', 'http_404', 'http_400' ), true ) ) {
@@ -229,7 +229,7 @@ class MAB_Manus_Client {
 	 */
 	private function request( $method, $path, array $data = array() ) {
 		if ( ! $this->has_key() ) {
-			return new WP_Error( 'mab_no_key', __( 'Manus API key is missing. Add it in Manus Auto Blogger > Settings.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_no_key', __( 'Manus API key is missing. Add it in LinkAuthority Publisher > Settings.', 'linkauthority-publisher' ) );
 		}
 
 		$url  = self::BASE_URL . $path;
@@ -260,12 +260,12 @@ class MAB_Manus_Client {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( ! is_array( $body ) ) {
-			return new WP_Error( 'http_' . $code, sprintf( __( 'Manus API returned a non-JSON response (HTTP %d).', 'manus-auto-blogger' ), $code ) );
+			return new WP_Error( 'http_' . $code, sprintf( __( 'Manus API returned a non-JSON response (HTTP %d).', 'linkauthority-publisher' ), $code ) );
 		}
 
 		if ( $code >= 400 || ( isset( $body['ok'] ) && false === $body['ok'] ) ) {
 			$err_code = isset( $body['error']['code'] ) ? $body['error']['code'] : 'http_' . $code;
-			$err_msg  = isset( $body['error']['message'] ) ? $body['error']['message'] : sprintf( __( 'Manus API error (HTTP %d).', 'manus-auto-blogger' ), $code );
+			$err_msg  = isset( $body['error']['message'] ) ? $body['error']['message'] : sprintf( __( 'Manus API error (HTTP %d).', 'linkauthority-publisher' ), $code );
 			return new WP_Error( $err_code, $err_msg, $body );
 		}
 

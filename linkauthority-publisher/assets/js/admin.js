@@ -1,19 +1,19 @@
-/* global MAB, jQuery */
+/* global LAPUB, jQuery */
 ( function ( $ ) {
 	'use strict';
 
 	var pollTimer = null;
 
 	function ajax( action, data ) {
-		return $.post( MAB.ajax, $.extend( { action: 'mab_' + action, nonce: MAB.nonce }, data || {} ) );
+		return $.post( LAPUB.ajax, $.extend( { action: 'lapub_' + action, nonce: LAPUB.nonce }, data || {} ) );
 	}
 
 	function applyStatus( status ) {
 		if ( ! status ) {
 			return;
 		}
-		$( '#mab-status' ).html( status.html );
-		$( '#mab-log' ).html( status.log );
+		$( '#lapub-status' ).html( status.html );
+		$( '#lapub-log' ).html( status.log );
 		if ( status.running ) {
 			startPolling();
 		} else {
@@ -42,9 +42,9 @@
 	}
 
 	function notice( type, text ) {
-		var $n = $( '<div class="notice is-dismissible mab-notice notice-' + type + '"><p></p></div>' );
+		var $n = $( '<div class="notice is-dismissible lapub-notice notice-' + type + '"><p></p></div>' );
 		$n.find( 'p' ).text( text );
-		$( '.mab-header' ).after( $n );
+		$( '.lapub-header' ).after( $n );
 		setTimeout( function () {
 			$n.fadeOut( 300, function () {
 				$( this ).remove();
@@ -54,14 +54,14 @@
 
 	$( function () {
 		/* Tabs */
-		$( '.mab-tabs .nav-tab' ).on( 'click', function ( e ) {
+		$( '.lapub-tabs .nav-tab' ).on( 'click', function ( e ) {
 			e.preventDefault();
 			var tab = $( this ).data( 'tab' );
-			$( '.mab-tabs .nav-tab' ).removeClass( 'nav-tab-active' );
+			$( '.lapub-tabs .nav-tab' ).removeClass( 'nav-tab-active' );
 			$( this ).addClass( 'nav-tab-active' );
-			$( '.mab-tab' ).removeClass( 'is-active' );
-			$( '.mab-tab[data-tab="' + tab + '"]' ).addClass( 'is-active' );
-			$( '#mab-current-tab' ).val( tab );
+			$( '.lapub-tab' ).removeClass( 'is-active' );
+			$( '.lapub-tab[data-tab="' + tab + '"]' ).addClass( 'is-active' );
+			$( '#lapub-current-tab' ).val( tab );
 			if ( window.history && window.history.replaceState ) {
 				var url = new URL( window.location.href );
 				url.searchParams.set( 'tab', tab );
@@ -72,23 +72,23 @@
 
 		/* Colour pickers */
 		if ( $.fn.wpColorPicker ) {
-			$( '.mab-color' ).wpColorPicker();
+			$( '.lapub-color' ).wpColorPicker();
 		}
 
 		/* Show / hide key */
-		$( document ).on( 'click', '.mab-toggle-key', function () {
+		$( document ).on( 'click', '.lapub-toggle-key', function () {
 			var $input = $( '#' + $( this ).data( 'target' ) );
 			$input.attr( 'type', 'password' === $input.attr( 'type' ) ? 'text' : 'password' );
 		} );
 
 		/* Test keys */
-		$( document ).on( 'click', '.mab-test-key', function () {
+		$( document ).on( 'click', '.lapub-test-key', function () {
 			var $btn    = $( this );
 			var service = $btn.data( 'service' );
 			var key     = $( '#' + $btn.data( 'input' ) ).val();
-			var $out    = $btn.siblings( '.mab-test-result' );
+			var $out    = $btn.siblings( '.lapub-test-result' );
 			$btn.prop( 'disabled', true );
-			$out.removeClass( 'is-ok is-err' ).text( MAB.i18n.testing );
+			$out.removeClass( 'is-ok is-err' ).text( LAPUB.i18n.testing );
 			ajax( 'test_' + service, { key: key } )
 				.done( function ( res ) {
 					if ( res.success ) {
@@ -106,14 +106,14 @@
 		} );
 
 		/* Generate now */
-		$( document ).on( 'click', '#mab-generate-now', function () {
+		$( document ).on( 'click', '#lapub-generate-now', function () {
 			var $btn = $( this );
 			$btn.prop( 'disabled', true ).addClass( 'is-busy' );
-			ajax( 'generate_now', { topic: $( '#mab-topic' ).val() } )
+			ajax( 'generate_now', { topic: $( '#lapub-topic' ).val() } )
 				.done( function ( res ) {
 					if ( res.success ) {
-						$( '#mab-topic' ).val( '' );
-						notice( 'success', MAB.i18n.generated );
+						$( '#lapub-topic' ).val( '' );
+						notice( 'success', LAPUB.i18n.generated );
 					} else {
 						notice( 'error', res.data && res.data.message ? res.data.message : 'Error' );
 					}
@@ -128,8 +128,8 @@
 		} );
 
 		/* Check now */
-		$( document ).on( 'click', '#mab-poll-now', function () {
-			var $btn = $( this ).prop( 'disabled', true ).text( MAB.i18n.working );
+		$( document ).on( 'click', '#lapub-poll-now', function () {
+			var $btn = $( this ).prop( 'disabled', true ).text( LAPUB.i18n.working );
 			ajax( 'poll_now' ).done( function ( res ) {
 				if ( res.success ) {
 					applyStatus( res.data.status );
@@ -140,8 +140,8 @@
 		} );
 
 		/* Cancel job */
-		$( document ).on( 'click', '#mab-cancel-job', function () {
-			if ( ! window.confirm( MAB.i18n.confirm ) ) {
+		$( document ).on( 'click', '#lapub-cancel-job', function () {
+			if ( ! window.confirm( LAPUB.i18n.confirm ) ) {
 				return;
 			}
 			ajax( 'cancel_job' ).done( function ( res ) {
@@ -152,20 +152,20 @@
 		} );
 
 		/* Clear log */
-		$( '#mab-clear-log' ).on( 'click', function () {
-			if ( ! window.confirm( MAB.i18n.clearlog ) ) {
+		$( '#lapub-clear-log' ).on( 'click', function () {
+			if ( ! window.confirm( LAPUB.i18n.clearlog ) ) {
 				return;
 			}
 			ajax( 'clear_log' ).done( function () {
-				$( '#mab-log' ).html( '<p class="description">Log cleared.</p>' );
+				$( '#lapub-log' ).html( '<p class="description">Log cleared.</p>' );
 			} );
 		} );
 
 		/* Social: connect via OAuth popup */
-		$( document ).on( 'click', '.mab-connect', function () {
+		$( document ).on( 'click', '.lapub-connect', function () {
 			var $btn     = $( this ).prop( 'disabled', true );
 			var provider = $btn.data( 'provider' );
-			var popup    = window.open( 'about:blank', 'mab_oauth', 'width=640,height=760,menubar=no,toolbar=no' );
+			var popup    = window.open( 'about:blank', 'lapub_oauth', 'width=640,height=760,menubar=no,toolbar=no' );
 			ajax( 'oauth_start', { provider: provider } )
 				.done( function ( res ) {
 					if ( res.success && popup ) {
@@ -174,7 +174,7 @@
 						if ( popup ) {
 							popup.close();
 						}
-						notice( 'error', res.data && res.data.message ? res.data.message : MAB.i18n.popup );
+						notice( 'error', res.data && res.data.message ? res.data.message : LAPUB.i18n.popup );
 					}
 				} )
 				.fail( function () {
@@ -189,10 +189,10 @@
 		} );
 
 		/* Social: connect through the LinkAuthority relay */
-		$( document ).on( 'click', '.mab-connect-cloud', function () {
+		$( document ).on( 'click', '.lapub-connect-cloud', function () {
 			var $btn     = $( this ).prop( 'disabled', true );
 			var provider = $btn.data( 'provider' );
-			var popup    = window.open( 'about:blank', 'mab_oauth', 'width=640,height=760,menubar=no,toolbar=no' );
+			var popup    = window.open( 'about:blank', 'lapub_oauth', 'width=640,height=760,menubar=no,toolbar=no' );
 			ajax( 'cloud_start', { provider: provider } )
 				.done( function ( res ) {
 					if ( res.success && popup ) {
@@ -201,7 +201,7 @@
 						if ( popup ) {
 							popup.close();
 						}
-						notice( 'error', res.data && res.data.message ? res.data.message : MAB.i18n.popup );
+						notice( 'error', res.data && res.data.message ? res.data.message : LAPUB.i18n.popup );
 					}
 				} )
 				.fail( function () {
@@ -215,10 +215,10 @@
 				} );
 		} );
 
-		$( document ).on( 'click', '#mab-cloud-verify', function () {
+		$( document ).on( 'click', '#lapub-cloud-verify', function () {
 			var $btn = $( this ).prop( 'disabled', true );
-			var $out = $btn.siblings( '.mab-test-result' ).removeClass( 'is-ok is-err' ).text( MAB.i18n.testing );
-			ajax( 'cloud_verify', { license: $( '#mab-cloud-license' ).val() } )
+			var $out = $btn.siblings( '.lapub-test-result' ).removeClass( 'is-ok is-err' ).text( LAPUB.i18n.testing );
+			ajax( 'cloud_verify', { license: $( '#lapub-cloud-license' ).val() } )
 				.done( function ( res ) {
 					$out.addClass( res.success ? 'is-ok' : 'is-err' ).text( res.data && res.data.message ? res.data.message : ( res.success ? 'OK' : 'Error' ) );
 				} )
@@ -230,8 +230,8 @@
 				} );
 		} );
 
-		$( document ).on( 'click', '.mab-disconnect', function () {
-			if ( ! window.confirm( MAB.i18n.disconnect ) ) {
+		$( document ).on( 'click', '.lapub-disconnect', function () {
+			if ( ! window.confirm( LAPUB.i18n.disconnect ) ) {
 				return;
 			}
 			var provider = $( this ).data( 'provider' );
@@ -241,10 +241,10 @@
 		} );
 
 		/* Social: webhook test */
-		$( document ).on( 'click', '#mab-webhook-test', function () {
+		$( document ).on( 'click', '#lapub-webhook-test', function () {
 			var $btn = $( this ).prop( 'disabled', true );
-			var $out = $btn.siblings( '.mab-test-result' ).removeClass( 'is-ok is-err' ).text( MAB.i18n.testing );
-			ajax( 'webhook_test', { url: $( '#mab-make-url' ).val() } )
+			var $out = $btn.siblings( '.lapub-test-result' ).removeClass( 'is-ok is-err' ).text( LAPUB.i18n.testing );
+			ajax( 'webhook_test', { url: $( '#lapub-make-url' ).val() } )
 				.done( function ( res ) {
 					$out.addClass( res.success ? 'is-ok' : 'is-err' ).text( res.data && res.data.message ? res.data.message : ( res.success ? 'OK' : 'Error' ) );
 				} )
@@ -257,20 +257,20 @@
 		} );
 
 		/* Copy helper */
-		$( document ).on( 'click', '.mab-copy', function () {
+		$( document ).on( 'click', '.lapub-copy', function () {
 			var $b = $( this );
 			var text = $b.data( 'copy' );
 			if ( navigator.clipboard ) {
 				navigator.clipboard.writeText( text ).then( function () {
 					var old = $b.text();
-					$b.text( MAB.i18n.copied );
+					$b.text( LAPUB.i18n.copied );
 					setTimeout( function () { $b.text( old ); }, 1500 );
 				} );
 			}
 		} );
 
 		/* Auto-poll while a job is running */
-		if ( $( '.mab-stat-card.is-running' ).length ) {
+		if ( $( '.lapub-stat-card.is-running' ).length ) {
 			startPolling();
 		}
 	} );

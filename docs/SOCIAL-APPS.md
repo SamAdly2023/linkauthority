@@ -1,6 +1,6 @@
 # Registering the social media apps
 
-Auto Blogger users connect their Facebook Page, Instagram, LinkedIn and Pinterest
+Publisher users connect their Facebook Page, Instagram, LinkedIn and Pinterest
 accounts with one click because they authorise against **LinkAuthority's** developer
 apps, not their own. This is the one-time setup of those apps, in the order that
 gets something working soonest.
@@ -38,7 +38,7 @@ connections fail and users just click Connect again.
 ## 1. LinkedIn - instant, do this first
 
 Proves the whole flow end to end in about 15 minutes, because the two products
-Auto Blogger needs are self-serve.
+Publisher needs are self-serve.
 
 ### Prerequisite
 A **LinkedIn Company Page** for LinkAuthority. Apps must be attached to one. If there
@@ -92,7 +92,7 @@ pinterest.com/business/convert, or create a new one.
 ### Create the app
 1. https://developers.pinterest.com/apps/ → **Connect app** (Create app)
 2. Name: `LinkAuthority Connect`. Description: what it does - "Lets WordPress sites
-   running the Auto Blogger plugin pin each new blog post, with its featured image,
+   running the Publisher plugin pin each new blog post, with its featured image,
    to a board the site owner chooses."
 3. Once created, open it → note **App ID** and **App secret key**
 4. **Redirect URIs** → add exactly:
@@ -145,7 +145,7 @@ and **Business Verification** of LinkAuthority as a company.
    - **App icon** (1024×1024), **Category** (Business and Pages)
    - **User data deletion**: choose "Data deletion instructions URL". LinkAuthority
      stores no tokens - they live on the user's WordPress site - so the instructions
-     are "disconnect the network in Auto Blogger → Social Sharing, which deletes the
+     are "disconnect the network in Publisher → Social Sharing, which deletes the
      token". You need a public page saying that; the User Guide is the natural home.
 4. **Add product → Facebook Login for Business** → Settings →
    **Valid OAuth Redirect URIs** → add exactly:
@@ -215,7 +215,7 @@ The relay runs in **open mode** until `LICENSES_FILE` is set - any site can conn
 That is right while it's free. Before charging, create the file on the server:
 
 ```json
-{ "MAB-XXXX-YYYY": { "label": "Customer name", "sites": 3, "active": true } }
+{ "LAP-XXXX-YYYY": { "label": "Customer name", "sites": 3, "active": true } }
 ```
 
 Point `LICENSES_FILE` at it (an absolute path outside the web root) and restart.
@@ -230,4 +230,4 @@ LinkAuthority dashboard automatically is a separate piece of work.
 |---|---|
 | Today | Step 0. LinkedIn end to end (15 min). Create the Pinterest and Meta apps and **submit both applications** - the clock only starts when you do. |
 | This week | Record the Meta screencast from a test site. Start Business Verification. Write the data-deletion paragraph in the User Guide. |
-| On approval | Add the credentials, restart. The Auto Blogger tab's status turns green per network on its own. |
+| On approval | Add the credentials, restart. The Publisher tab's status turns green per network on its own. |

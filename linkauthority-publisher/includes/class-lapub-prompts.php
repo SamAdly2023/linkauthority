@@ -6,13 +6,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Builds the prompts and JSON schemas sent to Manus.
  */
-class MAB_Prompts {
+class LAPUB_Prompts {
 
 	/**
 	 * Business context block shared by every prompt.
 	 */
 	public static function business_context() {
-		$o = MAB_Options::all();
+		$o = LAPUB_Options::all();
 
 		$site_name = $o['site_name'] ? $o['site_name'] : get_bloginfo( 'name' );
 		$site_url  = $o['site_url'] ? $o['site_url'] : home_url( '/' );
@@ -30,7 +30,7 @@ class MAB_Prompts {
 		if ( $o['focus_keywords'] ) {
 			$lines[] = 'Priority topics / keywords to rank for: ' . trim( $o['focus_keywords'] );
 		}
-		$socials = MAB_Options::social_links();
+		$socials = LAPUB_Options::social_links();
 		if ( $socials ) {
 			$parts = array();
 			foreach ( $socials as $s ) {
@@ -38,7 +38,7 @@ class MAB_Prompts {
 			}
 			$lines[] = 'Social media: ' . implode( ' | ', $parts );
 		}
-		$tones   = MAB_Options::tones();
+		$tones   = LAPUB_Options::tones();
 		$lines[] = 'Brand voice: ' . ( isset( $tones[ $o['tone'] ] ) ? $tones[ $o['tone'] ] : $o['tone'] );
 		if ( $o['custom_instructions'] ) {
 			$lines[] = 'Extra instructions from the site owner: ' . trim( $o['custom_instructions'] );
@@ -74,7 +74,7 @@ class MAB_Prompts {
 	 * Full prompt for the blog-post task.
 	 */
 	public static function content_prompt( $topic = '' ) {
-		$o         = MAB_Options::all();
+		$o         = LAPUB_Options::all();
 		$topic     = trim( (string) $topic );
 		$min       = max( 800, (int) $o['min_words'] );
 		$max       = max( $min + 200, (int) $o['max_words'] );
@@ -223,7 +223,7 @@ class MAB_Prompts {
 	public static function image_prompt( array $post ) {
 		$title = isset( $post['title'] ) ? $post['title'] : '';
 		$desc  = isset( $post['featured_image_prompt'] ) ? $post['featured_image_prompt'] : '';
-		$o     = MAB_Options::all();
+		$o     = LAPUB_Options::all();
 
 		$p   = array();
 		$p[] = 'Generate ONE high-quality featured image for a blog post and return it as an image file attachment (PNG or JPG).';

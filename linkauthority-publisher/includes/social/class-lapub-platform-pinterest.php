@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Pinterest publishing through the v5 API.
  */
-class MAB_Platform_Pinterest {
+class LAPUB_Platform_Pinterest {
 
 	const API    = 'https://api.pinterest.com/v5';
 	const DIALOG = 'https://www.pinterest.com/oauth/';
@@ -15,7 +15,7 @@ class MAB_Platform_Pinterest {
 	public static function authorize_url( $redirect_uri, $state ) {
 		return add_query_arg(
 			array(
-				'client_id'     => MAB_Options::get( 'pinterest_app_id' ),
+				'client_id'     => LAPUB_Options::get( 'pinterest_app_id' ),
 				'redirect_uri'  => rawurlencode( $redirect_uri ),
 				'response_type' => 'code',
 				'scope'         => self::SCOPES,
@@ -26,7 +26,7 @@ class MAB_Platform_Pinterest {
 	}
 
 	/**
-	 * @return array|WP_Error Account data for MAB_Social_Accounts::set('pinterest').
+	 * @return array|WP_Error Account data for LAPUB_Social_Accounts::set('pinterest').
 	 */
 	public static function handle_callback( $code, $redirect_uri ) {
 		$token = self::token_request(
@@ -63,7 +63,7 @@ class MAB_Platform_Pinterest {
 			$acct['boards'][] = array( 'id' => $b['id'], 'name' => $b['name'] );
 		}
 		if ( ! $acct['boards'] ) {
-			return new WP_Error( 'mab_pin_no_boards', __( 'No boards found on this Pinterest account. Create a board first.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_pin_no_boards', __( 'No boards found on this Pinterest account. Create a board first.', 'linkauthority-publisher' ) );
 		}
 		return $acct;
 	}
@@ -72,24 +72,24 @@ class MAB_Platform_Pinterest {
 	 * Refresh the access token if it is about to expire.
 	 */
 	private static function fresh_token() {
-		$p = MAB_Social_Accounts::get( 'pinterest' );
+		$p = LAPUB_Social_Accounts::get( 'pinterest' );
 		if ( empty( $p['access_token'] ) ) {
-			return new WP_Error( 'mab_pin_not_connected', __( 'Pinterest is not connected.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_pin_not_connected', __( 'Pinterest is not connected.', 'linkauthority-publisher' ) );
 		}
 		if ( (int) $p['expires'] - time() > DAY_IN_SECONDS || empty( $p['refresh_token'] ) ) {
 			return $p['access_token'];
 		}
 		if ( ! empty( $p['via'] ) && 'cloud' === $p['via'] ) {
 			// The app secret lives on the connect server, so refresh there.
-			$res = MAB_OAuth::cloud_post( '/refresh', array( 'provider' => 'pinterest', 'refresh_token' => $p['refresh_token'] ) );
+			$res = LAPUB_OAuth::cloud_post( '/refresh', array( 'provider' => 'pinterest', 'refresh_token' => $p['refresh_token'] ) );
 			if ( is_wp_error( $res ) ) {
 				return $res;
 			}
 			$t = isset( $res['tokens'] ) ? $res['tokens'] : array();
 			if ( empty( $t['access_token'] ) ) {
-				return new WP_Error( 'mab_pin_refresh', __( 'Pinterest token refresh failed.', 'manus-auto-blogger' ) );
+				return new WP_Error( 'lapub_pin_refresh', __( 'Pinterest token refresh failed.', 'linkauthority-publisher' ) );
 			}
-			MAB_Social_Accounts::merge( 'pinterest', array( 'access_token' => $t['access_token'], 'refresh_token' => ! empty( $t['refresh_token'] ) ? $t['refresh_token'] : $p['refresh_token'], 'expires' => (int) $t['expires'] ) );
+			LAPUB_Social_Accounts::merge( 'pinterest', array( 'access_token' => $t['access_token'], 'refresh_token' => ! empty( $t['refresh_token'] ) ? $t['refresh_token'] : $p['refresh_token'], 'expires' => (int) $t['expires'] ) );
 			return $t['access_token'];
 		}
 		$token = self::token_request(
@@ -101,7 +101,7 @@ class MAB_Platform_Pinterest {
 		if ( is_wp_error( $token ) ) {
 			return $token;
 		}
-		MAB_Social_Accounts::merge(
+		LAPUB_Social_Accounts::merge(
 			'pinterest',
 			array(
 				'access_token'  => $token['access_token'],
@@ -116,9 +116,9 @@ class MAB_Platform_Pinterest {
 	 * @return array|WP_Error { id, url }
 	 */
 	public static function publish( $title, $description, $image_url, $link ) {
-		$acct = MAB_Social_Accounts::pinterest_board();
+		$acct = LAPUB_Social_Accounts::pinterest_board();
 		if ( ! $acct ) {
-			return new WP_Error( 'mab_pin_not_connected', __( 'Pinterest board is not selected.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_pin_not_connected', __( 'Pinterest board is not selected.', 'linkauthority-publisher' ) );
 		}
 		$token = self::fresh_token();
 		if ( is_wp_error( $token ) ) {
@@ -157,7 +157,7 @@ class MAB_Platform_Pinterest {
 			array(
 				'timeout' => 45,
 				'headers' => array(
-					'Authorization' => 'Basic ' . base64_encode( MAB_Options::get( 'pinterest_app_id' ) . ':' . MAB_Options::get( 'pinterest_app_secret' ) ),
+					'Authorization' => 'Basic ' . base64_encode( LAPUB_Options::get( 'pinterest_app_id' ) . ':' . LAPUB_Options::get( 'pinterest_app_secret' ) ),
 					'Content-Type'  => 'application/x-www-form-urlencoded',
 				),
 				'body'    => $form,
@@ -168,7 +168,7 @@ class MAB_Platform_Pinterest {
 			return $body;
 		}
 		if ( empty( $body['access_token'] ) ) {
-			return new WP_Error( 'mab_pin_token', __( 'Pinterest did not return an access token.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_pin_token', __( 'Pinterest did not return an access token.', 'linkauthority-publisher' ) );
 		}
 		return $body;
 	}

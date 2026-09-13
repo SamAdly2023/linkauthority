@@ -1,5 +1,5 @@
 {
-  "MAB-DEMO-1234-5678": { "label": "Demo customer", "sites": 1, "active": true },
-  "MAB-AGENCY-0001":    { "label": "Agency plan", "sites": 10, "active": true },
-  "MAB-UNLIMITED-0001": { "label": "Internal / unlimited", "sites": 0, "active": true }
+  "LAP-DEMO-1234-5678": { "label": "Demo customer", "sites": 1, "active": true },
+  "LAP-AGENCY-0001":    { "label": "Agency plan", "sites": 10, "active": true },
+  "LAP-UNLIMITED-0001": { "label": "Internal / unlimited", "sites": 0, "active": true }
 }

@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * LinkAuthority Connect - OAuth relay for the Manus Auto Blogger WordPress plugin.
+ * LinkAuthority Connect - OAuth relay for the LinkAuthority Publisher WordPress plugin.
  *
  * Mount it in an existing Express app:
  *     const connect = require('./la-connect');

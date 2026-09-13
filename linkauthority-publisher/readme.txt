@@ -1,17 +1,17 @@
-=== Manus Auto Blogger ===
-Contributors: manusautoblogger
-Tags: ai, blog, seo, content, automation, manus, pexels
+=== LinkAuthority Publisher ===
+Contributors: samadly728
+Tags: ai, blog, seo, content, automation, social media
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.1.0
 License: GPLv2 or later
 
 Automatically researches, writes and publishes 2,500-3,000 word SEO blog posts with Manus AI, a Manus-generated featured image and copyright-free Pexels photos & videos - on a daily / 2-day / 3-day / weekly schedule.
 
 == Description ==
 
-Manus Auto Blogger turns your Manus AI API key into an autonomous content team:
+LinkAuthority Publisher turns your Manus AI API key into an autonomous content team:
 
 * **Research-driven topics** - Manus browses the web for what your audience is searching for, avoids topics you already covered and picks an angle that can rank.
 * **Long-form articles** - 2,500-3,000 words (configurable), 7-10 sections, key takeaways, FAQ, sourced facts, internal links to your site.
@@ -26,9 +26,21 @@ Manus Auto Blogger turns your Manus AI API key into an autonomous content team:
   * Option B: connect Facebook Page, Instagram Business, Pinterest and LinkedIn directly (OAuth popup, pick the page/board/account) and the plugin posts itself.
   * A "Social Posts" page lists every article with links to each social post; any post can be shared or retried from its edit screen.
 
+== Third-party services ==
+
+This plugin is a client for external services. Nothing works without them, and each one has its own account, terms and pricing.
+
+* **Manus AI** (https://manus.im) - researches and writes each article and generates the featured image. Requires your own Manus API key, entered in the plugin. Each post consumes Manus credits, which Manus bills you for directly. The plugin sends Manus your business profile, the topic, and your site's existing post titles so it can avoid repeats. Terms: https://manus.im/terms - Privacy: https://manus.im/privacy
+* **Pexels** (https://www.pexels.com) - supplies copyright-free photos and video inside articles. Requires your own free Pexels API key. The plugin sends Pexels search terms derived from the article. Terms: https://www.pexels.com/terms-of-service/ - Privacy: https://www.pexels.com/privacy-policy/
+* **LinkAuthority Connect** (https://www.linkauthority.live) - optional. Lets you connect Facebook, Instagram, Pinterest and LinkedIn with one click instead of registering developer apps of your own. During sign-in your browser is sent to linkauthority.live, which brokers the authorisation with the network and hands the resulting token to your site. LinkAuthority stores nothing after the hand-off. You can skip this entirely by using your own developer apps under "Advanced" on each network's card. Terms: https://www.linkauthority.live/terms-of-service - Privacy: https://www.linkauthority.live/privacy-policy
+* **Facebook, Instagram, Pinterest, LinkedIn** - when you connect an account, the plugin posts to it on your behalf using the token you authorised, and Instagram and Pinterest fetch the featured image from your site. Each network's own terms apply to what is posted.
+* **Make.com** (https://www.make.com) - optional alternative to direct sharing. If you enter a Make webhook URL, each published post is sent there as JSON.
+
+No data is sent anywhere unless you have entered the corresponding key, connected the corresponding account, or entered a webhook URL.
+
 == Setup ==
 
-1. Upload the `manus-auto-blogger` folder to `/wp-content/plugins/` and activate it.
+1. Upload the `linkauthority-publisher` folder to `/wp-content/plugins/` and activate it.
 2. Go to **Auto Blogger** in the admin menu.
 3. **API Keys** tab: paste your Manus API key (manus.im > Settings > API) and your Pexels API key (pexels.com/api). Use *Test connection* for each.
 4. **Business Profile** tab: describe your business, audience, keywords and social links. This is what Manus uses to choose and write topics.
@@ -58,9 +70,14 @@ Instagram and Pinterest download the featured image from your site, so the site 
 
 == Hooks ==
 
-* `do_action( 'mab_post_generated', $post_id, $job )` - fired after a post is created.
+* `do_action( 'lapub_post_generated', $post_id, $job )` - fired after a post is created.
 
 == Changelog ==
+
+= 1.1.0 =
+* Renamed to LinkAuthority Publisher. All option names, hooks and CSS classes carry the new prefix, so settings from the earlier "Manus Auto Blogger" build are not carried over - re-enter your keys after upgrading.
+* Menu entry is now "Publisher".
+* Added the Third-party services section.
 
 = 1.0.1 =
 * Connect buttons no longer require a licence key before opening the sign-in popup. The connect server decides whether a key is needed and says so; the plugin's own check closed the popup silently on every site that had left the field blank.

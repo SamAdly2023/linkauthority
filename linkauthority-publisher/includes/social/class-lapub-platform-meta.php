@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Unversioned Graph URLs are used on purpose: Meta routes them to the oldest
  * still-supported version, so the plugin keeps working as versions are retired.
  */
-class MAB_Platform_Meta {
+class LAPUB_Platform_Meta {
 
 	const GRAPH  = 'https://graph.facebook.com';
 	const DIALOG = 'https://www.facebook.com/dialog/oauth';
@@ -21,13 +21,13 @@ class MAB_Platform_Meta {
 
 	public static function authorize_url( $redirect_uri, $state ) {
 		$args = array(
-			'client_id'     => MAB_Options::get( 'meta_app_id' ),
+			'client_id'     => LAPUB_Options::get( 'meta_app_id' ),
 			'redirect_uri'  => rawurlencode( $redirect_uri ),
 			'state'         => $state,
 			'response_type' => 'code',
 		);
 		// "Facebook Login for Business" apps use a login configuration instead of a scope list.
-		$config_id = trim( (string) MAB_Options::get( 'meta_config_id' ) );
+		$config_id = trim( (string) LAPUB_Options::get( 'meta_config_id' ) );
 		if ( $config_id ) {
 			$args['config_id'] = $config_id;
 		} else {
@@ -39,11 +39,11 @@ class MAB_Platform_Meta {
 	/**
 	 * Exchange the code, upgrade to a long-lived token and load the user's pages.
 	 *
-	 * @return array|WP_Error Account data ready for MAB_Social_Accounts::set('meta').
+	 * @return array|WP_Error Account data ready for LAPUB_Social_Accounts::set('meta').
 	 */
 	public static function handle_callback( $code, $redirect_uri ) {
-		$app_id = MAB_Options::get( 'meta_app_id' );
-		$secret = MAB_Options::get( 'meta_app_secret' );
+		$app_id = LAPUB_Options::get( 'meta_app_id' );
+		$secret = LAPUB_Options::get( 'meta_app_secret' );
 
 		$token = self::get(
 			'/oauth/access_token',
@@ -95,7 +95,7 @@ class MAB_Platform_Meta {
 			);
 		}
 		if ( ! $pages ) {
-			return new WP_Error( 'mab_meta_no_pages', __( 'No Facebook Pages were returned. Make sure you granted access to at least one Page in the Facebook dialog.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_meta_no_pages', __( 'No Facebook Pages were returned. Make sure you granted access to at least one Page in the Facebook dialog.', 'linkauthority-publisher' ) );
 		}
 
 		return array(
@@ -118,9 +118,9 @@ class MAB_Platform_Meta {
 	 * @return array|WP_Error { id, url }
 	 */
 	public static function publish_facebook( $message, $image_url, $link ) {
-		$page = MAB_Social_Accounts::facebook_page();
+		$page = LAPUB_Social_Accounts::facebook_page();
 		if ( ! $page ) {
-			return new WP_Error( 'mab_fb_not_connected', __( 'Facebook Page is not connected.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_fb_not_connected', __( 'Facebook Page is not connected.', 'linkauthority-publisher' ) );
 		}
 		$text = trim( $message ) . "\n\n" . $link;
 		$res  = self::post(
@@ -147,9 +147,9 @@ class MAB_Platform_Meta {
 	 * @return array|WP_Error { id, url }
 	 */
 	public static function publish_instagram( $caption, $image_url ) {
-		$acct = MAB_Social_Accounts::instagram_account();
+		$acct = LAPUB_Social_Accounts::instagram_account();
 		if ( ! $acct ) {
-			return new WP_Error( 'mab_ig_not_connected', __( 'Instagram account is not connected.', 'manus-auto-blogger' ) );
+			return new WP_Error( 'lapub_ig_not_connected', __( 'Instagram account is not connected.', 'linkauthority-publisher' ) );
 		}
 		$token = $acct['access_token'];
 		$ig_id = $acct['ig_id'];
@@ -178,7 +178,7 @@ class MAB_Platform_Meta {
 				break;
 			}
 			if ( 'ERROR' === $code || 'EXPIRED' === $code ) {
-				return new WP_Error( 'mab_ig_container', 'Instagram could not process the image: ' . ( isset( $status['status'] ) ? $status['status'] : $code ) );
+				return new WP_Error( 'lapub_ig_container', 'Instagram could not process the image: ' . ( isset( $status['status'] ) ? $status['status'] : $code ) );
 			}
 			sleep( 3 );
 		}

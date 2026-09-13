@@ -6,9 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Central access to plugin settings with sane defaults.
  */
-class MAB_Options {
+class LAPUB_Options {
 
-	const OPTION_KEY = 'mab_settings';
+	const OPTION_KEY = 'lapub_settings';
 
 	public static function defaults() {
 		return array(
@@ -137,21 +137,21 @@ class MAB_Options {
 
 	public static function frequencies() {
 		return array(
-			'daily'            => __( 'Every day', 'manus-auto-blogger' ),
-			'mab_every_2_days' => __( 'Every 2 days', 'manus-auto-blogger' ),
-			'mab_every_3_days' => __( 'Every 3 days', 'manus-auto-blogger' ),
-			'weekly'           => __( 'Once a week', 'manus-auto-blogger' ),
+			'daily'            => __( 'Every day', 'linkauthority-publisher' ),
+			'lapub_every_2_days' => __( 'Every 2 days', 'linkauthority-publisher' ),
+			'lapub_every_3_days' => __( 'Every 3 days', 'linkauthority-publisher' ),
+			'weekly'           => __( 'Once a week', 'linkauthority-publisher' ),
 		);
 	}
 
 	public static function tones() {
 		return array(
-			'friendly-expert' => __( 'Friendly expert (recommended)', 'manus-auto-blogger' ),
-			'professional'    => __( 'Professional & authoritative', 'manus-auto-blogger' ),
-			'conversational'  => __( 'Conversational & casual', 'manus-auto-blogger' ),
-			'inspirational'   => __( 'Inspirational & story-driven', 'manus-auto-blogger' ),
-			'educational'     => __( 'Educational / how-to', 'manus-auto-blogger' ),
-			'witty'           => __( 'Witty & playful', 'manus-auto-blogger' ),
+			'friendly-expert' => __( 'Friendly expert (recommended)', 'linkauthority-publisher' ),
+			'professional'    => __( 'Professional & authoritative', 'linkauthority-publisher' ),
+			'conversational'  => __( 'Conversational & casual', 'linkauthority-publisher' ),
+			'inspirational'   => __( 'Inspirational & story-driven', 'linkauthority-publisher' ),
+			'educational'     => __( 'Educational / how-to', 'linkauthority-publisher' ),
+			'witty'           => __( 'Witty & playful', 'linkauthority-publisher' ),
 		);
 	}
 }
