@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  MapPin,
   Globe,
   CheckCircle2,
   AlertCircle,
@@ -44,13 +43,6 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
     website: ''
   });
   const [copied, setCopied] = useState(false);
-  const [comingSoon, setComingSoon] = useState(false);
-
-  const showComingSoon = () => {
-    setComingSoon(true);
-    setTimeout(() => setComingSoon(false), 3000);
-  };
-
   useEffect(() => {
     if (selectedSiteUrl) {
       setSchemaData(prev => ({ ...prev, website: selectedSiteUrl }));
@@ -327,50 +319,6 @@ const CitationsPage: React.FC<CitationsPageProps> = ({ websites }) => {
       {/* Citation Builder Section */}
       {activeTab === 'builder' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-          {comingSoon && (
-            <div className="bg-blue-500/10 border border-blue-500/30 text-blue-300 rounded-xl px-4 py-3 text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-200">
-              Automated citation syncing is coming soon. This section is a preview of what's on the way.
-            </div>
-          )}
-          {/* Data Aggregators */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-xl font-bold text-white">Data Aggregators & Networks</h3>
-                <p className="text-slate-400 text-sm">Sync your business data to hundreds of sites at once.</p>
-              </div>
-              <button onClick={showComingSoon} className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-xl font-bold text-sm transition-all shadow-lg shadow-green-600/20">
-                Sync All ($59/mo)
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { name: 'Google Business Profile', icon: Globe, status: 'Synced', color: 'green' },
-                { name: 'Facebook Local', icon: Globe, status: 'Synced', color: 'green' },
-                { name: 'Apple Maps', icon: MapPin, status: 'Issue Found', color: 'red' },
-                { name: 'Bing Places', icon: Globe, status: 'Synced', color: 'green' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-slate-800">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-slate-900 rounded-lg text-slate-400">
-                      <item.icon size={20} />
-                    </div>
-                    <span className="font-bold text-white">{item.name}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className={`text-xs font-bold px-2 py-1 rounded uppercase bg-${item.color}-500/10 text-${item.color}-500`}>
-                      {item.status}
-                    </span>
-                    <button onClick={showComingSoon} className="text-slate-400 hover:text-white">
-                      <Settings size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* The canonical business record. Sixty of these directories have no
               API, so a person fills the form - and the expensive part is not
               the clicking, it is retyping this and getting it subtly wrong. */}

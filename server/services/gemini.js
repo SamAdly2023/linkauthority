@@ -23,6 +23,66 @@ if (apiKey) {
   }
 }
 
+const isModelRejected = (err) => /not found|not supported|NOT_FOUND|\b404\b/i.test(String(err?.message || err));
+
+// The model that actually answered, once one has. Resolved at most once per
+// process, so a retired default costs a single extra round trip and then
+// every later call goes straight to a model Google has confirmed it serves.
+let resolvedModel = null;
+
+/**
+ * Asks Google which models this key can use and picks one, rather than
+ * guessing a name. Prefers the newest "flash" model that supports
+ * generateContent - fast and cheap, which is what these prompts need.
+ *
+ * @returns {Promise<{model: string, available: string[]}>}
+ */
+const discoverModel = async () => {
+  const names = [];
+  const pager = await ai.models.list();
+  for await (const m of pager) {
+    if (!m.name) continue;
+    const actions = m.supportedActions || [];
+    if (actions.length && !actions.includes('generateContent')) continue;
+    names.push(m.name.replace(/^models\//, ''));
+  }
+
+  // Newest first: sort descending so 2.5 beats 2.0 and "-latest" aliases float.
+  const usable = names.filter(n => /gemini/i.test(n) && !/embedding|vision|tts|image|audio|live|thinking-exp|aqa/i.test(n));
+  const flash = usable.filter(n => /flash/i.test(n) && !/lite|8b/i.test(n)).sort().reverse();
+  const any = usable.sort().reverse();
+  const pick = flash[0] || any[0] || null;
+
+  return { model: pick, available: usable };
+};
+
+/**
+ * generateContent with model fallback. Tries the configured model; when Google
+ * rejects the name, discovers what is available and retries once. The chosen
+ * model is remembered for the rest of the process.
+ */
+const generate = async (params) => {
+  const first = resolvedModel || MODEL;
+  try {
+    return await ai.models.generateContent({ ...params, model: first });
+  } catch (err) {
+    if (!isModelRejected(err) || resolvedModel) throw err;
+
+    console.warn(`Gemini rejected model "${first}"; asking Google which models this key can use`);
+    const { model, available } = await discoverModel();
+
+    if (!model) {
+      const e = new Error(`Google rejected "${first}" and listed no usable model for this key. Available: ${available.join(', ') || 'none'}`);
+      e.available = available;
+      throw e;
+    }
+
+    console.warn(`Gemini: switching to "${model}" (available: ${available.join(', ')})`);
+    resolvedModel = model;
+    return await ai.models.generateContent({ ...params, model });
+  }
+};
+
 const analyzeWebsite = async (url) => {
   // Default fallback object
   const defaultData = {
@@ -89,8 +149,7 @@ const analyzeWebsite = async (url) => {
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: MODEL,
+    const response = await generate({
       contents: prompt,
       config: {
         responseMimeType: 'application/json'
@@ -170,8 +229,7 @@ const getSEOAdvice = async (siteUrl, da) => {
   5. Do not include markdown formatting like \`\`\`json. Just return the raw JSON string.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: MODEL,
+    const response = await generate({
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -187,14 +245,18 @@ const getSEOAdvice = async (siteUrl, da) => {
 
     return data;
   } catch (error) {
-    console.error(`Gemini SEO Advice Error (model ${MODEL}):`, error);
+    console.error(`Gemini SEO Advice Error (model ${resolvedModel || MODEL}):`, error);
 
     // Name the cause. A retired model and a rejected key both surfaced as the
     // same blank screen before, so there was nothing to act on.
     const raw = String(error?.message || error);
 
-    if (/not found|not supported|NOT_FOUND|404/i.test(raw)) {
-      throw new Error(`The model "${MODEL}" was rejected by Google. Set GEMINI_MODEL to a current model name.`);
+    if (error.available) {
+      // Discovery ran and still found nothing usable - say what Google offered.
+      throw new Error(raw);
+    }
+    if (isModelRejected(error)) {
+      throw new Error(`The model "${resolvedModel || MODEL}" was rejected by Google. Set GEMINI_MODEL to a current model name.`);
     }
     if (/API key|401|PERMISSION_DENIED|UNAUTHENTICATED/i.test(raw)) {
       throw new Error('Google rejected the API key. Check GEMINI_API_KEY on the server.');

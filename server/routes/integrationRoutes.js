@@ -318,6 +318,27 @@ module.exports = app => {
   });
 
   // Legacy: generates a per-site plugin .zip with the token compiled in (owner-only).
+  // The Auto Blogger plugin, zipped from source on request like Partners above.
+  app.get('/api/wp/auto-blogger', (req, res) => {
+    try {
+      const pluginDir = path.resolve(__dirname, '../../manus-auto-blogger');
+      if (!fs.existsSync(pluginDir)) {
+        console.error('Auto Blogger plugin directory missing at', pluginDir);
+        return res.status(500).send({ error: 'Plugin package is unavailable' });
+      }
+
+      const zip = new AdmZip();
+      zip.addLocalFolder(pluginDir, 'manus-auto-blogger');
+
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename="manus-auto-blogger.zip"');
+      res.send(zip.toBuffer());
+    } catch (err) {
+      console.error('Failed to package the Auto Blogger plugin:', err);
+      res.status(500).send({ error: 'Failed to build the plugin package' });
+    }
+  });
+
   // Superseded by /api/wp/plugin above; kept so sites still running it keep working.
   app.get('/api/wp/generate-plugin/:websiteId', requireLogin, async (req, res) => {
     try {

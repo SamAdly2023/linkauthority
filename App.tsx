@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 
 import {
+  Share2,
   LayoutDashboard,
   Globe,
   History,
@@ -58,6 +59,7 @@ import { PRICING_ENABLED } from './config';
 const TermsOfService = React.lazy(() => import('./TermsOfService'));
 const PrivacyPolicy = React.lazy(() => import('./PrivacyPolicy'));
 const CitationsPage = React.lazy(() => import('./CitationsPage'));
+const AutoBloggerPage = React.lazy(() => import('./AutoBloggerPage'));
 const AdminAnalytics = React.lazy(() => import('./AdminAnalytics'));
 const AreaChartPanel = React.lazy(() => import('./AreaChartPanel'));
 const UserGuide = React.lazy(() => import('./UserGuide'));
@@ -803,21 +805,29 @@ const App: React.FC = () => {
     return <LandingPage onLogin={handleLogin} />;
   }
 
-  const SidebarItem = ({ tab, icon: Icon, label }: { tab: Tab, icon: any, label: string }) => (
-    <button
-      onClick={() => {
-        setActiveTab(tab);
-        setIsMobileMenuOpen(false);
-      }}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === tab
-        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-        }`}
-    >
-      <Icon size={20} />
-      <span className="font-medium">{label}</span>
-    </button>
-  );
+  // `accent` marks an item as a distinct product rather than another view of
+  // the same one. Auto Blogger is a second plugin with its own purpose, and
+  // the pink keeps it from reading as one more page of the backlink network.
+  const SidebarItem = ({ tab, icon: Icon, label, accent, badge }: { tab: Tab, icon: any, label: string, accent?: 'pink', badge?: string }) => {
+    const active = activeTab === tab;
+    const activeCls = accent === 'pink' ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/20' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20';
+    const idleCls = accent === 'pink' ? 'text-pink-300/90 hover:bg-pink-500/10 hover:text-pink-200' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200';
+    return (
+      <button
+        onClick={() => {
+          setActiveTab(tab);
+          setIsMobileMenuOpen(false);
+        }}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? activeCls : idleCls}`}
+      >
+        <Icon size={20} />
+        <span className="font-medium">{label}</span>
+        {badge && !active && (
+          <span className="ml-auto text-[10px] font-bold uppercase tracking-wider bg-pink-500/15 text-pink-300 px-2 py-0.5 rounded-full">{badge}</span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="flex h-screen bg-slate-950 overflow-hidden relative">
@@ -1450,6 +1460,7 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
               <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
               <SidebarItem tab={Tab.Citations} icon={MapPin} label="Citations & AI" />
+              <SidebarItem tab={Tab.AutoBlogger} icon={Share2} label="Auto Blogger & Social" accent="pink" badge="New" />
               {PRICING_ENABLED && <SidebarItem tab={Tab.Guide} icon={CreditCard} label="Pricing" />}
               <SidebarItem tab={Tab.UserGuide} icon={BookOpen} label="User Guide" />
               <SidebarItem tab={Tab.Profile} icon={UserIcon} label="My Profile" />
@@ -2235,6 +2246,10 @@ const App: React.FC = () => {
 
         {activeTab === Tab.Citations && (
           <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><CitationsPage websites={user.websites} /></React.Suspense>
+        )}
+
+        {activeTab === Tab.AutoBlogger && (
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><AutoBloggerPage /></React.Suspense>
         )}
 
         {activeTab === Tab.Guide && (
