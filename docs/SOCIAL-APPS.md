@@ -109,13 +109,18 @@ PINTEREST_APP_SECRET=
 ```
 
 ### The access tiers - this is the part that bites
-- **Trial access** (what you get on creation): the app works **only for the account
-  that owns it.** You can test the full flow. Nobody else can connect.
-- **Standard access**: required for other people to connect. Apply from the app page.
-  You describe the use case, the platform it runs on (WordPress plugin) and may be
-  asked for a short video of the flow. Turnaround is days to a couple of weeks.
+- **Trial access** is no longer granted on creation. Submitting the Connect App form
+  *is* the Trial application; the app shows "Trial access pending" and Pinterest
+  reviews it (days). Until it clears, the **secret key is withheld and the redirect
+  URI field is locked** - nothing can be configured. Once granted, the app works
+  **only for the account that owns it.**
+- **Standard access**: required for other people to connect. Apply from the app page
+  once Trial is granted - Pinterest allows one open request at a time, so it cannot
+  be queued earlier. You describe the use case and may be asked for a short video.
+  Days to a couple of weeks.
 
-Apply for Standard as soon as the app exists. There is nothing to wait for.
+So the Pinterest timeline is two sequential reviews. Submit the app on day one; the
+redirect URI and secret go in when the first review clears.
 
 Pinterest tokens **do** refresh; the relay handles that at `/connect/refresh`.
 
