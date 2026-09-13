@@ -118,6 +118,17 @@ app.post('/api/deploy', express.raw({ type: 'application/json', limit: '5mb' }),
 // createConnect() throws without CONNECT_SECRET and BASE_URL. Guarded so a
 // missing variable disables this one feature rather than taking the site down.
 if (process.env.CONNECT_SECRET && process.env.BASE_URL) {
+  // The relay runs inside a popup opened by the customer's WordPress site. The
+  // site-wide Cross-Origin-Opener-Policy helmet sets above severs a popup from
+  // a cross-origin opener the moment it lands here, so by the time the popup
+  // returned to the customer's site window.opener was already null and the
+  // "reload the page behind me" step silently did nothing. These routes opt
+  // out; nothing on them needs the isolation, and the plugin has its own
+  // fallback that watches for the popup closing.
+  app.use('/connect', (req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+    next();
+  });
   app.use('/connect', require('./la-connect')());
   console.log('Publisher connect relay mounted at /connect');
 } else {

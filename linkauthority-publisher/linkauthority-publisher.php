@@ -3,7 +3,7 @@
  * Plugin Name:       LinkAuthority Publisher
  * Plugin URI:        https://www.linkauthority.live/
  * Description:       Researches, writes and publishes long-form SEO blog posts on a schedule with Manus AI, generates a featured image, adds copyright-free Pexels media, and shares every post to Facebook, Instagram, Pinterest and LinkedIn.
- * Version:           1.1.0
+ * Version:           1.1.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            LinkAuthority
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'LAPUB_VERSION', '1.1.0' );
+define( 'LAPUB_VERSION', '1.1.1' );
 define( 'LAPUB_FILE', __FILE__ );
 define( 'LAPUB_DIR', plugin_dir_path( __FILE__ ) );
 define( 'LAPUB_URL', plugin_dir_url( __FILE__ ) );

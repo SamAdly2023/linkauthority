@@ -84,6 +84,21 @@ class LAPUB_Admin {
 			if ( isset( $_GET['saved'] ) ) { // phpcs:ignore
 				echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved.', 'linkauthority-publisher' ) . '</p></div>';
 			}
+			$just = get_transient( 'lapub_connected_' . get_current_user_id() );
+			if ( $just ) {
+				delete_transient( 'lapub_connected_' . get_current_user_id() );
+				$names = array(
+					'meta'      => __( 'Facebook & Instagram', 'linkauthority-publisher' ),
+					'pinterest' => __( 'Pinterest', 'linkauthority-publisher' ),
+					'linkedin'  => __( 'LinkedIn', 'linkauthority-publisher' ),
+				);
+				$label = $names[ $just ] ?? ucfirst( (string) $just );
+				echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html( sprintf(
+					/* translators: %s: social network name */
+					__( '%s connected.', 'linkauthority-publisher' ),
+					$label
+				) ) . '</strong> ' . esc_html__( 'New posts will be shared there automatically.', 'linkauthority-publisher' ) . '</p></div>';
+			}
 			if ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) {
 				echo '<div class="notice notice-info"><p>' . esc_html__( 'WP-Cron is disabled on this site (DISABLE_WP_CRON). Make sure a real system cron is calling wp-cron.php at least every minute so scheduled posts and Manus polling run reliably.', 'linkauthority-publisher' ) . '</p></div>';
 			}

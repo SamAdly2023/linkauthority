@@ -161,7 +161,23 @@
 			} );
 		} );
 
-		/* Social: connect via OAuth popup */
+		/* Reloads once the OAuth popup closes. The popup cannot always reach this
+	   page itself: any cross-origin page it passes through that sends a
+	   Cross-Origin-Opener-Policy header severs window.opener, and the connect
+	   relay did exactly that. popup.closed stays readable regardless. */
+	function reloadWhenClosed( popup ) {
+		if ( ! popup ) {
+			return;
+		}
+		var timer = setInterval( function () {
+			if ( popup.closed ) {
+				clearInterval( timer );
+				window.location.reload();
+			}
+		}, 500 );
+	}
+
+	/* Social: connect via OAuth popup */
 		$( document ).on( 'click', '.lapub-connect', function () {
 			var $btn     = $( this ).prop( 'disabled', true );
 			var provider = $btn.data( 'provider' );
@@ -170,6 +186,7 @@
 				.done( function ( res ) {
 					if ( res.success && popup ) {
 						popup.location.href = res.data.url;
+						reloadWhenClosed( popup );
 					} else {
 						if ( popup ) {
 							popup.close();
@@ -197,6 +214,7 @@
 				.done( function ( res ) {
 					if ( res.success && popup ) {
 						popup.location.href = res.data.url;
+						reloadWhenClosed( popup );
 					} else {
 						if ( popup ) {
 							popup.close();

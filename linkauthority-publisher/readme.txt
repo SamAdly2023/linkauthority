@@ -4,7 +4,7 @@ Tags: ai, blog, seo, content, automation, social media
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 
 Automatically researches, writes and publishes 2,500-3,000 word SEO blog posts with Manus AI, a Manus-generated featured image and copyright-free Pexels photos & videos - on a daily / 2-day / 3-day / weekly schedule.
@@ -73,6 +73,9 @@ Instagram and Pinterest download the featured image from your site, so the site 
 * `do_action( 'lapub_post_generated', $post_id, $job )` - fired after a post is created.
 
 == Changelog ==
+
+= 1.1.1 =
+* After connecting a social account the settings page now reloads itself and shows a "connected" notice. Previously the connection succeeded but the page kept saying "Not connected" until you refreshed by hand.
 
 = 1.1.0 =
 * Renamed to LinkAuthority Publisher. All option names, hooks and CSS classes carry the new prefix, so settings from the earlier "Manus Auto Blogger" build are not carried over - re-enter your keys after upgrading.

@@ -396,6 +396,10 @@ class LAPUB_OAuth {
 
 		LAPUB_Social_Accounts::set( $provider, $acct );
 		LAPUB_Logger::success( 'Social account connected. ' . $summary );
+		// The settings page reloads once this popup closes and shows a success
+		// notice from this. Short-lived and per user, so it cannot show to anyone
+		// else or linger.
+		set_transient( 'lapub_connected_' . get_current_user_id(), $provider, 2 * MINUTE_IN_SECONDS );
 
 		$this->popup_page( '<p class="lapub-p-ok">&#10003; ' . esc_html__( 'Connected! You can close this window.', 'linkauthority-publisher' ) . '</p><p class="lapub-p-muted">' . esc_html( $summary ) . '</p><script>try{if(window.opener&&!window.opener.closed){window.opener.location.reload();}}catch(e){}setTimeout(function(){window.close();},1500);</script>', false, __( 'Connected', 'linkauthority-publisher' ) );
 	}
