@@ -4,7 +4,7 @@ Tags: ai, blog, seo, content, automation, manus, pexels
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 
 Automatically researches, writes and publishes 2,500-3,000 word SEO blog posts with Manus AI, a Manus-generated featured image and copyright-free Pexels photos & videos - on a daily / 2-day / 3-day / weekly schedule.
@@ -61,6 +61,9 @@ Instagram and Pinterest download the featured image from your site, so the site 
 * `do_action( 'mab_post_generated', $post_id, $job )` - fired after a post is created.
 
 == Changelog ==
+
+= 1.0.1 =
+* Connect buttons no longer require a licence key before opening the sign-in popup. The connect server decides whether a key is needed and says so; the plugin's own check closed the popup silently on every site that had left the field blank.
 
 = 1.0.0 =
 * Initial release.

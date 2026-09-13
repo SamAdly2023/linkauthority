@@ -3,7 +3,7 @@
  * Plugin Name:       Manus Auto Blogger
  * Plugin URI:        https://example.com/manus-auto-blogger
  * Description:       Automatically researches, writes and publishes long-form (2,500-3,000 word) SEO blog posts on a schedule using the Manus AI API, generates a featured image with Manus, and enriches every post with copyright-free Pexels photos and videos wrapped in eye-catching styling.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Manus Auto Blogger
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MAB_VERSION', '1.0.0' );
+define( 'MAB_VERSION', '1.0.1' );
 define( 'MAB_FILE', __FILE__ );
 define( 'MAB_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MAB_URL', plugin_dir_url( __FILE__ ) );

@@ -86,9 +86,11 @@ class MAB_OAuth {
 		if ( ! self::cloud_url() ) {
 			wp_send_json_error( array( 'message' => __( 'Connect server URL is missing.', 'manus-auto-blogger' ) ) );
 		}
-		if ( ! MAB_Options::get( 'cloud_license' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Enter and save your LinkAuthority licence key first (or use your own developer app under "Advanced").', 'manus-auto-blogger' ) ) );
-		}
+		// No licence check here. The connect server decides whether a key is
+		// required - it runs in open mode while the service is free - and when
+		// one is missing it sends the popup back with a message that says so.
+		// Blocking here made the button close an empty popup with no explanation
+		// on every site that had, correctly, left the field blank.
 
 		$state = wp_generate_password( 24, false );
 		set_transient( 'mab_cloud_' . $state, array( 'provider' => $provider, 'user' => get_current_user_id() ), 15 * MINUTE_IN_SECONDS );
