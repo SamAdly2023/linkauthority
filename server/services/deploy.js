@@ -107,7 +107,28 @@ const runDeploy = async () => {
       log('npm install skipped - continuing with the dependencies already present');
     }
 
-    await run(npm, ['run', 'build'], APP_DIR);
+    // Build beside the live directory, never into it. Vite empties its output
+    // directory before it starts, so building straight into dist/ meant any
+    // build that failed or was killed part-way - an app restart landing during
+    // a deploy did exactly this - left nothing to serve and the site answered
+    // 404 until someone noticed. The swap below is two renames, so the window
+    // with no dist/ at all is milliseconds rather than the length of a build.
+    const dist = path.join(APP_DIR, 'dist');
+    const next = path.join(APP_DIR, 'dist.next');
+    const prev = path.join(APP_DIR, 'dist.prev');
+
+    fs.rmSync(next, { recursive: true, force: true });
+    await run(npm, ['run', 'build', '--', '--outDir', 'dist.next'], APP_DIR);
+
+    if (!fs.existsSync(path.join(next, 'index.html'))) {
+      throw new Error('build produced no index.html');
+    }
+
+    fs.rmSync(prev, { recursive: true, force: true });
+    if (fs.existsSync(dist)) fs.renameSync(dist, prev);
+    fs.renameSync(next, dist);
+    fs.rmSync(prev, { recursive: true, force: true });
+    log('ok      swapped dist.next into place');
 
     // Restart last, so a failed build leaves the previous version serving.
     fs.mkdirSync(path.dirname(RESTART_FILE), { recursive: true });

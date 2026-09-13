@@ -30,3 +30,7 @@ server/config/firebase-service-account.json
 
 # Local scratch notes - has held credentials, must never be committed
 *.jtml
+
+# deploy staging directories (see server/services/deploy.js)
+dist.next/
+dist.prev/
