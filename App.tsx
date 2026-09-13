@@ -801,6 +801,53 @@ const App: React.FC = () => {
     }
   };
 
+  // The legal and help pages are public. They are the URLs given to Meta,
+  // LinkedIn and Pinterest as this app's privacy policy, terms and data
+  // deletion instructions, and their reviewers are not logged in - every one
+  // of them was landing on the marketing home page instead. Render the page
+  // the URL names, inside a minimal shell, before the login gate.
+  const publicTabs: Tab[] = [Tab.Privacy, Tab.Terms, Tab.UserGuide, Tab.About, Tab.Contact];
+  if (!user && publicTabs.includes(activeTab)) {
+    const goHome = () => {
+      window.history.pushState({}, '', '/');
+      setActiveTab(Tab.Dashboard);
+    };
+    const spinner = <div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>;
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-200">
+        <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur sticky top-0 z-40">
+          <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" onClick={(e) => { e.preventDefault(); goHome(); }} className="flex items-center gap-2 text-white font-bold text-lg">
+              <img src="/link-authority-logo.png" alt="" className="w-8 h-8 rounded-lg" />
+              LinkAuthority
+            </a>
+            <button onClick={handleLogin} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+              Log In
+            </button>
+          </div>
+        </header>
+        <main className="max-w-6xl mx-auto px-6 py-10">
+          <React.Suspense fallback={spinner}>
+            {activeTab === Tab.Privacy && <PrivacyPolicy onBack={goHome} />}
+            {activeTab === Tab.Terms && <TermsOfService onBack={goHome} />}
+            {activeTab === Tab.UserGuide && <UserGuide />}
+            {activeTab === Tab.About && <AboutUs />}
+            {activeTab === Tab.Contact && <ContactUs />}
+          </React.Suspense>
+        </main>
+        <footer className="border-t border-slate-800/80 mt-10">
+          <div className="max-w-6xl mx-auto px-6 py-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500">
+            <a href="/privacy-policy" className="hover:text-white">Privacy Policy</a>
+            <a href="/terms-of-service" className="hover:text-white">Terms of Service</a>
+            <a href="/user-guide" className="hover:text-white">User Guide</a>
+            <a href="/about-us" className="hover:text-white">About</a>
+            <a href="/contact-us" className="hover:text-white">Contact</a>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
   if (!user) {
     return <LandingPage onLogin={handleLogin} />;
   }

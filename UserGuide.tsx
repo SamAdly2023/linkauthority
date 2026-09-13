@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, CheckCircle, Zap, Globe, Code, AlertTriangle, RefreshCw } from 'lucide-react';
+import { BookOpen, CheckCircle, Zap, Globe, Code, AlertTriangle, RefreshCw, Share2, Trash2 } from 'lucide-react';
 
 const UserGuide: React.FC = () => {
   return (
@@ -211,6 +211,63 @@ const UserGuide: React.FC = () => {
               replace the page content with the shortcode.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Publisher: connected social accounts, and what happens to the access
+          you grant. The data-deletion section is the page Meta's App Review
+          points reviewers and users at, so its wording is what they read. */}
+      <div id="social-accounts" className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <Share2 className="text-pink-400" /> 7. Connecting social accounts (Publisher)
+        </h2>
+        <div className="space-y-3 text-sm text-slate-400 leading-relaxed">
+          <p>
+            The Publisher plugin can share each post it publishes to your Facebook Page, Instagram
+            Business account, Pinterest board or LinkedIn profile. You connect them from
+            <span className="text-white font-semibold"> Publisher → Social Sharing</span> in your WordPress
+            admin. Clicking Connect opens a popup where you sign in to the network and approve access.
+          </p>
+          <p>
+            That sign-in is brokered by LinkAuthority so you never have to register developer apps of
+            your own. <span className="text-white font-semibold">The access token the network issues is
+            handed to your WordPress site and stored there.</span> LinkAuthority does not keep it, does not
+            keep a copy, and cannot post to your accounts. Temporary hand-off data on our side is
+            encrypted and deleted within ten minutes.
+          </p>
+          <p>
+            Two things to know before you connect: Instagram must be a Business or Creator account linked
+            to a Facebook Page (a rule Meta applies to every third-party app), and LinkedIn tokens expire
+            after 60 days, after which you reconnect from the same screen.
+          </p>
+        </div>
+      </div>
+
+      <div id="data-deletion" className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <Trash2 className="text-red-400" /> 8. Removing your data and disconnecting
+        </h2>
+        <div className="space-y-3 text-sm text-slate-400 leading-relaxed">
+          <p>
+            <span className="text-white font-semibold">To delete the access a social network granted:</span>{' '}
+            open <span className="text-white">Publisher → Social Sharing</span> on your WordPress site and click
+            <span className="text-white"> Disconnect</span> next to the network. That deletes the token from your site,
+            which is the only place it was stored. Nothing remains on LinkAuthority to delete, because we never held it.
+          </p>
+          <p>
+            You can also revoke the app from the network itself &mdash; on Facebook under
+            <span className="text-white"> Settings → Apps and Websites</span>, on Instagram under
+            <span className="text-white"> Apps and Websites</span>, on LinkedIn under
+            <span className="text-white"> Settings → Data privacy → Permitted services</span>, on Pinterest under
+            <span className="text-white"> Settings → Security → Connected apps</span>. Removing LinkAuthority Connect there
+            invalidates the token immediately.
+          </p>
+          <p>
+            <span className="text-white font-semibold">To delete your LinkAuthority account and everything in it</span>{' '}
+            &mdash; your websites, business details and audit history &mdash; email us from the address on your account and
+            we remove it within 30 days. Deleting the Publisher or Partners plugin from WordPress removes everything
+            they stored on your site; deactivating alone does not.
+          </p>
         </div>
       </div>
     </div>
