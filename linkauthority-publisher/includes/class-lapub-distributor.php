@@ -6,8 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Shares published posts to social networks.
  *
- *  Option A - Make.com webhook: POST a JSON payload (post link, featured image, per-platform captions).
- *  Option B - Direct posting through the connected Facebook / Instagram / Pinterest / LinkedIn accounts.
+ *  Direct posting through the connected Facebook / Instagram / Pinterest / LinkedIn accounts.
  *
  * Results are stored in post meta `_lapub_social_results` and listed on the "Social Posts" admin page.
  */
@@ -32,7 +31,6 @@ class LAPUB_Distributor {
 		add_action( 'transition_post_status', array( $this, 'on_transition' ), 10, 3 );
 		add_action( 'add_meta_boxes', array( $this, 'meta_box' ) );
 		add_action( 'wp_ajax_lapub_share_now', array( $this, 'ajax_share_now' ) );
-		add_action( 'wp_ajax_lapub_webhook_test', array( $this, 'ajax_webhook_test' ) );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -116,18 +114,6 @@ class LAPUB_Distributor {
 			update_post_meta( $post_id, self::RESULTS, $results );
 		}
 
-		// Option A - Make.com webhook (once per post unless explicitly re-run).
-		if ( ! empty( $o['make_enabled'] ) && ! empty( $o['make_webhook_url'] ) && ( $explicit ? in_array( 'make', (array) $platforms, true ) : empty( $results['make'] ) || 'success' !== $results['make']['status'] ) ) {
-			$hook = $this->send_webhook( $o['make_webhook_url'], $payload );
-			if ( is_wp_error( $hook ) ) {
-				$results['make'] = $this->result( 'error', '', '', $hook->get_error_message() );
-				LAPUB_Logger::error( sprintf( 'Make.com webhook failed for post #%d: %s', $post_id, $hook->get_error_message() ) );
-			} else {
-				$results['make'] = $this->result( 'success', '', '', '' );
-				LAPUB_Logger::success( sprintf( 'Post #%d sent to the Make.com webhook.', $post_id ) );
-			}
-			update_post_meta( $post_id, self::RESULTS, $results );
-		}
 
 		update_post_meta( $post_id, self::RESULTS, $results );
 		update_post_meta( $post_id, '_lapub_shared_at', time() );
@@ -163,7 +149,7 @@ class LAPUB_Distributor {
 	/* ------------------------------------------------------------------ */
 
 	/**
-	 * Everything a social post (or Make.com) needs, with sensible fallbacks for non-generated posts.
+	 * Everything a social post needs, with sensible fallbacks for non-generated posts.
 	 */
 	public function payload( $post_id ) {
 		$post  = get_post( $post_id );
@@ -259,54 +245,6 @@ class LAPUB_Distributor {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* Option A - webhook                                                  */
-	/* ------------------------------------------------------------------ */
-
-	public function send_webhook( $url, array $payload ) {
-		$res = wp_remote_post(
-			$url,
-			array(
-				'timeout' => 30,
-				'headers' => array( 'Content-Type' => 'application/json' ),
-				'body'    => wp_json_encode( $payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ),
-			)
-		);
-		if ( is_wp_error( $res ) ) {
-			return $res;
-		}
-		$code = (int) wp_remote_retrieve_response_code( $res );
-		if ( $code >= 400 ) {
-			return new WP_Error( 'lapub_webhook_http_' . $code, sprintf( 'Webhook returned HTTP %d: %s', $code, mb_substr( wp_remote_retrieve_body( $res ), 0, 200 ) ) );
-		}
-		return true;
-	}
-
-	public function ajax_webhook_test() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
-		}
-		check_ajax_referer( 'lapub_ajax', 'nonce' );
-		$url = isset( $_POST['url'] ) ? esc_url_raw( wp_unslash( $_POST['url'] ) ) : LAPUB_Options::get( 'make_webhook_url' );
-		if ( ! $url ) {
-			wp_send_json_error( array( 'message' => __( 'Enter the webhook URL first.', 'linkauthority-publisher' ) ) );
-		}
-		$latest = get_posts( array( 'post_type' => 'post', 'post_status' => 'publish', 'posts_per_page' => 1, 'meta_key' => '_lapub_generated', 'fields' => 'ids' ) );
-		if ( ! $latest ) {
-			$latest = get_posts( array( 'post_type' => 'post', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) );
-		}
-		if ( ! $latest ) {
-			wp_send_json_error( array( 'message' => __( 'Publish at least one post first so a sample payload can be sent.', 'linkauthority-publisher' ) ) );
-		}
-		$payload          = $this->payload( $latest[0] );
-		$payload['event'] = 'test';
-		$res              = $this->send_webhook( $url, $payload );
-		if ( is_wp_error( $res ) ) {
-			wp_send_json_error( array( 'message' => $res->get_error_message() ) );
-		}
-		wp_send_json_success( array( 'message' => sprintf( __( 'Sent a sample payload for "%s". Check the Make scenario.', 'linkauthority-publisher' ), $payload['title'] ) ) );
-	}
-
-	/* ------------------------------------------------------------------ */
 	/* Post edit screen                                                    */
 	/* ------------------------------------------------------------------ */
 
@@ -335,10 +273,6 @@ class LAPUB_Distributor {
 				echo ' &ndash; <span style="color:#b32d2e" title="' . esc_attr( $r['error'] ) . '">' . esc_html__( 'failed', 'linkauthority-publisher' ) . '</span>';
 			}
 			echo '</label>';
-		}
-		if ( ! empty( $o['make_enabled'] ) && ! empty( $o['make_webhook_url'] ) ) {
-			$r = isset( $results['make'] ) ? $results['make'] : null;
-			echo '<label style="display:block;margin:4px 0"><input type="checkbox" class="lapub-share-platform" value="make" checked /> Make.com webhook' . ( $r && 'success' === $r['status'] ? ' &ndash; ' . esc_html__( 'sent', 'linkauthority-publisher' ) : '' ) . '</label>';
 		}
 		echo '<p><button type="button" class="button button-primary" id="lapub-share-now"' . ( 'publish' !== $post->post_status ? ' disabled' : '' ) . '>' . esc_html__( 'Share now', 'linkauthority-publisher' ) . '</button> <span class="lapub-share-msg"></span></p>';
 		echo '<p class="description"><a href="' . esc_url( admin_url( 'admin.php?page=linkauthority-publisher-social' ) ) . '">' . esc_html__( 'All shared posts', 'linkauthority-publisher' ) . '</a></p>';

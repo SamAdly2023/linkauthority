@@ -63,8 +63,6 @@ class LAPUB_Options {
 			'share_instagram'      => 1,
 			'share_pinterest'      => 1,
 			'share_linkedin'       => 1,
-			'make_enabled'         => 0,
-			'make_webhook_url'     => '',
 			'meta_app_id'          => '',
 			'meta_app_secret'      => '',
 			'meta_config_id'       => '',

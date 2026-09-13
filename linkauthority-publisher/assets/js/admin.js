@@ -258,22 +258,6 @@
 			} );
 		} );
 
-		/* Social: webhook test */
-		$( document ).on( 'click', '#lapub-webhook-test', function () {
-			var $btn = $( this ).prop( 'disabled', true );
-			var $out = $btn.siblings( '.lapub-test-result' ).removeClass( 'is-ok is-err' ).text( LAPUB.i18n.testing );
-			ajax( 'webhook_test', { url: $( '#lapub-make-url' ).val() } )
-				.done( function ( res ) {
-					$out.addClass( res.success ? 'is-ok' : 'is-err' ).text( res.data && res.data.message ? res.data.message : ( res.success ? 'OK' : 'Error' ) );
-				} )
-				.fail( function () {
-					$out.addClass( 'is-err' ).text( 'Request failed' );
-				} )
-				.always( function () {
-					$btn.prop( 'disabled', false );
-				} );
-		} );
-
 		/* Copy helper */
 		$( document ).on( 'click', '.lapub-copy', function () {
 			var $b = $( this );

@@ -32,54 +32,14 @@ class LAPUB_Admin_Social {
 							<?php foreach ( LAPUB_Social_Accounts::platforms() as $key => $label ) : ?>
 								<label style="display:inline-block;margin-right:18px"><input type="checkbox" name="lapub[share_<?php echo esc_attr( $key ); ?>]" value="1" <?php checked( $o[ 'share_' . $key ] ); ?> /> <?php echo esc_html( $label ); ?></label>
 							<?php endforeach; ?>
-							<p class="description"><?php esc_html_e( 'Applies to direct posting (Option B). Option A sends everything to Make and your scenario decides.', 'linkauthority-publisher' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Which connected networks each new post is shared to.', 'linkauthority-publisher' ); ?></p>
 						</td>
 					</tr>
 				</table>
 			</div>
 
 			<div class="lapub-card">
-				<h2><span class="lapub-opt">A</span> <?php esc_html_e( 'Make.com webhook', 'linkauthority-publisher' ); ?></h2>
-				<p class="description"><?php esc_html_e( 'The plugin POSTs a JSON payload to your Make webhook after each post is published; your Make scenario handles Facebook, Instagram, Pinterest, LinkedIn, Google Sheets or anything else.', 'linkauthority-publisher' ); ?></p>
-				<table class="form-table" role="presentation">
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Enable', 'linkauthority-publisher' ); ?></th>
-						<td><label><input type="checkbox" name="lapub[make_enabled]" value="1" <?php checked( $o['make_enabled'] ); ?> /> <?php esc_html_e( 'Send published posts to Make.com', 'linkauthority-publisher' ); ?></label></td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="lapub-make-url"><?php esc_html_e( 'Webhook URL', 'linkauthority-publisher' ); ?></label></th>
-						<td>
-							<div class="lapub-key-row">
-								<input type="url" id="lapub-make-url" name="lapub[make_webhook_url]" class="regular-text" value="<?php echo esc_attr( $o['make_webhook_url'] ); ?>" placeholder="https://hook.eu1.make.com/xxxxxxxx" />
-								<button type="button" class="button" id="lapub-webhook-test"><?php esc_html_e( 'Send test payload', 'linkauthority-publisher' ); ?></button>
-								<span class="lapub-test-result"></span>
-							</div>
-							<details class="lapub-details"><summary><?php esc_html_e( 'Payload fields sent to Make', 'linkauthority-publisher' ); ?></summary>
-<pre class="lapub-pre">{
-  "event": "post_published",
-  "post_id": 123,
-  "title": "…", "url": "https://…", "excerpt": "…",
-  "meta_description": "…", "focus_keyword": "…",
-  "tags": ["…"], "categories": ["…"], "hashtags": "#… #…",
-  "featured_image_url": "https://…/image.png",
-  "featured_image_jpeg_url": "https://…/image-social.jpg",
-  "published_at": "2026-09-13T08:15:00+00:00",
-  "author": "…", "site_name": "…", "site_url": "https://…",
-  "social": {
-    "facebook_post": "…", "instagram_caption": "…",
-    "pinterest_title": "…", "pinterest_description": "…",
-    "linkedin_post": "…"
-  }
-}</pre>
-							<p class="description"><?php esc_html_e( 'In Make: Webhooks → Custom webhook → copy its URL here → click "Send test payload" so Make learns the structure → map the fields into your Facebook / Instagram / Pinterest / LinkedIn / Google Sheets modules.', 'linkauthority-publisher' ); ?></p>
-							</details>
-						</td>
-					</tr>
-				</table>
-			</div>
-
-			<div class="lapub-card">
-				<h2><span class="lapub-opt">B</span> <?php esc_html_e( 'Direct posting from WordPress', 'linkauthority-publisher' ); ?></h2>
+				<h2><?php esc_html_e( 'Direct posting from WordPress', 'linkauthority-publisher' ); ?></h2>
 				<p class="description">
 					<?php esc_html_e( 'Connect your accounts and the plugin posts directly from this website. The easiest way is through LinkAuthority Connect: click Connect, log in to the network in the popup and choose your page, board or profile - no developer apps needed. Advanced users can use their own developer apps instead (see the fold-out on each card).', 'linkauthority-publisher' ); ?>
 				</p>
@@ -252,11 +212,9 @@ class LAPUB_Admin_Social {
 			return isset( $in[ $k ] ) ? sanitize_text_field( $in[ $k ] ) : '';
 		};
 		$new['auto_share']   = empty( $in['auto_share'] ) ? 0 : 1;
-		$new['make_enabled'] = empty( $in['make_enabled'] ) ? 0 : 1;
 		foreach ( array_keys( LAPUB_Social_Accounts::platforms() ) as $p ) {
 			$new[ 'share_' . $p ] = empty( $in[ 'share_' . $p ] ) ? 0 : 1;
 		}
-		$new['make_webhook_url'] = esc_url_raw( $txt( 'make_webhook_url' ) );
 		$new['cloud_license']    = $txt( 'cloud_license' );
 		$cloud                   = esc_url_raw( $txt( 'cloud_url' ) );
 		$new['cloud_url']        = $cloud ? untrailingslashit( $cloud ) : $old['cloud_url'];
@@ -314,9 +272,9 @@ class LAPUB_Admin_Social {
 					$connected++;
 				}
 			}
-			if ( ! $connected && ! LAPUB_Options::get( 'make_enabled' ) ) :
+			if ( ! $connected ) :
 				?>
-				<div class="notice notice-info inline"><p><?php esc_html_e( 'No social accounts are connected and the Make.com webhook is off - nothing will be shared yet. Open Sharing settings to set it up.', 'linkauthority-publisher' ); ?></p></div>
+				<div class="notice notice-info inline"><p><?php esc_html_e( 'No social accounts are connected - nothing will be shared yet. Open Sharing settings to connect one.', 'linkauthority-publisher' ); ?></p></div>
 			<?php endif; ?>
 
 			<table class="widefat striped lapub-social-table">
@@ -325,12 +283,11 @@ class LAPUB_Admin_Social {
 						<th style="width:110px"><?php esc_html_e( 'Date', 'linkauthority-publisher' ); ?></th>
 						<th><?php esc_html_e( 'Post', 'linkauthority-publisher' ); ?></th>
 						<?php foreach ( $platforms as $label ) : ?><th style="width:110px"><?php echo esc_html( $label ); ?></th><?php endforeach; ?>
-						<th style="width:90px">Make.com</th>
 					</tr>
 				</thead>
 				<tbody>
 				<?php if ( ! $q->have_posts() ) : ?>
-					<tr><td colspan="7"><?php esc_html_e( 'No generated posts yet.', 'linkauthority-publisher' ); ?></td></tr>
+					<tr><td colspan="<?php echo 2 + count( $platforms ); ?>"><?php esc_html_e( 'No generated posts yet.', 'linkauthority-publisher' ); ?></td></tr>
 				<?php endif; ?>
 				<?php
 				while ( $q->have_posts() ) :
@@ -351,7 +308,6 @@ class LAPUB_Admin_Social {
 						<?php foreach ( array_keys( $platforms ) as $p ) : ?>
 							<td><?php self::result_cell( isset( $results[ $p ] ) ? $results[ $p ] : null ); ?></td>
 						<?php endforeach; ?>
-						<td><?php self::result_cell( isset( $results['make'] ) ? $results['make'] : null, true ); ?></td>
 					</tr>
 				<?php endwhile; wp_reset_postdata(); ?>
 				</tbody>

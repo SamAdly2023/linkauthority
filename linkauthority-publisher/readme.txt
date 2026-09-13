@@ -4,7 +4,7 @@ Tags: ai, blog, seo, content, automation, social media
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 
 Automatically researches, writes and publishes 2,500-3,000 word SEO blog posts with Manus AI, a Manus-generated featured image and copyright-free Pexels photos & videos - on a daily / 2-day / 3-day / weekly schedule.
@@ -22,8 +22,7 @@ LinkAuthority Publisher turns your Manus AI API key into an autonomous content t
 * **Scheduling** - every day, every 2 days, every 3 days or once a week at the hour you choose. Or click "Generate a post now".
 * **Business profile** - describe your business, audience, priority keywords, brand voice and social links; every article is written around them.
 * **Social sharing** - after publishing, share the post with its featured image and platform-specific captions (written by Manus in the same task):
-  * Option A: send a JSON payload to a Make.com webhook and let your scenario post everywhere.
-  * Option B: connect Facebook Page, Instagram Business, Pinterest and LinkedIn directly (OAuth popup, pick the page/board/account) and the plugin posts itself.
+  * Connect Facebook Page, Instagram Business, Pinterest and LinkedIn (one click through LinkAuthority, or your own developer apps) and the plugin posts itself.
   * A "Social Posts" page lists every article with links to each social post; any post can be shared or retried from its edit screen.
 
 == Third-party services ==
@@ -34,14 +33,13 @@ This plugin is a client for external services. Nothing works without them, and e
 * **Pexels** (https://www.pexels.com) - supplies copyright-free photos and video inside articles. Requires your own free Pexels API key. The plugin sends Pexels search terms derived from the article. Terms: https://www.pexels.com/terms-of-service/ - Privacy: https://www.pexels.com/privacy-policy/
 * **LinkAuthority Connect** (https://www.linkauthority.live) - optional. Lets you connect Facebook, Instagram, Pinterest and LinkedIn with one click instead of registering developer apps of your own. During sign-in your browser is sent to linkauthority.live, which brokers the authorisation with the network and hands the resulting token to your site. LinkAuthority stores nothing after the hand-off. You can skip this entirely by using your own developer apps under "Advanced" on each network's card. Terms: https://www.linkauthority.live/terms-of-service - Privacy: https://www.linkauthority.live/privacy-policy
 * **Facebook, Instagram, Pinterest, LinkedIn** - when you connect an account, the plugin posts to it on your behalf using the token you authorised, and Instagram and Pinterest fetch the featured image from your site. Each network's own terms apply to what is posted.
-* **Make.com** (https://www.make.com) - optional alternative to direct sharing. If you enter a Make webhook URL, each published post is sent there as JSON.
 
-No data is sent anywhere unless you have entered the corresponding key, connected the corresponding account, or entered a webhook URL.
+No data is sent anywhere unless you have entered the corresponding key or connected the corresponding account.
 
 == Setup ==
 
 1. Upload the `linkauthority-publisher` folder to `/wp-content/plugins/` and activate it.
-2. Go to **Auto Blogger** in the admin menu.
+2. Go to **Publisher** in the admin menu.
 3. **API Keys** tab: paste your Manus API key (manus.im > Settings > API) and your Pexels API key (pexels.com/api). Use *Test connection* for each.
 4. **Business Profile** tab: describe your business, audience, keywords and social links. This is what Manus uses to choose and write topics.
 5. **Schedule & Publishing** tab: enable automation, choose frequency, start hour, post status (publish or draft for review), author and category.
@@ -60,9 +58,7 @@ Scheduling relies on WP-Cron, which only runs when your site gets traffic. For r
 
 == Social sharing setup ==
 
-Option A (Make.com): create a Custom Webhook in Make, paste its URL in Auto Blogger > Social Sharing, click "Send test payload" so Make learns the fields, then map `url`, `featured_image_url` / `featured_image_jpeg_url` and the `social.*` captions into your Facebook, Instagram, Pinterest, LinkedIn and Google Sheets modules.
-
-Option B (direct): each network needs a developer app. The settings page shows the redirect URL to paste into the app and step-by-step instructions:
+Connect each network with one click through LinkAuthority Connect, or use your own developer app. The settings page shows the redirect URL to paste into the app and step-by-step instructions:
 * Meta (Facebook + Instagram): developers.facebook.com - Business app with Facebook Login for Business.
 * Pinterest: developers.pinterest.com - app with Trial/standard access.
 * LinkedIn: linkedin.com/developers - "Share on LinkedIn" + "Sign In with LinkedIn using OpenID Connect" (Community Management API for Company Pages).
@@ -73,6 +69,9 @@ Instagram and Pinterest download the featured image from your site, so the site 
 * `do_action( 'lapub_post_generated', $post_id, $job )` - fired after a post is created.
 
 == Changelog ==
+
+= 1.2.0 =
+* Removed the Make.com webhook option. Sharing goes through the connected networks directly; there is one way to set it up now instead of two. If you had a webhook URL saved it is simply no longer used.
 
 = 1.1.1 =
 * After connecting a social account the settings page now reloads itself and shows a "connected" notice. Previously the connection succeeded but the page kept saying "Not connected" until you refreshed by hand.

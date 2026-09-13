@@ -91,7 +91,6 @@
 .lapub-notice { margin: 0 0 16px; }
 
 /* Social sharing tab */
-.lapub-opt { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(120deg, #6d28d9, #0ea5e9); color: #fff; font-weight: 800; font-size: 13px; margin-right: 4px; vertical-align: middle; }
 .lapub-redirect { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .lapub-redirect code { user-select: all; }
 .lapub-platforms { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-top: 12px; }

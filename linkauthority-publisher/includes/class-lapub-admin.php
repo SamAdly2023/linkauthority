@@ -451,7 +451,7 @@ class LAPUB_Admin {
 					<ol>
 						<li><?php printf( wp_kses_post( __( 'Go to <a href="%s" target="_blank" rel="noopener">manus.im</a> and sign in (or create a free account). The API needs a paid plan or purchased credits - the free tier can create tasks but has very few credits.', 'linkauthority-publisher' ) ), 'https://manus.im/' ); ?></li>
 						<li><?php esc_html_e( 'Click your avatar / profile picture (bottom-left) → Settings.', 'linkauthority-publisher' ); ?></li>
-						<li><?php esc_html_e( 'Open the "API" (or "API Keys") tab and click "Create API key". Give it a name such as "WordPress Auto Blogger".', 'linkauthority-publisher' ); ?></li>
+						<li><?php esc_html_e( 'Open the "API" (or "API Keys") tab and click "Create API key". Give it a name such as "LinkAuthority Publisher".', 'linkauthority-publisher' ); ?></li>
 						<li><?php esc_html_e( 'Copy the key immediately - Manus shows it only once - and paste it below, then click "Test connection".', 'linkauthority-publisher' ); ?></li>
 						<li><?php printf( wp_kses_post( __( 'Optional: check credit usage and task history any time at <a href="%s" target="_blank" rel="noopener">manus.im</a>; every task the plugin creates also appears in your Manus task list with an "Open in Manus" link in the Activity Log.', 'linkauthority-publisher' ) ), 'https://manus.im/' ); ?></li>
 					</ol>
