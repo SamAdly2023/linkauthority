@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   ShieldCheck, 
   BarChart, 
@@ -23,7 +23,6 @@ import {
   Plug
 } from 'lucide-react';
 import ParticleNetwork from './ParticleNetwork';
-import Testimonials from './Testimonials';
 import PricingSection from './PricingSection';
 import { PRICING_ENABLED } from './config';
 import ChatWidget from './ChatWidget';
@@ -34,6 +33,20 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
+  // Real counts, or nothing. The ticker showed "423 Links Exchanged Today" and
+  // "1,204 New Websites Added" as literals for months; a visitor who joined and
+  // found twenty partners knew at once what they had been told. If the fetch
+  // fails the number is simply absent - never a placeholder that reads as data.
+  const [stats, setStats] = useState<{ activeWebsites: number; linksPerMember: number; checkedEveryHours: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/public/stats')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (!cancelled && d && typeof d.activeWebsites === 'number') setStats(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div className="bg-slate-950 min-h-screen text-slate-100 font-inter selection:bg-blue-500/30 relative">
       <SEO 
@@ -55,7 +68,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
             {PRICING_ENABLED && <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>}
           </div>
@@ -124,11 +136,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         <div className="inline-flex gap-16 animate-infinite-scroll">
             {[...Array(2)].map((_, i) => (
                 <div key={i} className="flex gap-16 items-center text-slate-400 font-mono text-sm">
-                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> 423 Links Exchanged Today</span>
-                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span> 1,204 New Websites Added</span>
-                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Free Dofollow Links</span>
-                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-amber-500"></span> 98% Customer Satisfaction</span>
-                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500"></span> 24/7 AI Monitoring Active</span>
+                    {stats && (
+                      <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> {stats.activeWebsites.toLocaleString()} Active Websites in the Network</span>
+                    )}
+                    {stats && stats.linksPerMember > 0 && (
+                      <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span> {stats.linksPerMember.toLocaleString()} Dofollow Links to Every New Member</span>
+                    )}
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Free While We Grow</span>
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Listed on Every Member Site Automatically</span>
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500"></span> Every Link Verified Daily</span>
                 </div>
             ))}
         </div>
@@ -195,11 +211,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           </div>
         </div>
       </section>
-
-      {/* Testimonials Slider */}
-      <div id="testimonials">
-        <Testimonials />
-      </div>
 
       {/* Pricing Section - hidden while the network is free. See config.ts. */}
       {PRICING_ENABLED ? (

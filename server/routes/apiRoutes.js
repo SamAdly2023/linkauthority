@@ -116,6 +116,39 @@ module.exports = app => {
     }
   });
 
+  // Public counts for the landing page. Cached briefly because the page is the
+  // most-hit URL on the site and the number changes slowly. The ticker used to
+  // show "423 Links Exchanged Today" and "1,204 New Websites Added" as
+  // literals - a visitor who joined and saw twenty partners knew at once what
+  // they had been told. Only what is actually counted goes out from here.
+  let publicStatsCache = { at: 0, body: null };
+  app.get('/api/public/stats', async (req, res) => {
+    try {
+      if (Date.now() - publicStatsCache.at < 5 * 60 * 1000 && publicStatsCache.body) {
+        return res.send(publicStatsCache.body);
+      }
+
+      const snap = await db.collection('websites').where('isActive', '==', true).get();
+      const active = snap.size;
+
+      // Every active member is listed on every other member's page, so each
+      // one receives a link from each of the others. Not an estimate.
+      const body = {
+        activeWebsites: active,
+        linksPerMember: Math.max(0, active - 1),
+        // The reciprocity sweep runs on a 24-hour interval (services/cron.js).
+        checkedEveryHours: 24
+      };
+
+      publicStatsCache = { at: Date.now(), body };
+      res.set('Cache-Control', 'public, max-age=300');
+      res.send(body);
+    } catch (err) {
+      console.error('Public stats failed:', err);
+      res.status(500).send({ error: 'Stats unavailable' });
+    }
+  });
+
   // Get all websites for marketplace (excluding own)
   app.get('/api/marketplace', async (req, res) => {
     try {
