@@ -34,3 +34,6 @@ server/config/firebase-service-account.json
 # deploy staging directories (see server/services/deploy.js)
 dist.next/
 dist.prev/
+
+# release zips are built on demand
+*.zip

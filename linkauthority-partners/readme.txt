@@ -2,9 +2,9 @@
 Contributors: samadly728
 Tags: backlinks, seo, link building, partners, directory
 Requires at least: 5.8
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,9 @@ Your site is marked inactive on the network and stops appearing in other members
 2. The LinkAuthority admin screen, showing connection status and the two opt-ins.
 
 == Changelog ==
+
+= 1.1.1 =
+* Declare compatibility with WordPress 7.1, which the plugin has been running on.
 
 = 1.1.0 =
 * New "Link authority and backlinks" section on the admin screen: your measured authority score, every backlink the network is sending you, whether each is dofollow or nofollow, the linking site's own authority, and what each link is worth to you - with the reasoning shown, not a made-up score.

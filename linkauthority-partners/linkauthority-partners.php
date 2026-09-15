@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       LinkAuthority Partners
  * Description:       Publishes a Business Partners page listing the sites you exchange links with on the LinkAuthority network, kept in sync automatically.
- * Version:           1.1.0
+ * Version:           1.1.1
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            LinkAuthority
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'LINKAUTHORITY_PARTNERS_VERSION', '1.1.0' );
+define( 'LINKAUTHORITY_PARTNERS_VERSION', '1.1.1' );
 define( 'LINKAUTHORITY_PARTNERS_PLUGIN_FILE', __FILE__ );
 define( 'LINKAUTHORITY_PARTNERS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'LINKAUTHORITY_PARTNERS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
