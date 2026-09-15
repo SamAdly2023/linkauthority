@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const dns = require('dns').promises;
 const requireLogin = require('../middlewares/requireLogin');
 const authority = require('../services/authority');
-const { refreshBacklinks } = require('../services/backlinks');
+const { refreshBacklinks, valueReport } = require('../services/backlinks');
 const { auditCitations, configuredProviders } = require('../services/citations');
 const { buildProfile, renderFields, validateProfile } = require('../services/napProfile');
 const { buildBookmarklet } = require('../services/autofill');
@@ -281,12 +281,15 @@ module.exports = app => {
 
       // Crawling every member is slow, so serve a cached report for a day
       // unless the caller explicitly asks for a fresh one.
+      // Valued the same way the plugin sees it - a label with its reasoning
+      // per link, never a score - and at read time, so reports cached before
+      // valuation existed are covered.
       if (cached && age < 24 * 60 * 60 * 1000 && 'true' !== req.query.refresh) {
-        return res.send({ ...cached, cached: true });
+        return res.send({ ...valueReport(cached, website.category || null), cached: true });
       }
 
       const report = await refreshBacklinks(website);
-      res.send({ ...report, cached: false });
+      res.send({ ...valueReport(report, website.category || null), cached: false });
     } catch (err) {
       console.error('Backlink audit failed:', err);
       res.status(500).send({ error: 'Failed to audit backlinks' });

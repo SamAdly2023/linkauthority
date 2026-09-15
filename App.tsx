@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 
 import {
   Share2,
+  Link2,
   LayoutDashboard,
   Globe,
   History,
@@ -60,6 +61,7 @@ const TermsOfService = React.lazy(() => import('./TermsOfService'));
 const PrivacyPolicy = React.lazy(() => import('./PrivacyPolicy'));
 const CitationsPage = React.lazy(() => import('./CitationsPage'));
 const AutoBloggerPage = React.lazy(() => import('./AutoBloggerPage'));
+const BacklinksPanel = React.lazy(() => import('./BacklinksPanel'));
 const AdminAnalytics = React.lazy(() => import('./AdminAnalytics'));
 const AreaChartPanel = React.lazy(() => import('./AreaChartPanel'));
 const UserGuide = React.lazy(() => import('./UserGuide'));
@@ -120,6 +122,7 @@ const App: React.FC = () => {
   const [selectedAiSite, setSelectedAiSite] = useState<string>('');
   const [aiSearchQuery, setAiSearchQuery] = useState('');
   const [isAiDropdownOpen, setIsAiDropdownOpen] = useState(false);
+  const [backlinksSite, setBacklinksSite] = useState<Website | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterServiceType, setFilterServiceType] = useState<'all' | 'local' | 'worldwide'>('all');
@@ -1936,6 +1939,14 @@ const App: React.FC = () => {
                         <td className="py-6 text-right">
                           <div className="flex justify-end items-center gap-2">
                             <button
+                              onClick={() => setBacklinksSite(site)}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors"
+                              title="Verified backlinks from the network, with each one valued"
+                            >
+                              <Link2 size={16} />
+                              Backlinks
+                            </button>
+                            <button
                               onClick={() => setDomainVerificationModal({ isOpen: true, website: site })}
                               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors"
                             >
@@ -2293,6 +2304,10 @@ const App: React.FC = () => {
 
         {activeTab === Tab.Citations && (
           <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><CitationsPage websites={user.websites} /></React.Suspense>
+        )}
+
+        {backlinksSite && (
+          <React.Suspense fallback={null}><BacklinksPanel site={backlinksSite} onClose={() => setBacklinksSite(null)} /></React.Suspense>
         )}
 
         {activeTab === Tab.AutoBlogger && (
