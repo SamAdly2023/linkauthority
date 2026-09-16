@@ -1507,7 +1507,7 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.Dashboard} icon={LayoutDashboard} label="Dashboard" />
               <SidebarItem tab={Tab.Marketplace} icon={Globe} label="Network" />
               <SidebarItem tab={Tab.MySites} icon={Globe} label="My Websites" />
-              <SidebarItem tab={Tab.History} icon={History} label="Transactions" />
+              {PRICING_ENABLED && <SidebarItem tab={Tab.History} icon={History} label="Transactions" />}
               <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
               <SidebarItem tab={Tab.Citations} icon={MapPin} label="Citations & AI" />
               <SidebarItem tab={Tab.AutoBlogger} icon={Share2} label="Publisher & Social" accent="pink" badge="New" />
@@ -1545,10 +1545,12 @@ const App: React.FC = () => {
               <p className="text-xs text-slate-500 truncate w-32">{user.email}</p>
             </div>
           </div>
+          {PRICING_ENABLED && (
           <div className="flex justify-between items-center text-xs text-slate-400 mb-3">
             <span>Points Balance</span>
             <span className="text-blue-400 font-bold">{user.points} DA</span>
           </div>
+          )}
           <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-xs font-medium bg-slate-800 hover:bg-red-900/30 hover:text-red-400 py-2 rounded-lg transition-colors">
             Logout
           </button>
@@ -1611,12 +1613,14 @@ const App: React.FC = () => {
               )}
             </div>
 
+            {PRICING_ENABLED && (
             <div className="relative group flex-1 md:flex-none">
               <Zap className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-400" size={18} />
               <span className="block w-full md:w-auto pl-10 pr-4 py-2 bg-amber-400/10 text-amber-400 rounded-full border border-amber-400/20 font-bold text-sm text-center">
                 {user.points} Points
               </span>
             </div>
+            )}
             <button
               onClick={() => setShowAddSiteModal(true)}
               className="bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-5 py-2 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20 font-medium whitespace-nowrap"
@@ -1625,6 +1629,7 @@ const App: React.FC = () => {
               <span className="hidden md:inline">Add Website</span>
               <span className="md:hidden">Add</span>
             </button>
+            {PRICING_ENABLED && (
             <button
               onClick={() => setActiveTab(Tab.Guide)}
               className="bg-green-600 hover:bg-green-500 text-white px-4 md:px-5 py-2 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20 font-medium whitespace-nowrap"
@@ -1633,43 +1638,46 @@ const App: React.FC = () => {
               <span className="hidden md:inline">Buy Points</span>
               <span className="md:hidden">Buy</span>
             </button>
+            )}
           </div>
         </header>
 
         {activeTab === Tab.Dashboard && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Stats Grid */}
+            {/* Counted from the network, not from the credit ledger. "Links
+                Hosted" and "Links Received" used to count transactions, which
+                the automatic network never creates, so both sat at zero; the
+                fourth tile multiplied points by $1.50 and called it savings. */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { label: 'Active Sites', value: user.websites.length, icon: Globe, color: 'blue' },
+                { label: 'Your Websites', value: user.websites.length, icon: Globe, color: 'blue' },
                 {
-                  label: 'Links Hosted',
-                  value: transactions.filter(t => t.type === 'earn').length,
-                  icon: transactions.filter(t => t.type === 'earn').length >= 50 ? ShieldCheck : ArrowUpRight,
-                  color: transactions.filter(t => t.type === 'earn').length >= 50 ? 'amber' : 'green',
-                  badge: transactions.filter(t => t.type === 'earn').length >= 50 ? 'Gold Partner' : transactions.filter(t => t.type === 'earn').length >= 20 ? 'Silver Partner' : 'Bronze Partner'
+                  label: 'Active Network Members',
+                  value: marketplaceSites.filter(s => s.isActive).length,
+                  icon: Users,
+                  color: 'green'
                 },
-                { label: 'Links Received', value: transactions.filter(t => t.type === 'spend').length, icon: ArrowDownLeft, color: 'purple' },
+                {
+                  label: 'Dofollow Links to Each of Your Sites',
+                  value: Math.max(0, marketplaceSites.filter(s => s.isActive).length),
+                  icon: ArrowDownLeft,
+                  color: 'purple'
+                },
               ].map((stat, i) => (
                 <div key={i} className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800 flex items-center justify-between">
                   <div>
                     <p className="text-slate-400 text-sm mb-1">{stat.label}</p>
                     <p className="text-3xl font-bold text-white">{stat.value}</p>
-                    {stat.badge && <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded ml-1">{stat.badge}</span>}
                   </div>
                   <div className={`p-4 bg-${stat.color}-500/10 text-${stat.color}-500 rounded-2xl`}>
                     <stat.icon size={28} />
                   </div>
                 </div>
               ))}
-
-              <div className="bg-gradient-to-br from-indigo-900/50 to-blue-900/50 p-6 rounded-3xl border border-blue-500/20 flex flex-col justify-center">
-                <p className="text-blue-200 text-sm mb-1">Estimated Value Saved</p>
-                <p className="text-3xl font-bold text-white">${(user.points * 1.5).toLocaleString()}</p>
-                <p className="text-xs text-blue-300/60 mt-2">vs buying guest posts</p>
-              </div>
             </div>
 
+            {PRICING_ENABLED && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Chart */}
               <div className="lg:col-span-2 bg-slate-900/50 p-8 rounded-3xl border border-slate-800">
@@ -1728,6 +1736,7 @@ const App: React.FC = () => {
                 </button>
               </div>
             </div>
+            )}
           </div>
         )}
 
