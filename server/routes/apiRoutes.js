@@ -157,18 +157,40 @@ module.exports = app => {
         query = query.where('ownerId', '!=', req.user.id);
       }
       const snap = await query.get();
-      const sites = [];
-      for (const doc of snap.docs) {
-        const data = doc.data();
-        const ownerDoc = await db.collection('users').doc(data.ownerId).get();
-        const owner = ownerDoc.exists ? { name: ownerDoc.data().name } : { name: 'Unknown' };
-        sites.push({
+
+      // Owner names in one read per distinct owner rather than one per site.
+      const ownerIds = [...new Set(snap.docs.map(d => d.data().ownerId).filter(Boolean))];
+      const ownerNames = {};
+      await Promise.all(ownerIds.map(async (uid) => {
+        const u = await db.collection('users').doc(uid).get();
+        ownerNames[uid] = u.exists ? (u.data().name || 'Member') : 'Member';
+      }));
+
+      // Public fields only. This route used to spread the whole document, and
+      // it is reachable without logging in - so it handed out every site's
+      // verificationToken, the credential the plugin authenticates with, to
+      // anyone who asked. It would also have leaked business details (phone,
+      // address, email) as members saved them. Anything not named here does
+      // not leave the server.
+      const sites = snap.docs.map(doc => {
+        const d = doc.data();
+        return {
           id: doc.id,
           _id: doc.id,
-          ...data,
-          owner
-        });
-      }
+          url: d.url,
+          name: d.name || null,
+          category: d.category || null,
+          description: d.description || '',
+          logo: d.logo || null,
+          domainAuthority: Number.isFinite(d.domainAuthority) ? d.domainAuthority : null,
+          serviceType: d.serviceType || null,
+          location: d.location ? { city: d.location.city || null, state: d.location.state || null, country: d.location.country || null } : null,
+          isActive: !!d.isActive,
+          isVerified: !!d.isVerified,
+          createdAt: d.createdAt || null,
+          owner: { name: ownerNames[d.ownerId] || 'Member' }
+        };
+      });
       res.send(sites);
     } catch (err) {
       console.error(err);
