@@ -9,7 +9,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class LinkAuthority_Partners_Admin {
 
-	const MENU_SLUG = 'linkauthority-partners';
+	const MENU_SLUG    = 'linkauthority-partners';
+	const NETWORK_SLUG = 'linkauthority-partners-network';
+
+	/**
+	 * Hook suffixes of our two screens, as add_menu_page / add_submenu_page
+	 * returned them, so the stylesheet loads on exactly those.
+	 *
+	 * @var string[]
+	 */
+	private $hooks = array();
 
 	public function init() {
 		add_action( 'admin_menu', array( $this, 'add_menu' ) );
@@ -18,6 +27,7 @@ class LinkAuthority_Partners_Admin {
 		add_action( 'admin_post_linkauthority_partners_create_page', array( $this, 'handle_create_page' ) );
 		add_action( 'admin_post_linkauthority_partners_refresh', array( $this, 'handle_refresh' ) );
 		add_action( 'admin_post_linkauthority_partners_backlinks', array( $this, 'handle_backlinks' ) );
+		add_action( 'admin_post_linkauthority_partners_curation', array( $this, 'handle_curation' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( LINKAUTHORITY_PARTNERS_PLUGIN_FILE ), array( $this, 'action_links' ) );
 	}
 
@@ -28,6 +38,15 @@ class LinkAuthority_Partners_Admin {
 	 */
 	public static function page_url() {
 		return admin_url( 'admin.php?page=' . self::MENU_SLUG );
+	}
+
+	/**
+	 * URL of the Network screen.
+	 *
+	 * @return string
+	 */
+	public static function network_url() {
+		return admin_url( 'admin.php?page=' . self::NETWORK_SLUG );
 	}
 
 	/**
@@ -49,7 +68,7 @@ class LinkAuthority_Partners_Admin {
 	 * findable rather than buried.
 	 */
 	public function add_menu() {
-		add_menu_page(
+		$this->hooks[] = add_menu_page(
 			__( 'LinkAuthority Partners', 'linkauthority-partners' ),
 			__( 'LinkAuthority', 'linkauthority-partners' ),
 			'manage_options',
@@ -57,6 +76,26 @@ class LinkAuthority_Partners_Admin {
 			array( $this, 'render_page' ),
 			'dashicons-admin-links',
 			58
+		);
+
+		// Re-registering the top-level slug as the first submenu is how WordPress
+		// names that entry; without it the first child inherits the parent title.
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'LinkAuthority Partners', 'linkauthority-partners' ),
+			__( 'Dashboard', 'linkauthority-partners' ),
+			'manage_options',
+			self::MENU_SLUG,
+			array( $this, 'render_page' )
+		);
+
+		$this->hooks[] = add_submenu_page(
+			self::MENU_SLUG,
+			__( 'The Network', 'linkauthority-partners' ),
+			__( 'Network', 'linkauthority-partners' ),
+			'manage_options',
+			self::NETWORK_SLUG,
+			array( $this, 'render_network_page' )
 		);
 	}
 
@@ -66,7 +105,7 @@ class LinkAuthority_Partners_Admin {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue_styles( $hook ) {
-		if ( 'toplevel_page_' . self::MENU_SLUG !== $hook ) {
+		if ( ! in_array( $hook, $this->hooks, true ) ) {
 			return;
 		}
 
@@ -88,7 +127,7 @@ class LinkAuthority_Partners_Admin {
 		}
 
 		$screen = get_current_screen();
-		if ( $screen && 'toplevel_page_' . self::MENU_SLUG === $screen->id ) {
+		if ( $screen && in_array( $screen->id, $this->hooks, true ) ) {
 			return;
 		}
 
@@ -187,10 +226,71 @@ class LinkAuthority_Partners_Admin {
 	}
 
 	/**
-	 * @param string $notice Notice key.
+	 * Saves the owner's choices from the Network screen.
+	 *
+	 * The screen may have been filtered, so only the members it actually
+	 * rendered are decided here: each one is hidden unless its "show" box was
+	 * ticked. Members outside the filter keep whatever state they had.
 	 */
-	private function redirect_back( $notice ) {
-		wp_safe_redirect( add_query_arg( 'linkauthority_partners_notice', $notice, self::page_url() ) );
+	public function handle_curation() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to do that.', 'linkauthority-partners' ) );
+		}
+
+		check_admin_referer( 'linkauthority_partners_curation' );
+
+		if ( '' === linkauthority_partners_get_token() ) {
+			$this->redirect_back( 'no-token', self::network_url() );
+		}
+
+		$network = LinkAuthority_Partners_API::get_network();
+		if ( ! is_array( $network ) ) {
+			$this->redirect_back( 'network-failed', self::network_url() );
+		}
+
+		$ids   = array();
+		$shown = array();
+		if ( isset( $_POST['members'] ) && is_array( $_POST['members'] ) ) {
+			$ids = array_map( 'sanitize_key', wp_unslash( $_POST['members'] ) );
+		}
+		if ( isset( $_POST['show'] ) && is_array( $_POST['show'] ) ) {
+			$shown = array_map( 'sanitize_key', wp_unslash( $_POST['show'] ) );
+		}
+
+		$hidden = array();
+		foreach ( $network['members'] as $member ) {
+			$id = isset( $member['id'] ) ? (string) $member['id'] : '';
+			if ( '' === $id ) {
+				continue;
+			}
+			if ( in_array( $id, $ids, true ) ) {
+				if ( ! in_array( $id, $shown, true ) ) {
+					$hidden[] = $id;
+				}
+			} elseif ( ! empty( $member['hidden'] ) ) {
+				$hidden[] = $id;
+			}
+		}
+
+		$scope = ! empty( $_POST['niche_only'] ) ? 'niche' : 'all';
+
+		if ( ! LinkAuthority_Partners_API::save_curation( $hidden, $scope ) ) {
+			$this->redirect_back( 'network-failed', self::network_url() );
+		}
+
+		// The live page renders from the cached list; pull it again so the
+		// change shows immediately rather than on the next scheduled sync.
+		LinkAuthority_Partners_API::refresh_partners();
+
+		$this->redirect_back( 'curated', self::network_url() );
+	}
+
+	/**
+	 * @param string $notice Notice key.
+	 * @param string $to     Screen to return to; the dashboard by default.
+	 */
+	private function redirect_back( $notice, $to = '' ) {
+		wp_safe_redirect( add_query_arg( 'linkauthority_partners_notice', $notice, $to ? $to : self::page_url() ) );
 		exit;
 	}
 
@@ -211,6 +311,8 @@ class LinkAuthority_Partners_Admin {
 			'backlinks-refreshed' => array( 'success', __( 'Backlinks re-checked across the network.', 'linkauthority-partners' ) ),
 			'backlinks-limited'   => array( 'info', __( 'Backlinks were checked recently. The network is re-crawled at most once an hour; the report below is the latest.', 'linkauthority-partners' ) ),
 			'backlinks-failed'    => array( 'error', __( 'LinkAuthority could not be reached. Try again in a moment.', 'linkauthority-partners' ) ),
+			'curated'             => array( 'success', __( 'Saved. Your Business Partners page has been updated.', 'linkauthority-partners' ) ),
+			'network-failed'      => array( 'error', __( 'LinkAuthority could not be reached. Nothing was changed.', 'linkauthority-partners' ) ),
 		);
 
 		return $notices[ $key ] ?? array();
@@ -543,6 +645,215 @@ class LinkAuthority_Partners_Admin {
 					<?php submit_button(); ?>
 				</div>
 			</form>
+		</div>
+		<?php
+	}
+	/**
+	 * The Network screen: every active member, filterable by niche, with a
+	 * "show on my page" box per member and the niche-only switch.
+	 *
+	 * The exchange itself stays automatic - every member links to every other.
+	 * What the owner decides here is only who appears on their own page.
+	 */
+	public function render_network_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only filters and our own notice key.
+		$notice_key = isset( $_GET['linkauthority_partners_notice'] ) ? sanitize_key( wp_unslash( $_GET['linkauthority_partners_notice'] ) ) : '';
+		$niche      = isset( $_GET['niche'] ) ? sanitize_text_field( wp_unslash( $_GET['niche'] ) ) : '';
+		$query      = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'] ) ) : '';
+		// phpcs:enable
+		$notice = $this->notice_for( $notice_key );
+
+		$token    = linkauthority_partners_get_token();
+		$network  = '' !== $token ? LinkAuthority_Partners_API::get_network() : false;
+		$members  = is_array( $network ) ? $network['members'] : array();
+		$cats     = is_array( $network ) && ! empty( $network['categories'] ) ? (array) $network['categories'] : array();
+		$site     = is_array( $network ) && isset( $network['site'] ) ? $network['site'] : array();
+		$niche_on = isset( $site['partnerScope'] ) && 'niche' === $site['partnerScope'];
+		$my_cat   = isset( $site['category'] ) ? (string) $site['category'] : '';
+
+		$hidden_total = 0;
+		foreach ( $members as $m ) {
+			if ( ! empty( $m['hidden'] ) ) {
+				$hidden_total++;
+			}
+		}
+
+		$shown = array_filter(
+			$members,
+			function ( $m ) use ( $niche, $query ) {
+				if ( '' !== $niche && ( ! isset( $m['category'] ) || $m['category'] !== $niche ) ) {
+					return false;
+				}
+				if ( '' === $query ) {
+					return true;
+				}
+				$hay = strtolower( ( $m['name'] ?? '' ) . ' ' . ( $m['url'] ?? '' ) . ' ' . ( $m['category'] ?? '' ) . ' ' . ( $m['description'] ?? '' ) );
+				return false !== strpos( $hay, strtolower( $query ) );
+			}
+		);
+		?>
+		<div class="wrap lap-admin lap-network">
+			<h1><?php esc_html_e( 'The Network', 'linkauthority-partners' ); ?></h1>
+
+			<?php if ( ! empty( $notice ) ) : ?>
+				<div class="notice notice-<?php echo esc_attr( $notice[0] ); ?> is-dismissible">
+					<p><?php echo esc_html( $notice[1] ); ?></p>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( '' === $token ) : ?>
+				<div class="lap-card">
+					<p><?php esc_html_e( 'Add your site token on the Dashboard screen first. The network is only visible to connected sites.', 'linkauthority-partners' ); ?></p>
+					<p><a class="button button-primary" href="<?php echo esc_url( self::page_url() ); ?>"><?php esc_html_e( 'Go to the Dashboard', 'linkauthority-partners' ); ?></a></p>
+				</div>
+			<?php elseif ( ! is_array( $network ) ) : ?>
+				<div class="lap-card">
+					<p><?php esc_html_e( 'LinkAuthority could not be reached. Reload in a moment.', 'linkauthority-partners' ); ?></p>
+				</div>
+			<?php else : ?>
+
+			<div class="lap-card">
+				<h2>
+					<?php
+					printf(
+						/* translators: %d: number of active member sites. */
+						esc_html( _n( '%d active site is linking to you', '%d active sites are linking to you', count( $members ), 'linkauthority-partners' ) ),
+						(int) count( $members )
+					);
+					?>
+				</h2>
+				<p class="lap-card-intro">
+					<?php esc_html_e( 'Every site below carries a dofollow link to you, and your Business Partners page carries a link back to each of them. Listings update automatically as members join and leave - there is nothing to request. What you control here is who appears on your page: untick a site to hide it from your page only. It keeps linking to you.', 'linkauthority-partners' ); ?>
+				</p>
+
+				<form method="get" class="lap-filters">
+					<input type="hidden" name="page" value="<?php echo esc_attr( self::NETWORK_SLUG ); ?>">
+					<input type="search" name="q" value="<?php echo esc_attr( $query ); ?>" placeholder="<?php esc_attr_e( 'Search name, niche or URL', 'linkauthority-partners' ); ?>">
+					<select name="niche">
+						<option value=""><?php esc_html_e( 'All niches', 'linkauthority-partners' ); ?></option>
+						<?php foreach ( $cats as $cat ) : ?>
+							<option value="<?php echo esc_attr( $cat ); ?>" <?php selected( $niche, $cat ); ?>><?php echo esc_html( $cat ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<?php submit_button( __( 'Filter', 'linkauthority-partners' ), 'secondary', '', false ); ?>
+					<?php if ( '' !== $niche || '' !== $query ) : ?>
+						<a class="button-link" href="<?php echo esc_url( self::network_url() ); ?>"><?php esc_html_e( 'Clear', 'linkauthority-partners' ); ?></a>
+					<?php endif; ?>
+				</form>
+			</div>
+
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="linkauthority_partners_curation">
+				<?php wp_nonce_field( 'linkauthority_partners_curation' ); ?>
+
+				<div class="lap-card">
+					<h2><?php esc_html_e( 'Your page', 'linkauthority-partners' ); ?></h2>
+					<label class="lap-switch">
+						<input type="checkbox" name="niche_only" value="1" <?php checked( $niche_on ); ?>>
+						<?php
+						if ( '' !== $my_cat ) {
+							printf(
+								/* translators: %s: this site's category. */
+								esc_html__( 'Only list partners in my category (%s)', 'linkauthority-partners' ),
+								esc_html( $my_cat )
+							);
+						} else {
+							esc_html_e( 'Only list partners in my category', 'linkauthority-partners' );
+						}
+						?>
+					</label>
+					<?php if ( $hidden_total ) : ?>
+						<p class="lap-muted">
+							<?php
+							printf(
+								/* translators: %d: number of hidden partners. */
+								esc_html( _n( '%d site is hidden from your page.', '%d sites are hidden from your page.', $hidden_total, 'linkauthority-partners' ) ),
+								(int) $hidden_total
+							);
+							?>
+						</p>
+					<?php endif; ?>
+				</div>
+
+				<?php if ( empty( $members ) ) : ?>
+					<div class="lap-card"><p class="lap-empty"><?php esc_html_e( 'No other sites are active yet. As soon as one activates, it appears here - and your link appears on it.', 'linkauthority-partners' ); ?></p></div>
+				<?php elseif ( empty( $shown ) ) : ?>
+					<div class="lap-card"><p class="lap-empty"><?php esc_html_e( 'Nothing matches those filters.', 'linkauthority-partners' ); ?></p></div>
+				<?php else : ?>
+					<div class="lap-members">
+					<?php
+					foreach ( $shown as $m ) :
+						$id = isset( $m['id'] ) ? sanitize_key( $m['id'] ) : '';
+						if ( '' === $id ) {
+							continue;
+						}
+						$host    = wp_parse_url( $m['url'] ?? '', PHP_URL_HOST );
+						$host    = $host ? preg_replace( '/^www\./', '', $host ) : ( $m['url'] ?? '' );
+						$is_hid  = ! empty( $m['hidden'] );
+						$out     = $niche_on && '' !== $my_cat && ( $m['category'] ?? '' ) !== $my_cat;
+						$classes = 'lap-member' . ( $is_hid || $out ? ' is-off' : '' );
+						?>
+						<div class="<?php echo esc_attr( $classes ); ?>">
+							<input type="hidden" name="members[]" value="<?php echo esc_attr( $id ); ?>">
+							<div class="lap-member-logo">
+								<?php if ( ! empty( $m['logo'] ) ) : ?>
+									<img src="<?php echo esc_url( $m['logo'] ); ?>" alt="" loading="lazy">
+								<?php else : ?>
+									<span class="dashicons dashicons-admin-site-alt3"></span>
+								<?php endif; ?>
+							</div>
+							<div class="lap-member-body">
+								<strong class="lap-member-name"><?php echo esc_html( ! empty( $m['name'] ) ? $m['name'] : $host ); ?></strong>
+								<a class="lap-member-host" href="<?php echo esc_url( $m['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $host ); ?></a>
+								<div class="lap-member-meta">
+									<?php if ( ! empty( $m['category'] ) ) : ?>
+										<span class="lap-tag"><?php echo esc_html( $m['category'] ); ?></span>
+									<?php endif; ?>
+									<?php if ( ! empty( $m['location']['city'] ) ) : ?>
+										<span class="lap-muted"><?php echo esc_html( $m['location']['city'] . ( ! empty( $m['location']['country'] ) ? ', ' . $m['location']['country'] : '' ) ); ?></span>
+									<?php else : ?>
+										<span class="lap-muted"><?php esc_html_e( 'Worldwide', 'linkauthority-partners' ); ?></span>
+									<?php endif; ?>
+									<span class="lap-muted lap-member-auth">
+										<?php
+										if ( isset( $m['domainAuthority'] ) && is_numeric( $m['domainAuthority'] ) ) {
+											/* translators: %s: authority score out of 10. */
+											printf( esc_html__( 'authority %s/10', 'linkauthority-partners' ), esc_html( number_format_i18n( (float) $m['domainAuthority'], 1 ) ) );
+										} else {
+											esc_html_e( 'authority not measured', 'linkauthority-partners' );
+										}
+										?>
+									</span>
+								</div>
+								<?php if ( ! empty( $m['description'] ) ) : ?>
+									<p class="lap-member-desc"><?php echo esc_html( wp_trim_words( $m['description'], 30 ) ); ?></p>
+								<?php endif; ?>
+								<?php if ( $out ) : ?>
+									<p class="lap-member-note"><?php esc_html_e( 'Outside your category - not on your page while the switch above is on. Still links to you.', 'linkauthority-partners' ); ?></p>
+								<?php endif; ?>
+							</div>
+							<label class="lap-member-toggle">
+								<input type="checkbox" name="show[]" value="<?php echo esc_attr( $id ); ?>" <?php checked( ! $is_hid ); ?>>
+								<?php esc_html_e( 'Show on my page', 'linkauthority-partners' ); ?>
+							</label>
+						</div>
+					<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $members ) ) : ?>
+					<p class="lap-actions">
+						<?php submit_button( __( 'Save my page', 'linkauthority-partners' ), 'primary', 'submit', false ); ?>
+						<span class="lap-muted"><?php esc_html_e( 'Only the sites listed above are changed; filtered-out sites keep their setting.', 'linkauthority-partners' ); ?></span>
+					</p>
+				<?php endif; ?>
+			</form>
+
+			<?php endif; ?>
 		</div>
 		<?php
 	}

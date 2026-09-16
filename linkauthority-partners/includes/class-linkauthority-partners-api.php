@@ -136,6 +136,63 @@ class LinkAuthority_Partners_API {
 	}
 
 	/**
+	 * The whole network, for the Network screen: every active member with its
+	 * public card fields, plus whether this site has hidden each one. Fetched
+	 * live rather than cached - the owner is about to act on it, so it has to
+	 * be current.
+	 *
+	 * @return array|false Decoded response, or false when unreachable.
+	 */
+	public static function get_network() {
+		$token = linkauthority_partners_get_token();
+		if ( '' === $token ) {
+			return false;
+		}
+
+		$response = wp_remote_get(
+			add_query_arg( array( 'token' => rawurlencode( $token ) ), self::base_url() . '/network' ),
+			array( 'timeout' => 20 )
+		);
+
+		$data = self::decode( $response );
+
+		return ( is_array( $data ) && isset( $data['members'] ) && is_array( $data['members'] ) ) ? $data : false;
+	}
+
+	/**
+	 * Saves which partners this site hides and whether the page is limited to
+	 * its own category. This only shapes the owner's own page; the site still
+	 * appears on every partner's page as before.
+	 *
+	 * @param string[] $hidden_ids Member IDs to hide.
+	 * @param string   $scope      'all' or 'niche'.
+	 * @return bool
+	 */
+	public static function save_curation( $hidden_ids, $scope ) {
+		$token = linkauthority_partners_get_token();
+		if ( '' === $token ) {
+			return false;
+		}
+
+		$response = wp_remote_post(
+			self::base_url() . '/curation',
+			array(
+				'timeout' => 15,
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'token'          => $token,
+						'hiddenPartners' => array_values( $hidden_ids ),
+						'partnerScope'   => 'niche' === $scope ? 'niche' : 'all',
+					)
+				),
+			)
+		);
+
+		return self::is_ok( $response );
+	}
+
+	/**
 	 * Pulls the partner directory and caches it.
 	 *
 	 * The result is stored, not written into any post: the page renders from

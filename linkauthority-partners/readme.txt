@@ -4,7 +4,7 @@ Tags: backlinks, seo, link building, partners, directory
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,6 +22,7 @@ This plugin renders that directory on your site and keeps it current. Add the sh
 * Refreshes hourly, plus an immediate update when the network changes
 * Ships responsive card styling that inherits nothing from, and overrides nothing in, your theme
 * Adds Schema.org `ItemList` structured data describing the listed businesses
+* A Network screen in wp-admin to browse every member by niche, and to choose who appears on your own page
 * Optional page-view reporting, so your LinkAuthority dashboard can show how the page performs
 * Optional "Site by LinkAuthority" credit link
 
@@ -35,6 +36,7 @@ Once you save your site token in the LinkAuthority menu in your sidebar, the plu
 
 * register your site as active on the network, and mark it inactive again when you deactivate the plugin (your site token and site URL are sent)
 * download the current list of partner businesses, hourly and on demand (your site token is sent)
+* load the full member directory for the Network screen, and save which partners you hide from your page (your site token is sent)
 * report your Business Partners page view count, **only if** you enable that option (your site token and a single running total are sent - never any visitor details)
 
 The plugin also exposes one authenticated REST route, `linkauthority/v1/update`, which LinkAuthority calls to trigger an immediate refresh. Requests must present your site token, which is compared in constant time; nothing else is accepted.
@@ -77,6 +79,10 @@ Your site is marked inactive on the network and stops appearing in other members
 2. The LinkAuthority admin screen, showing connection status and the two opt-ins.
 
 == Changelog ==
+
+= 1.2.0 =
+* New Network screen: browse every active member by niche, with logo, description and measured authority.
+* Choose who appears on your Business Partners page: hide individual partners, or limit the page to your own category. Hiding only affects your page; the partner keeps linking to you.
 
 = 1.1.1 =
 * Declare compatibility with WordPress 7.1, which the plugin has been running on.

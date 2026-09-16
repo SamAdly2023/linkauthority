@@ -62,6 +62,7 @@ const PrivacyPolicy = React.lazy(() => import('./PrivacyPolicy'));
 const CitationsPage = React.lazy(() => import('./CitationsPage'));
 const AutoBloggerPage = React.lazy(() => import('./AutoBloggerPage'));
 const BacklinksPanel = React.lazy(() => import('./BacklinksPanel'));
+const NetworkDirectory = React.lazy(() => import('./NetworkDirectory'));
 const AdminAnalytics = React.lazy(() => import('./AdminAnalytics'));
 const AreaChartPanel = React.lazy(() => import('./AreaChartPanel'));
 const UserGuide = React.lazy(() => import('./UserGuide'));
@@ -124,11 +125,6 @@ const App: React.FC = () => {
   const [isAiDropdownOpen, setIsAiDropdownOpen] = useState(false);
   const [backlinksSite, setBacklinksSite] = useState<Website | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterServiceType, setFilterServiceType] = useState<'all' | 'local' | 'worldwide'>('all');
-  const [filterCountry, setFilterCountry] = useState('');
-  const [filterState, setFilterState] = useState('');
-  const [filterCity, setFilterCity] = useState('');
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
   const [newSiteUrl, setNewSiteUrl] = useState('');
   const [newSiteCategory, setNewSiteCategory] = useState('');
@@ -1741,135 +1737,11 @@ const App: React.FC = () => {
         )}
 
         {activeTab === Tab.Marketplace && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800">
-              <p className="text-slate-500 text-sm uppercase tracking-wider font-bold mb-2">The Network</p>
-              <h3 className="text-3xl font-black text-white mb-2">
-                {marketplaceSites.filter(s => s.isActive).length.toLocaleString()} active {marketplaceSites.filter(s => s.isActive).length === 1 ? 'site is' : 'sites are'} linking to you
-              </h3>
-              <p className="text-slate-400 text-sm max-w-2xl">
-                Every site below carries a dofollow link to each of your active websites, and each of your
-                Business Partners pages carries a link back to them. Listings update automatically as
-                members join and leave &mdash; there is nothing to request.
-              </p>
-            </div>
-
-            <div className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
-              <div className="flex items-center gap-2 mb-4 text-slate-400 text-sm font-bold uppercase tracking-wider">
-                <Sliders size={16} />
-                Filters
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-5 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
-                  <input
-                    type="text"
-                    placeholder="Search categories, niches, or URLs..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-blue-500 outline-none text-slate-100 transition-all"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-
-                <div className="md:col-span-3">
-                  <select
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-300 outline-none focus:border-blue-500 appearance-none cursor-pointer"
-                    value={filterServiceType}
-                    onChange={(e) => setFilterServiceType(e.target.value as any)}
-                  >
-                    <option value="all">All Service Types</option>
-                    <option value="worldwide">Worldwide Only</option>
-                    <option value="local">Local Business Only</option>
-                  </select>
-                </div>
-
-                {filterServiceType === 'local' && (
-                  <div className="md:col-span-4 flex gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
-                    <input
-                      type="text"
-                      placeholder="Country"
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 outline-none focus:border-blue-500"
-                      value={filterCountry}
-                      onChange={(e) => setFilterCountry(e.target.value)}
-                    />
-                    <input
-                      type="text"
-                      placeholder="City"
-                      className="w-1/2 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 outline-none focus:border-blue-500"
-                      value={filterCity}
-                      onChange={(e) => setFilterCity(e.target.value)}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {marketplaceSites.filter(s => {
-                // Only sites that are actually live are hosting your links.
-                if (!s.isActive) return false;
-                const matchesSearch = s.category.toLowerCase().includes(searchQuery.toLowerCase()) || s.url.includes(searchQuery);
-                const matchesType = filterServiceType === 'all' || s.serviceType === filterServiceType;
-                const matchesCountry = !filterCountry || s.location?.country?.toLowerCase().includes(filterCountry.toLowerCase());
-                const matchesCity = !filterCity || s.location?.city?.toLowerCase().includes(filterCity.toLowerCase());
-
-                return matchesSearch && matchesType && matchesCountry && matchesCity;
-              }).map(site => (
-                <div key={site.id} className="bg-slate-900/50 rounded-3xl p-6 border border-slate-800 hover:border-blue-500/30 transition-all group">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex flex-col gap-1">
-                      <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold uppercase tracking-wider w-fit">{site.category}</span>
-                      {site.serviceType === 'local' && site.location ? (
-                        <span className="text-xs text-slate-500 flex items-center gap-1">
-                          <MapPin size={12} />
-                          {site.location.city}, {site.location.country}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-500 flex items-center gap-1">
-                          <Globe size={12} />
-                          Worldwide
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded-lg">
-                      <Zap size={14} />
-                      <span>DA {site.domainAuthority}</span>
-                    </div>
-                  </div>
-                  <h4 className="text-lg font-bold text-white mb-2 truncate group-hover:text-blue-400 transition-colors">{site.url}</h4>
-                  {site.description && (
-                    <p className="text-slate-400 text-sm mb-4 line-clamp-3">{site.description}</p>
-                  )}
-                  <div className="flex items-center gap-2 text-green-500 text-sm mb-6">
-                    <ShieldCheck size={16} />
-                    Linking to your sites
-                  </div>
-                  <button
-                    onClick={() => window.open(site.url, '_blank', 'noopener')}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
-                  >
-                    Visit site
-                    <ExternalLink size={16} />
-                  </button>
-                </div>
-              ))}
-              {marketplaceSites.filter(s => s.isActive).length === 0 && (
-                <div className="col-span-full text-center py-10 text-slate-500">
-                  No other sites are active yet. As soon as one activates, it appears here &mdash; and your links appear on it.
-                </div>
-              )}
-            </div>
-
-            {PRICING_ENABLED && user.points < 1 && (
-              <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-3xl flex items-center gap-4 text-red-400">
-                <Zap size={24} className="shrink-0" />
-                <div>
-                  <p className="font-bold">Account Restricted</p>
-                  <p className="text-sm opacity-80">You have less than 1 point. Your sites are hidden from the marketplace. Host a link to earn points.</p>
-                </div>
-              </div>
-            )}
-          </div>
+          <NetworkDirectory
+            members={marketplaceSites as any}
+            ownSites={(user.websites || []) as any}
+            onCurated={fetchUser}
+          />
         )}
 
         {activeTab === Tab.MySites && (
