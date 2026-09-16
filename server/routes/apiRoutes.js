@@ -20,7 +20,7 @@ const {
 const { analyzeWebsite, getSEOAdvice } = require('../services/gemini');
 
 const { db } = require('../services/firebase');
-const { broadcastRefresh } = require('../services/partnerSync');
+const { broadcastRefresh, pingSite } = require('../services/partnerSync');
 
 // Firestore helpers
 const getWebsiteByUrl = async (url) => {
@@ -453,6 +453,44 @@ module.exports = app => {
     } catch (err) {
       console.error('Saving business profile failed:', err);
       res.status(500).send({ error: 'Failed to save the business profile' });
+    }
+  });
+
+  // Who appears on this site's Business Partners page. Hidden partners are
+  // website ids; scope 'niche' limits the page to the owner's own category.
+  // Neither touches what the owner receives - they stay listed everywhere.
+  app.put('/api/websites/:id/curation', requireLogin, async (req, res) => {
+    try {
+      const website = await getWebsiteById(req.params.id);
+      if (!website || website.ownerId !== req.user.id) {
+        return res.status(404).send({ error: 'Website not found' });
+      }
+
+      const body = req.body || {};
+      const updates = {};
+
+      if (Array.isArray(body.hiddenPartners)) {
+        // Ids only, deduplicated, capped so a runaway client cannot bloat the doc.
+        updates.hiddenPartners = [...new Set(body.hiddenPartners.map(String).filter(v => /^[A-Za-z0-9_-]{1,64}$/.test(v)))].slice(0, 500);
+      }
+      if (body.partnerScope !== undefined) {
+        if (!['all', 'niche'].includes(body.partnerScope)) {
+          return res.status(400).send({ error: 'partnerScope must be "all" or "niche"' });
+        }
+        updates.partnerScope = body.partnerScope;
+      }
+      if (!Object.keys(updates).length) {
+        return res.status(400).send({ error: 'Nothing to update' });
+      }
+
+      await db.collection('websites').doc(website.id).update(updates);
+      res.send({ ok: true, ...updates });
+
+      // Only this site's page changed; refresh it rather than the whole network.
+      pingSite({ ...website, ...updates }).catch(() => {});
+    } catch (err) {
+      console.error('Curation update failed:', err);
+      res.status(500).send({ error: 'Failed to update' });
     }
   });
 

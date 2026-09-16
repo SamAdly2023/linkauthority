@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const requireLogin = require('../middlewares/requireLogin');
 const { db } = require('../services/firebase');
-const { broadcastRefresh } = require('../services/partnerSync');
+const { broadcastRefresh, pingSite } = require('../services/partnerSync');
 const { refreshBacklinks, valueReport } = require('../services/backlinks');
 const authority = require('../services/authority');
 
@@ -133,10 +133,19 @@ module.exports = app => {
       // end up registered as more than one website doc, and matching on id alone
       // lets a site list itself among its own partners.
       const requesterHost = hostname(requester.url);
+      // The owner decides who appears on their own page: specific partners
+      // can be hidden, or the page limited to the owner's own category. This
+      // affects only this site's page - the owner still appears on everyone
+      // else's - so the network stays automatic while a law firm is not
+      // obliged to list a casino.
+      const hidden = new Set(Array.isArray(requester.hiddenPartners) ? requester.hiddenPartners : []);
+      const nicheOnly = 'niche' === requester.partnerScope && requester.category;
       const snap = await db.collection('websites').where('isActive', '==', true).get();
       const partners = snap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(site => site.id !== requester.id && site.url && hostname(site.url) !== requesterHost)
+        .filter(site => !hidden.has(site.id))
+        .filter(site => !nicheOnly || site.category === requester.category)
         .sort((a, b) => (b.domainAuthority || 0) - (a.domainAuthority || 0))
         .map(site => ({
           title: site.name || hostname(site.url),
@@ -150,6 +159,78 @@ module.exports = app => {
     } catch (err) {
       console.error(err);
       res.status(500).send({ error: 'Failed to retrieve partners' });
+    }
+  });
+
+  // The whole network for the plugin's directory screen: every active member
+  // with the public card fields, plus whether this site has hidden each one.
+  // Token-authenticated like its siblings; public fields only, same list the
+  // web app's marketplace route sends.
+  app.get('/api/integration/network', async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.status(400).send({ error: 'Token is required' });
+
+    try {
+      const requester = await getWebsiteByToken(token);
+      if (!requester) return res.status(404).send({ error: 'Invalid token' });
+
+      const hidden = new Set(Array.isArray(requester.hiddenPartners) ? requester.hiddenPartners : []);
+      const requesterHost = hostname(requester.url);
+      const snap = await db.collection('websites').where('isActive', '==', true).get();
+
+      const members = snap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(s => s.id !== requester.id && s.url && hostname(s.url) !== requesterHost)
+        .map(s => ({
+          id: s.id,
+          url: s.url,
+          name: s.name || hostname(s.url),
+          category: s.category || null,
+          description: s.description || '',
+          logo: s.logo || null,
+          domainAuthority: Number.isFinite(s.domainAuthority) ? s.domainAuthority : null,
+          location: s.location ? { city: s.location.city || null, country: s.location.country || null } : null,
+          hidden: hidden.has(s.id)
+        }))
+        .sort((a, b) => (b.domainAuthority || 0) - (a.domainAuthority || 0));
+
+      const categories = [...new Set(members.map(m => m.category).filter(Boolean))].sort();
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.send({
+        site: { url: requester.url, category: requester.category || null, partnerScope: requester.partnerScope || 'all' },
+        categories,
+        members
+      });
+    } catch (err) {
+      console.error('Integration network failed:', err);
+      res.status(500).send({ error: 'Failed to load the network' });
+    }
+  });
+
+  app.post('/api/integration/curation', async (req, res) => {
+    const { token, hiddenPartners, partnerScope } = req.body || {};
+    if (!token) return res.status(400).send({ error: 'Token is required' });
+
+    try {
+      const site = await getWebsiteByToken(token);
+      if (!site) return res.status(404).send({ error: 'Invalid token' });
+
+      const updates = {};
+      if (Array.isArray(hiddenPartners)) {
+        updates.hiddenPartners = [...new Set(hiddenPartners.map(String).filter(v => /^[A-Za-z0-9_-]{1,64}$/.test(v)))].slice(0, 500);
+      }
+      if (partnerScope !== undefined) {
+        if (!['all', 'niche'].includes(partnerScope)) return res.status(400).send({ error: 'partnerScope must be "all" or "niche"' });
+        updates.partnerScope = partnerScope;
+      }
+      if (!Object.keys(updates).length) return res.status(400).send({ error: 'Nothing to update' });
+
+      await db.collection('websites').doc(site.id).update(updates);
+      res.send({ ok: true, ...updates });
+    } catch (err) {
+      console.error('Integration curation failed:', err);
+      res.status(500).send({ error: 'Failed to update' });
     }
   });
 

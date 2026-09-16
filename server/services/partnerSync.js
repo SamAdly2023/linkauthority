@@ -17,4 +17,16 @@ const broadcastRefresh = async (excludeWebsiteId) => {
   }));
 };
 
-module.exports = { broadcastRefresh };
+// Refresh one site's own cached directory - used when its owner changes who
+// appears on their page, which affects only that page.
+const pingSite = async (site) => {
+  if (!site?.url || !site.verificationToken) return;
+  const restUrl = `${site.url.replace(/\/$/, '')}/wp-json/linkauthority/v1/update`;
+  try {
+    await axios.post(restUrl, { token: site.verificationToken }, { timeout: 5000 });
+  } catch (err) {
+    // Best effort; the plugin's own hourly cron picks it up otherwise.
+  }
+};
+
+module.exports = { broadcastRefresh, pingSite };
