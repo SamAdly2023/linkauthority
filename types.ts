@@ -85,6 +85,7 @@ export enum Tab {
   AdminSettings = 'admin_settings',
   Citations = 'citations',
   AutoBlogger = 'auto_blogger',
+  LinkRepair = 'link_repair',
   TermsOfService = 'terms_of_service',
   PrivacyPolicy = 'privacy_policy'
 }

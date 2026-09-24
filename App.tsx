@@ -26,6 +26,7 @@ import {
   Database,
   FileText,
   Sliders,
+  Wrench,
   BarChart2,
   Sparkles,
   Menu,
@@ -63,6 +64,7 @@ const CitationsPage = React.lazy(() => import('./CitationsPage'));
 const AutoBloggerPage = React.lazy(() => import('./AutoBloggerPage'));
 const BacklinksPanel = React.lazy(() => import('./BacklinksPanel'));
 const NetworkDirectory = React.lazy(() => import('./NetworkDirectory'));
+const LinkRepairPage = React.lazy(() => import('./LinkRepairPage'));
 const AdminAnalytics = React.lazy(() => import('./AdminAnalytics'));
 const AreaChartPanel = React.lazy(() => import('./AreaChartPanel'));
 const UserGuide = React.lazy(() => import('./UserGuide'));
@@ -1501,6 +1503,7 @@ const App: React.FC = () => {
           {!isAdminMode ? (
             <>
               <SidebarItem tab={Tab.Dashboard} icon={LayoutDashboard} label="Dashboard" />
+              <SidebarItem tab={Tab.LinkRepair} icon={Wrench} label="Link Repair" accent="pink" badge="New" />
               <SidebarItem tab={Tab.Marketplace} icon={Globe} label="Network" />
               <SidebarItem tab={Tab.MySites} icon={Globe} label="My Websites" />
               {PRICING_ENABLED && <SidebarItem tab={Tab.History} icon={History} label="Transactions" />}
@@ -2193,6 +2196,12 @@ const App: React.FC = () => {
 
         {activeTab === Tab.AutoBlogger && (
           <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><AutoBloggerPage /></React.Suspense>
+        )}
+
+        {activeTab === Tab.LinkRepair && (
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}>
+            <LinkRepairPage sites={user.websites || []} />
+          </React.Suspense>
         )}
 
         {activeTab === Tab.Guide && (
