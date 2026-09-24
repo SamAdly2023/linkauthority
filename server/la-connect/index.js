@@ -46,6 +46,9 @@ module.exports = function createConnect(options = {}) {
 	}
 	const base = cfg.BASE_URL.replace(/\/+$/, '');
 	const store = new Store(cfg.STORE_DIR || path.join(os.tmpdir(), 'la-connect'), cfg.CONNECT_SECRET);
+
+	// Reported by /health, so "did the restart actually happen?" has an answer.
+	const startedAt = new Date();
 	const allowHttp = cfg.ALLOW_HTTP === '1';
 
 	/* ---------------------------------------------------------------- */
@@ -176,16 +179,34 @@ module.exports = function createConnect(options = {}) {
 	router.use(express.json({ limit: '64kb' }));
 	router.use(express.urlencoded({ extended: false, limit: '64kb' }));
 
+	// Per-variable booleans, never values. A provider that reads false is
+	// otherwise a guessing game between a typo in the name, an empty value and
+	// a server that was never restarted - and the answer is always one of the
+	// two variables behind it.
+	const CREDENTIALS = {
+		meta: ['META_APP_ID', 'META_APP_SECRET'],
+		pinterest: ['PINTEREST_APP_ID', 'PINTEREST_APP_SECRET'],
+		linkedin: ['LINKEDIN_CLIENT_ID', 'LINKEDIN_CLIENT_SECRET'],
+	};
+
+	const configured = (name) => Boolean(cfg[name] && String(cfg[name]).trim());
+
 	router.get('/health', (req, res) => {
+		const providerState = {};
+		const variables = {};
+
+		Object.entries(CREDENTIALS).forEach(([provider, names]) => {
+			providerState[provider] = names.every(configured);
+			names.forEach((name) => { variables[name] = configured(name); });
+		});
+
 		res.json({
 			ok: true,
-			providers: {
-				meta: !!(cfg.META_APP_ID && cfg.META_APP_SECRET),
-				pinterest: !!(cfg.PINTEREST_APP_ID && cfg.PINTEREST_APP_SECRET),
-				linkedin: !!(cfg.LINKEDIN_CLIENT_ID && cfg.LINKEDIN_CLIENT_SECRET),
-			},
+			providers: providerState,
+			variables,
+			startedAt: startedAt.toISOString(),
 			licensing: loadLicenses() === null ? 'open' : 'required',
-			callbacks: ['meta', 'pinterest', 'linkedin'].map((p) => `${base}/callback/${p}`),
+			callbacks: Object.keys(CREDENTIALS).map((p) => `${base}/callback/${p}`),
 		});
 	});
 
