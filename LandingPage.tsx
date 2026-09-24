@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  ShieldCheck, 
-  BarChart, 
-  Globe, 
-  Zap, 
-  CheckCircle2, 
-  ArrowRight, 
-  Search, 
-  Users, 
-  Lock, 
-  ChevronDown, 
-  Rocket, 
-  Target, 
+import {
+  ArrowRight,
   Award,
+  BarChart,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  Download,
   Facebook,
+  Globe,
   Instagram,
   Linkedin,
-  Twitter,
-  Youtube,
-  MessageCircle,
+  Lock,
   Mail,
-  Plug
+  MapPin,
+  MessageCircle,
+  Plug,
+  Rocket,
+  Search,
+  ShieldCheck,
+  Target,
+  Twitter,
+  Users,
+  Wrench,
+  Youtube,
+  Zap
 } from 'lucide-react';
 import ParticleNetwork from './ParticleNetwork';
 import PricingSection from './PricingSection';
@@ -49,13 +53,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
   return (
     <div className="bg-slate-950 min-h-screen text-slate-100 font-inter selection:bg-blue-500/30 relative">
-      <SEO 
-        title="LinkAuthority - Free Backlink Exchange Platform | Boost SEO" 
-        description="Join LinkAuthority to exchange high-quality backlinks, increase your Domain Authority (DA), and rank higher on Google safely. The #1 community for SEO growth."
+      <SEO
+        title="Find Broken Backlinks to Your Site - Free WordPress Plugin | LinkAuthority"
+        description="Renamed a page? The backlinks pointing at it now hit a 404 and nothing tells you. LinkAuthority finds broken backlinks to your WordPress site, fixes them with one click, and keeps old URLs working when you rename a page. Free plugin."
         canonical="https://www.linkauthority.live/"
+        faq={[
+          {
+            q: 'How do I find backlinks pointing at a 404 on my site?',
+            a: 'Install the free LinkAuthority plugin. When anyone follows a link from another site to a page of yours that no longer exists, the plugin records the linking page and the dead address, and LinkAuthority verifies both ends by fetching them. Broken links appear on the Link Repair screen with a field to point the old address at the page that replaced it.'
+          },
+          {
+            q: 'Does changing a WordPress slug break my backlinks?',
+            a: 'Yes. WordPress does not create a redirect when you change a post slug, so every external link to the old address starts returning 404 and nothing warns you. LinkAuthority watches the URLs other sites link to and creates the 301 automatically when you rename one of those pages.'
+          },
+          {
+            q: 'Is LinkAuthority free?',
+            a: 'Yes. Link repair, the WordPress plugin, the partner network and unlimited websites are free while the network grows. There is no card required and no trial that expires.'
+          },
+          {
+            q: 'How is this different from Ahrefs or Semrush?',
+            a: 'Those tools have a large backlink index and no code on your site. LinkAuthority runs inside WordPress, so it sees a broken backlink the moment a visitor follows one, and can fix it with a redirect in the same screen. It reports only links it has verified by fetching both pages, so it is not a substitute for a full backlink index.'
+          },
+          {
+            q: 'What data does the plugin send?',
+            a: 'Two URLs: the page a visitor came from, and the address on your site they asked for. No IP address, user agent or session is collected, so none can be sent. Link repair can be switched off in the plugin settings.'
+          }
+        ]}
       />
       <ChatWidget />
-      
+
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -65,8 +91,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               LinkAuthority
             </span>
           </div>
-          
+
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+            <a href="#link-repair" className="hover:text-white transition-colors">Link Repair</a>
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
             {PRICING_ENABLED && <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>}
@@ -83,54 +110,58 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       <header className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
         <div className="absolute inset-0 bg-blue-600/5 z-0"></div>
         <ParticleNetwork />
-        
+
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <Zap size={12} />
-            100% Free &mdash; Every Feature, No Card Required
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl font-black text-white tracking-tight mb-8 leading-tight animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-            Free Backlinks From <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Hundreds of Real Sites</span><br />
-            Activate Once. Stay Listed.
-          </h1>
-          
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-             Add your website, activate it, and you are automatically featured on the Business Partners page of every other site in the network &mdash; with a real dofollow link back to you. No credits to buy, no outreach emails, no waiting. The whole network is free while we grow.
-          </p>
-          
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-            <button onClick={onLogin} className="w-full md:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-3">
-              <img src="https://www.google.com/favicon.ico" alt="G" className="w-5 h-5 bg-white rounded-full p-0.5" />
-              Start For Free
-            </button>
-            <a href="#how-it-works" className="w-full md:w-auto px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 group">
-              How it works
-              <ChevronDown className="group-hover:translate-y-1 transition-transform" size={20} />
-            </a>
+            Free WordPress plugin &mdash; no card, no trial
           </div>
 
-          <div className="mt-16 flex flex-wrap justify-center gap-8 md:gap-16 text-slate-500 grayscale opacity-60">
-             <div className="flex items-center gap-2">
-                <Target size={24} />
-                <span className="font-bold text-lg">SEMRush</span>
-             </div>
-             <div className="flex items-center gap-2">
-                <Award size={24} />
-                <span className="font-bold text-lg">Ahrefs</span>
-             </div>
-             <div className="flex items-center gap-2">
-                <Rocket size={24} />
-                <span className="font-bold text-lg">Moz</span>
-             </div>
-             <div className="flex items-center gap-2">
-                <Globe size={24} />
-                <span className="font-bold text-lg">Google</span>
-             </div>
+          <h1 className="text-5xl md:text-7xl font-black text-white tracking-tight mb-8 leading-tight animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+            You Spent Years Earning Links.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">One Slug Change Killed Them.</span>
+          </h1>
+
+          <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+            Rename a page in WordPress and every backlink to the old address starts returning 404. The links still
+            exist. They just stop counting &mdash; and nothing tells you. LinkAuthority catches it the first time
+            somebody follows one, and fixes it in a click.
+          </p>
+
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
+            <a
+              href="/api/wp/plugin"
+              className="w-full md:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-3"
+            >
+              <Download size={20} />
+              Download the free plugin
+            </a>
+            <button onClick={onLogin} className="w-full md:w-auto px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3">
+              <img src="https://www.google.com/favicon.ico" alt="" className="w-5 h-5 bg-white rounded-full p-0.5" />
+              Create a free account
+            </button>
+          </div>
+
+          <p className="mt-6 text-slate-500 text-sm animate-in fade-in duration-700 delay-500">
+            Works with any WordPress site &middot; Install, paste your token, done
+          </p>
+
+          <div className="mt-16 flex flex-wrap justify-center gap-4 text-sm">
+            {[
+              'Finds links pointing at your 404s',
+              'Keeps old URLs alive when you rename a page',
+              'Reads every link\'s rel attribute, never guesses',
+              'Free dofollow links from the member network'
+            ].map(claim => (
+              <span key={claim} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-400">
+                <Check size={14} className="text-emerald-400 shrink-0" />
+                {claim}
+              </span>
+            ))}
           </div>
         </div>
       </header>
-      
+
       {/* Live Stats Ticker */}
       <div className="bg-slate-900 border-y border-slate-800 py-4 overflow-hidden whitespace-nowrap">
         <div className="inline-flex gap-16 animate-infinite-scroll">
@@ -150,63 +181,102 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </div>
       </div>
 
+      {/* Link Repair: the problem, then the three things that solve it */}
+      <section id="link-repair" className="py-24 bg-slate-950 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <p className="text-blue-400 text-sm uppercase tracking-wider font-bold mb-4">Link Repair</p>
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">The backlinks you are losing right now</h2>
+            <p className="text-slate-400 max-w-3xl mx-auto text-lg">
+              WordPress does not create a redirect when you change a slug, trash a post, or drop a path in a
+              migration. Every link anyone ever built to those addresses quietly stops working. Google takes months
+              to reflect it, and by then nobody connects the traffic drop to an edit made in March.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <FeatureCard
+              icon={Search}
+              title="Caught in the act"
+              description="The plugin runs inside WordPress, so when a visitor follows a link from another site to a page that is gone, it sees the linking page and the dead address at that exact moment. No crawl schedule, no waiting for an index to refresh."
+            />
+            <FeatureCard
+              icon={ShieldCheck}
+              title="Verified, never estimated"
+              description="Every link is confirmed by fetching both ends: their page, to check the link is still on it and read its rel attribute, and yours, to record the status code it actually returns. A link the other site removed is reported as removed, not sold to you as work."
+            />
+            <FeatureCard
+              icon={Wrench}
+              title="Fixed in one click"
+              description="Each broken link gets one field: the page that replaced the old one. The plugin writes the 301 and the link starts counting again. Rename a page that other sites link to and it writes the redirect before the save can cost you anything."
+            />
+          </div>
+
+          <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-8 md:p-12 text-center">
+            <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">Install it and find out in ten minutes</h3>
+            <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
+              Install the plugin, create a free account, and paste your site token. The first report tells you which
+              sites are linking to you and whether any of those links are landing on nothing.
+            </p>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+              <a
+                href="/api/wp/plugin"
+                className="w-full md:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-3"
+              >
+                <Download size={20} />
+                Download the plugin
+              </a>
+              <button onClick={onLogin} className="w-full md:w-auto px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-lg transition-all">
+                Create a free account
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* SEO Content & Features Grid */}
       <section id="features" className="py-24 bg-slate-900/50 border-t border-slate-800 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/5 rounded-full blur-3xl -z-10"></div>
-        
+
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Why LinkAuthority?</h2>
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">What else is in it</h2>
             <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-              We streamline the entire off-page SEO process. No cold emails, no sketchy PBNs, just real verified websites exchanging value.
+              Everything below is built and working today. Nothing here is a roadmap item, and no figure on this page
+              is estimated &mdash; if we have not measured something, we say so instead of printing a number.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FeatureCard 
-              icon={Globe}
-              title="Global Link Marketplace"
-              description="Access a calibrated network of 10,000+ verified websites across every niche from Technology to Local Plumbing."
-            />
-            <FeatureCard 
-              icon={ShieldCheck}
-              title="No Spam, Just Authority"
-              description="Our AI continuously monitors Spam Score and Domain Authority. Toxic links are automatically flagged and blocked."
-            />
-            <FeatureCard 
-              icon={BarChart}
-              title="AI SEO Analysis"
-              description="Get instant, deep-dive SEO reports for any website. Identify technical errors and keyword opportunities in seconds."
-            />
-            <FeatureCard 
+            <FeatureCard
               icon={Users}
-              title="Community Driven"
-              description="Host the network on your site and the network hosts you. Every active member links to every other member - no credits to earn or spend."
+              title="A free link network"
+              description="Activate a site and it is listed on the Business Partners page of every other active member, with a dofollow link back. No credits, no requests, no outreach. Free while the network grows."
             />
-            <FeatureCard 
-              icon={Search}
-              title="Competitor Intelligence"
-              description="See where your competitors are getting their backlinks and replicate their strategy with our gap analysis tools."
-            />
-            <FeatureCard 
-              icon={Lock}
-              title="Secure Transactions"
-              description="Links are verified automatically. We check daily that every member is still hosting the directory, so the exchange stays honest."
-            />
-            <FeatureCard 
-              icon={Award}
-              title="White Label Reporting"
-              description="Generate professional PDF reports with your branding to show clients exactly what links you've built."
-            />
-            <FeatureCard 
+            <FeatureCard
               icon={Target}
-              title="Niche Filtering"
-              description="Drill down by specific vertical, language, and estimated traffic to find the perfect link partner."
+              title="Your page, your call"
+              description="Browse every member by niche and decide who appears on your own page: hide one, or list only businesses in your category. Hiding is one-directional - you stay listed on theirs."
+            />
+            <FeatureCard
+              icon={BarChart}
+              title="Backlink value, explained"
+              description="Each link is labelled strong, useful, modest or citation, with the reason: whether it is dofollow, the measured authority of the domain sending it, and whether that domain is in your line of business."
+            />
+            <FeatureCard
+              icon={MapPin}
+              title="Local citations"
+              description="A checked list of directories worth a profile for your business, your address block formatted to match each one, and a bookmarklet that fills the form in. It never submits anything for you."
+            />
+            <FeatureCard
+              icon={Lock}
+              title="Checked daily"
+              description="Every member is checked for a live Business Partners page. A site that stops hosting the directory is paused across the network until it is restored, so the links you receive come from members who are genuinely taking part."
             />
             <FeatureCard
               icon={Plug}
-              title="One-Click WordPress Plugin"
-              description="Install our plugin and you're listed automatically — no manual requests. It builds a live Business Partners page on your site and keeps it in sync in real time."
+              title="Publisher and social"
+              description="A second plugin writes posts with AI and shares them to your own LinkedIn, Pinterest, Facebook and Instagram accounts. You connect your accounts once, on linkauthority.live."
             />
           </div>
         </div>
@@ -247,7 +317,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 <h2 className="text-3xl font-bold text-white mb-6">Stop Wasting Money on Agencies</h2>
                 <p className="text-slate-400">See how LinkAuthority compares to traditional link building methods.</p>
             </div>
-            
+
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
@@ -289,19 +359,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         <div className="max-w-3xl mx-auto px-6">
             <h2 className="text-3xl font-bold text-white mb-12 text-center">Frequently Asked Questions</h2>
             <div className="space-y-6">
-                <FAQItem 
-                    question="Is this safe for my SEO? Will Google penalize me?"
-                    answer="Yes, it is safe. We focus on high-quality, relevant content exchanges between real websites. We strictly prohibit spam farms, PBNs, and gambling/casino sites. Our AI monitors link patterns to ensure natural growth."
+                <FAQItem
+                    question="How do I find backlinks that point at a 404 on my site?"
+                    answer="Install the free plugin. The moment anyone follows a link from another site to a page of yours that no longer exists, the plugin records the linking page and the dead address, and LinkAuthority confirms it by fetching both. You get the list, with one field each to point the old address at the page that replaced it."
                 />
-                <FAQItem 
+                <FAQItem
+                    question="Does changing a slug in WordPress break my backlinks?"
+                    answer="Yes. WordPress does not create a redirect when you change a post slug, so every external link to the old address starts returning 404, and nothing warns you. With the plugin installed, renaming a page that other sites link to writes the 301 automatically and tells you how many links it just saved."
+                />
+                <FAQItem
+                    question="How is this different from Ahrefs or Semrush?"
+                    answer="They have a large backlink index and no code on your site. This runs inside WordPress, so it sees a broken link the moment somebody follows one and can fix it in the same screen. It only reports links it has verified by fetching both pages, so it is not a replacement for a full backlink index - it is the half those tools cannot reach."
+                />
+                <FAQItem
+                    question="What does the plugin send about my visitors?"
+                    answer="Nothing about your visitors. It sends two URLs: the page someone arrived from, and the address on your site they asked for. No IP address, user agent or session is collected in the first place. Link repair can be switched off in the plugin settings."
+                />
+                <FAQItem
+                    question="Is the link network safe for my SEO?"
+                    answer="Judge it on what it is: a directory of real, active businesses on a page of your own site, editorially presented, with no money changing hands. We check daily that members are genuinely hosting their page. It is one part of a link profile, not a substitute for earning links, and we do not claim it is risk-free - excessive reciprocal linking is something Google's guidelines name directly."
+                />
+                <FAQItem
                     question="What does it cost?"
                     answer="Nothing. LinkAuthority is completely free while we grow the network - unlimited websites, unlimited partner links, the WordPress plugin and support included. All you contribute is a Business Partners page on your own site."
                 />
-                <FAQItem 
+                <FAQItem
                     question="Can I buy links without having a website?"
                     answer="Every active member is listed on every other active member's site automatically, so there is nothing to buy. Add a site, activate it, and the links appear."
                 />
-                <FAQItem 
+                <FAQItem
                     question="Are the links permanent?"
                     answer="Yes. We check every member site daily. If a site stops hosting its Business Partners page, its own listing is paused across the network until the page is restored - so the links you receive are backed by members who are genuinely participating."
                 />
@@ -318,17 +404,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                         Ranking #1 Has Never Been Easier
                     </h2>
                     <div className="space-y-8">
-                        <Step 
+                        <Step
                             number="1"
                             title="Connect Your Site"
                             description="Add your website to the platform. Our AI verifies ownership and estimates your Domain Authority."
                         />
-                        <Step 
+                        <Step
                             number="2"
                             title="Activate Your Site"
                             description="Install the WordPress plugin or paste the snippet. The moment your site connects, you are listed on every other member's Business Partners page."
                         />
-                        <Step 
+                        <Step
                             number="3"
                             title="Get Authority Backlinks"
                             description="Browse our marketplace and request dofollow links from authoritative sites in your exact niche."
@@ -363,14 +449,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           <div className="max-w-4xl mx-auto px-6 text-center">
               <h2 className="text-2xl font-bold text-white mb-8">Trusted by Professionals for High Quality Link Building</h2>
               <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-500">
-                  <span>Backlink Management Software</span> &bull; 
-                  <span>White Hat Link Building</span> &bull; 
-                  <span>Guest Posting Marketplace</span> &bull; 
-                  <span>Domain Authority Checker</span> &bull; 
-                  <span>SEO Audit Tools</span> &bull; 
-                  <span>Link Exchange Network</span> &bull; 
-                  <span>Get Dofollow Backlinks</span> &bull; 
-                  <span>Local SEO Citations</span> &bull; 
+                  <span>Backlink Management Software</span> &bull;
+                  <span>White Hat Link Building</span> &bull;
+                  <span>Guest Posting Marketplace</span> &bull;
+                  <span>Domain Authority Checker</span> &bull;
+                  <span>SEO Audit Tools</span> &bull;
+                  <span>Link Exchange Network</span> &bull;
+                  <span>Get Dofollow Backlinks</span> &bull;
+                  <span>Local SEO Citations</span> &bull;
                   <span>Automated Link Building</span>
               </div>
           </div>
@@ -467,10 +553,10 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
 );
 
 const SocialIcon = ({ href, icon: Icon, label }: { href: string, icon: any, label: string }) => (
-    <a 
-      href={href} 
-      target="_blank" 
-      rel="noopener noreferrer" 
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className="p-3 bg-slate-900 rounded-xl hover:bg-blue-600 hover:text-white text-slate-400 transition-all hover:-translate-y-1 block"
       aria-label={label}
     >

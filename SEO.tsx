@@ -9,6 +9,8 @@ interface SEOProps {
   image?: string;
   url?: string;
   canonical?: string;
+  /** Rendered as FAQPage structured data, so these can win the expandable results. */
+  faq?: Array<{ q: string; a: string }>;
 }
 
 const SEO: React.FC<SEOProps> = ({
@@ -18,7 +20,8 @@ const SEO: React.FC<SEOProps> = ({
   type = 'website',
   image = 'https://www.linkauthority.live/link-authority-logo.png',
   url = 'https://www.linkauthority.live/',
-  canonical
+  canonical,
+  faq
 }) => {
   return (
     <Helmet>
@@ -42,7 +45,7 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
-      
+
       {/* Structured Data (JSON-LD) */}
       <script type="application/ld+json">
         {JSON.stringify({
@@ -73,6 +76,21 @@ const SEO: React.FC<SEOProps> = ({
           }
         })}
       </script>
+
+      {/* Questions people actually type. Only ever the answers shown on the page. */}
+      {faq && faq.length > 0 && (
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faq.map(item => ({
+              '@type': 'Question',
+              name: item.q,
+              acceptedAnswer: { '@type': 'Answer', text: item.a }
+            }))
+          })}
+        </script>
+      )}
     </Helmet>
   );
 }
