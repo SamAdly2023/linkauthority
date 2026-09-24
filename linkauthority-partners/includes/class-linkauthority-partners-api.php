@@ -193,6 +193,112 @@ class LinkAuthority_Partners_API {
 	}
 
 	/**
+	 * Reports link sightings: pairs of URLs the site has seen with its own eyes.
+	 *
+	 * Nothing about any visitor is included, because nothing about any visitor
+	 * was collected - see class-linkauthority-partners-links.php.
+	 *
+	 * @param array $sightings List of {sourceUrl, targetUrl, kind}.
+	 * @return bool True when the service accepted them.
+	 */
+	public static function send_sightings( array $sightings ) {
+		$token = linkauthority_partners_get_token();
+		if ( '' === $token || empty( $sightings ) ) {
+			return false;
+		}
+
+		$response = wp_remote_post(
+			self::base_url() . '/link-sightings',
+			array(
+				'timeout' => 20,
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'token'     => $token,
+						'sightings' => array_values( $sightings ),
+					)
+				),
+			)
+		);
+
+		return self::is_ok( $response );
+	}
+
+	/**
+	 * The link report: every external link we know of, its verified state, and
+	 * the paths worth protecting from a careless slug edit.
+	 *
+	 * Cached in an option, because the editor guard consults it on every save
+	 * and must not make a network call to do so.
+	 *
+	 * @param bool $verify Ask the service to re-check the oldest links first.
+	 * @return array|false
+	 */
+	public static function get_link_report( $verify = false ) {
+		$token = linkauthority_partners_get_token();
+		if ( '' === $token ) {
+			return false;
+		}
+
+		$args = array( 'token' => rawurlencode( $token ) );
+		if ( $verify ) {
+			$args['verify'] = '1';
+		}
+
+		$response = wp_remote_get(
+			add_query_arg( $args, self::base_url() . '/link-repair' ),
+			array( 'timeout' => $verify ? 60 : 25 )
+		);
+
+		$data = self::decode( $response );
+		if ( is_array( $data ) && isset( $data['summary'] ) ) {
+			update_option( LINKAUTHORITY_PARTNERS_OPT_LINK_REPORT, $data, false );
+
+			return $data;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Tells LinkAuthority a broken link has been dealt with, so the next
+	 * verification pass confirms it rather than reporting it again.
+	 *
+	 * @param string      $link_id     Link id from the report.
+	 * @param string|null $redirect_to Where the old address now goes.
+	 * @param bool|null   $dismissed   Set instead to ignore the link entirely.
+	 * @return bool
+	 */
+	public static function report_fix( $link_id, $redirect_to = null, $dismissed = null ) {
+		$token = linkauthority_partners_get_token();
+		if ( '' === $token || '' === (string) $link_id ) {
+			return false;
+		}
+
+		$body = array(
+			'token'  => $token,
+			'linkId' => (string) $link_id,
+		);
+
+		if ( null !== $dismissed ) {
+			$body['dismissed'] = (bool) $dismissed;
+		} else {
+			$body['redirectTo'] = (string) $redirect_to;
+		}
+
+		$response = wp_remote_post(
+			self::base_url() . '/link-fixed',
+			array(
+				'timeout' => 15,
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode( $body ),
+			)
+		);
+
+		return self::is_ok( $response );
+	}
+
+	/**
 	 * Pulls the partner directory and caches it.
 	 *
 	 * The result is stored, not written into any post: the page renders from

@@ -47,6 +47,7 @@ class LinkAuthority_Partners_Settings {
 			'token'        => sanitize_text_field( (string) ( $input['token'] ?? '' ) ),
 			'show_credit'  => empty( $input['show_credit'] ) ? 0 : 1,
 			'report_views' => empty( $input['report_views'] ) ? 0 : 1,
+			'link_repair'  => empty( $input['link_repair'] ) ? 0 : 1,
 		);
 	}
 

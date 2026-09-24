@@ -625,6 +625,23 @@ class LinkAuthority_Partners_Admin {
 						</td>
 					</tr>
 					<tr>
+						<th scope="row"><?php esc_html_e( 'Link repair', 'linkauthority-partners' ); ?></th>
+						<td>
+							<label>
+								<input
+									type="checkbox"
+									name="<?php echo esc_attr( LINKAUTHORITY_PARTNERS_OPT_SETTINGS ); ?>[link_repair]"
+									value="1"
+									<?php checked( ! empty( $settings['link_repair'] ) ); ?>
+								>
+								<?php esc_html_e( 'Watch for links to this site that have stopped working', 'linkauthority-partners' ); ?>
+							</label>
+							<p class="description">
+								<?php esc_html_e( 'On by default. When a visitor arrives from another site, the plugin reports two URLs: the page they came from, and the address on this site they asked for. Nothing identifying the visitor is collected. This is what lets LinkAuthority tell you when a page you renamed left someone else\'s link pointing at a 404 - switch it off and that goes unnoticed.', 'linkauthority-partners' ); ?>
+							</p>
+						</td>
+					</tr>
+					<tr>
 						<th scope="row"><?php esc_html_e( 'Page views', 'linkauthority-partners' ); ?></th>
 						<td>
 							<label>

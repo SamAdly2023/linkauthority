@@ -4,7 +4,7 @@ Tags: backlinks, seo, link building, partners, directory
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,8 @@ This plugin renders that directory on your site and keeps it current. Add the sh
 * Ships responsive card styling that inherits nothing from, and overrides nothing in, your theme
 * Adds Schema.org `ItemList` structured data describing the listed businesses
 * A Network screen in wp-admin to browse every member by niche, and to choose who appears on your own page
+* Link Repair: spots when another site is linking to a page of yours that no longer exists, and fixes it with one click
+* A guard that keeps an old address working when you rename a page other sites link to
 * Optional page-view reporting, so your LinkAuthority dashboard can show how the page performs
 * Optional "Site by LinkAuthority" credit link
 
@@ -37,6 +39,8 @@ Once you save your site token in the LinkAuthority menu in your sidebar, the plu
 * register your site as active on the network, and mark it inactive again when you deactivate the plugin (your site token and site URL are sent)
 * download the current list of partner businesses, hourly and on demand (your site token is sent)
 * load the full member directory for the Network screen, and save which partners you hide from your page (your site token is sent)
+* report link sightings, **only while link repair is enabled** (on by default): when a visitor arrives from another site, two URLs are sent - the page they came from, and the address on your site they asked for. No IP address, user agent, session or any other visitor detail is collected or sent. LinkAuthority then fetches both of those pages itself to check whether the link is still there and whether it still lands on a working page
+* download the resulting link report, so this plugin can warn you before you rename a page that other sites link to (your site token is sent)
 * report your Business Partners page view count, **only if** you enable that option (your site token and a single running total are sent - never any visitor details)
 
 The plugin also exposes one authenticated REST route, `linkauthority/v1/update`, which LinkAuthority calls to trigger an immediate refresh. Requests must present your site token, which is compared in constant time; nothing else is accepted.
@@ -79,6 +83,12 @@ Your site is marked inactive on the network and stops appearing in other members
 2. The LinkAuthority admin screen, showing connection status and the two opt-ins.
 
 == Changelog ==
+
+= 1.3.0 =
+* New: Link Repair. Finds links from other sites that now point at a page of yours that no longer exists, and fixes each one with a redirect in a click.
+* New: the guard. Rename a page that other sites link to and the old address keeps working automatically, with a notice saying how many links were saved.
+* New: a redirect table, shown only on requests that would otherwise be a 404, so republishing a page at an old address takes precedence again.
+* Link repair can be switched off in Settings.
 
 = 1.2.0 =
 * New Network screen: browse every active member by niche, with logo, description and measured authority.
