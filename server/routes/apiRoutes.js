@@ -5,6 +5,7 @@ const dns = require('dns').promises;
 const requireLogin = require('../middlewares/requireLogin');
 const authority = require('../services/authority');
 const { refreshBacklinks, valueReport } = require('../services/backlinks');
+const linkRepair = require('../services/linkRepair');
 const { auditCitations, configuredProviders } = require('../services/citations');
 const { buildProfile, renderFields, validateProfile } = require('../services/napProfile');
 const { buildBookmarklet } = require('../services/autofill');
@@ -315,6 +316,108 @@ module.exports = app => {
     } catch (err) {
       console.error('Backlink audit failed:', err);
       res.status(500).send({ error: 'Failed to audit backlinks' });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Link repair: the external links pointing at this site, and whether they
+  // still land anywhere. See services/linkRepair.js for where they come from.
+  // ---------------------------------------------------------------------------
+
+  const ownedSite = async (req, res) => {
+    const website = await getWebsiteById(req.params.id);
+    if (!website || website.ownerId !== req.user.id) {
+      res.status(404).send({ error: 'Website not found' });
+      return null;
+    }
+    return website;
+  };
+
+  app.get('/api/websites/:id/links', requireLogin, async (req, res) => {
+    try {
+      const website = await ownedSite(req, res);
+      if (!website) return;
+
+      const links = await linkRepair.linksFor(website.id);
+
+      res.send({
+        url: website.url,
+        summary: linkRepair.summarise(links),
+        links,
+        protectedPaths: await linkRepair.protectedPaths(website.id),
+        verifiedAt: website.linksVerifiedAt || null
+      });
+    } catch (err) {
+      console.error('Links fetch failed:', err);
+      res.status(500).send({ error: 'Failed to load links' });
+    }
+  });
+
+  // Re-checks both ends of the oldest-checked links. Rate limited per site:
+  // each pass makes up to fifty outbound requests.
+  app.post('/api/websites/:id/links/verify', requireLogin, async (req, res) => {
+    try {
+      const website = await ownedSite(req, res);
+      if (!website) return;
+
+      const lastAt = website.linksVerifiedAt;
+      const lastMs = lastAt ? new Date(lastAt.toDate ? lastAt.toDate() : lastAt).getTime() : 0;
+      const dueAt = lastMs + 15 * 60 * 1000;
+
+      if (Date.now() < dueAt) {
+        return res.status(429).send({
+          error: 'Links were checked recently.',
+          nextVerifyAt: new Date(dueAt).toISOString()
+        });
+      }
+
+      const result = await linkRepair.verifySite(website, 25);
+      await db.collection('websites').doc(website.id).update({ linksVerifiedAt: new Date() });
+
+      const links = await linkRepair.linksFor(website.id);
+      res.send({ ...result, summary: linkRepair.summarise(links), links });
+    } catch (err) {
+      console.error('Link verification failed:', err);
+      res.status(500).send({ error: 'Failed to verify links' });
+    }
+  });
+
+  // A link the owner knows about that we have not seen traffic from: a paid
+  // placement, or a row pasted from a Search Console export.
+  app.post('/api/websites/:id/links', requireLogin, async (req, res) => {
+    try {
+      const website = await ownedSite(req, res);
+      if (!website) return;
+
+      const { sourceUrl, targetUrl } = req.body || {};
+      const result = await linkRepair.addManualLink(website, sourceUrl, targetUrl);
+      if (!result.ok) return res.status(400).send({ error: result.reason });
+
+      res.send({ ok: true, id: result.id });
+    } catch (err) {
+      console.error('Adding a link failed:', err);
+      res.status(500).send({ error: 'Failed to add the link' });
+    }
+  });
+
+  app.patch('/api/websites/:id/links/:linkId', requireLogin, async (req, res) => {
+    try {
+      const website = await ownedSite(req, res);
+      if (!website) return;
+
+      const doc = await db.collection('externalLinks').doc(req.params.linkId).get();
+      if (!doc.exists || doc.data().siteId !== website.id) {
+        return res.status(404).send({ error: 'Unknown link' });
+      }
+
+      const { dismissed, redirectTo } = req.body || {};
+      if (undefined !== dismissed) await linkRepair.dismiss(req.params.linkId, Boolean(dismissed));
+      if (undefined !== redirectTo) await linkRepair.markFixed(req.params.linkId, redirectTo);
+
+      res.send({ ok: true });
+    } catch (err) {
+      console.error('Updating a link failed:', err);
+      res.status(500).send({ error: 'Failed to update the link' });
     }
   });
 

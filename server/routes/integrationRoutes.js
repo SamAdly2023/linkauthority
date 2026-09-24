@@ -6,6 +6,7 @@ const { db } = require('../services/firebase');
 const { broadcastRefresh, pingSite } = require('../services/partnerSync');
 const { refreshBacklinks, valueReport } = require('../services/backlinks');
 const authority = require('../services/authority');
+const linkRepair = require('../services/linkRepair');
 
 // Firestore helpers (kept local, matching the pattern used by the other route files)
 const getWebsiteById = async (id) => {
@@ -270,6 +271,10 @@ module.exports = app => {
   // Once an hour per site is plenty for links that change on a cron cadence.
   const BACKLINK_REFRESH_MS = 60 * 60 * 1000;
 
+  // A verification pass fetches both ends of up to 25 links, so it is held to
+  // once an hour per site however often the button is pressed.
+  const LINK_VERIFY_MS = 60 * 60 * 1000;
+
   // The site's authority and verified backlinks, for the plugin dashboard.
   // Reads the cached report and only re-crawls on ?refresh=1, rate limited.
   //
@@ -372,6 +377,125 @@ module.exports = app => {
     } catch (err) {
       console.error('visitor-stats ingest failed:', err);
       res.status(500).send({ error: 'Failed to store visitor stats' });
+    }
+  });
+
+
+  // ---------------------------------------------------------------------------
+  // Link repair
+  //
+  // The plugin reports link sightings it has seen with its own eyes: a visitor
+  // who arrived from another site (so that link exists), or a visitor who
+  // followed a link to a page that is gone (a broken backlink, caught in the
+  // act). URL pairs only - nothing about the visitor is accepted here, so
+  // nothing about the visitor can be stored.
+  // ---------------------------------------------------------------------------
+
+  app.post('/api/integration/link-sightings', async (req, res) => {
+    const { token, sightings } = req.body || {};
+    if (!token) return res.status(400).send({ error: 'Token is required' });
+    if (!Array.isArray(sightings)) return res.status(400).send({ error: 'sightings must be an array' });
+
+    try {
+      const site = await getWebsiteByToken(token);
+      if (!site) return res.status(404).send({ error: 'Invalid token' });
+
+      const counts = await linkRepair.recordSightings(site, sightings);
+
+      res.send({ ok: true, ...counts, accepted: linkRepair.MAX_SIGHTINGS_PER_REPORT });
+    } catch (err) {
+      console.error('Link sightings failed:', err);
+      res.status(500).send({ error: 'Failed to record sightings' });
+    }
+  });
+
+  // Everything the plugin's Link Repair screen needs: the stored links, the
+  // summary, and the paths worth protecting from a careless slug edit.
+  app.get('/api/integration/link-repair', async (req, res) => {
+    const { token, verify } = req.query;
+    if (!token) return res.status(400).send({ error: 'Token is required' });
+
+    try {
+      const site = await getWebsiteByToken(token);
+      if (!site) return res.status(404).send({ error: 'Invalid token' });
+
+      let verifiedNow = false;
+      let nextVerifyAt = null;
+
+      if ('1' === String(verify)) {
+        const lastAt = site.linksVerifiedAt;
+        const lastMs = lastAt ? new Date(lastAt.toDate ? lastAt.toDate() : lastAt).getTime() : 0;
+        const dueAt = lastMs + LINK_VERIFY_MS;
+
+        if (Date.now() >= dueAt) {
+          await linkRepair.verifySite(site, 25);
+          await db.collection('websites').doc(site.id).update({ linksVerifiedAt: new Date() });
+          verifiedNow = true;
+        } else {
+          nextVerifyAt = new Date(dueAt).toISOString();
+        }
+      }
+
+      const links = await linkRepair.linksFor(site.id);
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.send({
+        url: site.url,
+        summary: linkRepair.summarise(links),
+        links: links.slice(0, 200),
+        protectedPaths: await linkRepair.protectedPaths(site.id),
+        verifiedNow,
+        nextVerifyAt
+      });
+    } catch (err) {
+      console.error('Link repair fetch failed:', err);
+      res.status(500).send({ error: 'Failed to load link repair' });
+    }
+  });
+
+  // Just the guarded paths, small enough for the plugin to cache and consult
+  // every time a post is about to be saved or trashed.
+  app.get('/api/integration/protected-paths', async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.status(400).send({ error: 'Token is required' });
+
+    try {
+      const site = await getWebsiteByToken(token);
+      if (!site) return res.status(404).send({ error: 'Invalid token' });
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.send({ paths: await linkRepair.protectedPaths(site.id) });
+    } catch (err) {
+      console.error('Protected paths failed:', err);
+      res.status(500).send({ error: 'Failed to load protected paths' });
+    }
+  });
+
+  // The owner put a redirect in place. Recorded so the row stops shouting;
+  // the next verification pass confirms it independently.
+  app.post('/api/integration/link-fixed', async (req, res) => {
+    const { token, linkId, redirectTo, dismissed } = req.body || {};
+    if (!token || !linkId) return res.status(400).send({ error: 'Token and linkId are required' });
+
+    try {
+      const site = await getWebsiteByToken(token);
+      if (!site) return res.status(404).send({ error: 'Invalid token' });
+
+      const doc = await db.collection('externalLinks').doc(String(linkId)).get();
+      if (!doc.exists || doc.data().siteId !== site.id) {
+        return res.status(404).send({ error: 'Unknown link' });
+      }
+
+      if (undefined !== dismissed) {
+        await linkRepair.dismiss(String(linkId), Boolean(dismissed));
+      } else {
+        await linkRepair.markFixed(String(linkId), redirectTo);
+      }
+
+      res.send({ ok: true });
+    } catch (err) {
+      console.error('Link fix failed:', err);
+      res.status(500).send({ error: 'Failed to update the link' });
     }
   });
 
