@@ -27,9 +27,9 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: [
-        "'self'", 
-        "'unsafe-inline'", 
-        "'unsafe-eval'", 
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
         "https://accounts.google.com",
         "https://cdn.tailwindcss.com",
         "https://www.paypal.com",
@@ -43,8 +43,8 @@ app.use(helmet({
         "https://apis.google.com"
       ],
       connectSrc: [
-        "'self'", 
-        "https://accounts.google.com", 
+        "'self'",
+        "https://accounts.google.com",
         "https://*.googleapis.com",
         "https://www.paypal.com",
         "https://www.google-analytics.com",
@@ -58,9 +58,9 @@ app.use(helmet({
         "wss://*.firebaseio.com"
       ],
       imgSrc: [
-        "'self'", 
-        "data:", 
-        "https://*.googleusercontent.com", 
+        "'self'",
+        "data:",
+        "https://*.googleusercontent.com",
         "https://*.gravatar.com",
         "https://www.paypalobjects.com",
         "https://www.google.com",
@@ -71,7 +71,7 @@ app.use(helmet({
         "https://ui-avatars.com"
       ],
       frameSrc: [
-        "'self'", 
+        "'self'",
         "https://accounts.google.com",
         "https://www.paypal.com",
         "https://www.sandbox.paypal.com",
@@ -81,8 +81,8 @@ app.use(helmet({
         "https://*.firebaseapp.com"
       ],
       styleSrc: [
-        "'self'", 
-        "'unsafe-inline'", 
+        "'self'",
+        "'unsafe-inline'",
         "https://fonts.googleapis.com"
       ],
       fontSrc: [
@@ -97,8 +97,8 @@ app.use(helmet({
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true, 
-  legacyHeaders: false, 
+  standardHeaders: true,
+  legacyHeaders: false,
   message: "Too many requests from this IP, please try again after 15 minutes"
 });
 app.use('/api', limiter); // Apply to API routes
@@ -151,16 +151,17 @@ app.use(firebaseAuth);
 
 require('./routes/authRoutes')(app);
 require('./routes/apiRoutes')(app);
+require('./routes/billingRoutes')(app);
 require('./routes/adminRoutes')(app);
 require('./routes/integrationRoutes')(app);
 
 // Global Error Handler to debug 500 errors
 app.use((err, req, res, next) => {
   console.error("Global Error Handler Caught:", err);
-  res.status(500).json({ 
-    error: "Internal Server Error", 
-    message: err.message, 
-    stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack 
+  res.status(500).json({
+    error: "Internal Server Error",
+    message: err.message,
+    stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack
   });
 });
 
@@ -200,7 +201,7 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    
+
     // Start verification Cron Job
     try {
       const cron = require('./services/cron');

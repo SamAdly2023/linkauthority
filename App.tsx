@@ -65,6 +65,7 @@ const AutoBloggerPage = React.lazy(() => import('./AutoBloggerPage'));
 const BacklinksPanel = React.lazy(() => import('./BacklinksPanel'));
 const NetworkDirectory = React.lazy(() => import('./NetworkDirectory'));
 const LinkRepairPage = React.lazy(() => import('./LinkRepairPage'));
+const BillingPage = React.lazy(() => import('./BillingPage'));
 const AdminAnalytics = React.lazy(() => import('./AdminAnalytics'));
 const AreaChartPanel = React.lazy(() => import('./AreaChartPanel'));
 const UserGuide = React.lazy(() => import('./UserGuide'));
@@ -1510,7 +1511,7 @@ const App: React.FC = () => {
               <SidebarItem tab={Tab.AIExpert} icon={BrainCircuit} label="AI SEO Expert" />
               <SidebarItem tab={Tab.Citations} icon={MapPin} label="Citations & AI" />
               <SidebarItem tab={Tab.AutoBlogger} icon={Share2} label="Publisher & Social" accent="pink" badge="New" />
-              {PRICING_ENABLED && <SidebarItem tab={Tab.Guide} icon={CreditCard} label="Pricing" />}
+              <SidebarItem tab={Tab.Guide} icon={CreditCard} label="Plan & Billing" />
               <SidebarItem tab={Tab.UserGuide} icon={BookOpen} label="User Guide" />
               <SidebarItem tab={Tab.Profile} icon={UserIcon} label="My Profile" />
               <div className="pt-4 mt-2 border-t border-slate-800">
@@ -2390,31 +2391,12 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Pricing is hidden while the network is free - see config.ts. The tab and
-            its /pricing route stay reachable so existing links don't 404. */}
+        {/* The billing screen reports the live state of the subscription, and
+            says plainly when signups are not open, so it needs no flag. */}
         {activeTab === Tab.Guide && (
-          PRICING_ENABLED ? (
-            <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}><PricingSection /></React.Suspense>
-          ) : (
-            <div className="max-w-2xl mx-auto text-center py-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider mb-6">
-                <Zap size={12} />
-                Free while we grow
-              </div>
-              <h3 className="text-3xl font-black text-white mb-4">Everything is free right now</h3>
-              <p className="text-slate-400 leading-relaxed mb-8">
-                There are no plans to choose and nothing to pay. Unlimited websites, unlimited partner
-                links, the WordPress plugin and full support are included for every member while we build
-                the network out. We'll give you plenty of notice before that ever changes.
-              </p>
-              <button
-                onClick={() => setActiveTab(Tab.MySites)}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors"
-              >
-                Go to My Websites
-              </button>
-            </div>
-          )
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-500"><RefreshCw size={20} className="animate-spin" /></div>}>
+            <BillingPage />
+          </React.Suspense>
         )}
 
         {activeTab === Tab.About && (

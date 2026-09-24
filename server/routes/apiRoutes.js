@@ -6,6 +6,7 @@ const requireLogin = require('../middlewares/requireLogin');
 const authority = require('../services/authority');
 const { refreshBacklinks, valueReport } = require('../services/backlinks');
 const linkRepair = require('../services/linkRepair');
+const plan = require('../services/plan');
 const { auditCitations, configuredProviders } = require('../services/citations');
 const { buildProfile, renderFields, validateProfile } = require('../services/napProfile');
 const { buildBookmarklet } = require('../services/autofill');
@@ -211,6 +212,16 @@ module.exports = app => {
     const existing = await getWebsiteByUrl(url);
     if (existing) return res.status(400).send({ error: 'Website already exists' });
 
+    // A free account covers one site. Counted from what is stored rather than
+    // from anything the client sent.
+    const { pro } = await plan.planFor(req.user.id);
+    if (!pro) {
+      const owned = await db.collection('websites').where('ownerId', '==', req.user.id).get();
+      if (owned.size >= plan.FREE_LIMITS.websites) {
+        return res.status(402).send({ error: plan.limitMessage('websites'), upgrade: true });
+      }
+    }
+
     // Measured from a real link graph. Null means "not measured" - it is shown
     // as such rather than as a zero or an invented number.
     const authorityResult = await authority.lookup(url);
@@ -360,13 +371,15 @@ module.exports = app => {
       const website = await ownedSite(req, res);
       if (!website) return;
 
+      const { pro } = await plan.planFor(req.user.id);
       const lastAt = website.linksVerifiedAt;
       const lastMs = lastAt ? new Date(lastAt.toDate ? lastAt.toDate() : lastAt).getTime() : 0;
-      const dueAt = lastMs + 15 * 60 * 1000;
+      const dueAt = lastMs + plan.verifyIntervalMs(pro);
 
       if (Date.now() < dueAt) {
         return res.status(429).send({
-          error: 'Links were checked recently.',
+          error: pro ? 'Links were checked a moment ago.' : plan.limitMessage('verify'),
+          upgrade: !pro,
           nextVerifyAt: new Date(dueAt).toISOString()
         });
       }
@@ -388,6 +401,16 @@ module.exports = app => {
     try {
       const website = await ownedSite(req, res);
       if (!website) return;
+
+      // Links found from the site's own traffic are never limited; this cap is
+      // only on placements typed in by hand.
+      const { pro } = await plan.planFor(req.user.id);
+      if (!pro) {
+        const existing = await linkRepair.linksFor(website.id);
+        if (existing.filter(l => 'manual' === l.discoveredVia).length >= plan.FREE_LIMITS.manualLinks) {
+          return res.status(402).send({ error: plan.limitMessage('manualLinks'), upgrade: true });
+        }
+      }
 
       const { sourceUrl, targetUrl } = req.body || {};
       const result = await linkRepair.addManualLink(website, sourceUrl, targetUrl);
@@ -1153,8 +1176,8 @@ module.exports = app => {
         const updatedWebsite = await getWebsiteById(websiteId);
         res.send({ success: true, website: updatedWebsite });
       } else {
-        res.status(400).send({ 
-          error: 'Integration not found. Please activate the WP plugin or insert the JS snippet first.' 
+        res.status(400).send({
+          error: 'Integration not found. Please activate the WP plugin or insert the JS snippet first.'
         });
       }
     } catch (err) {

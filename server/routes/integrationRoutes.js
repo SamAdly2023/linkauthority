@@ -7,6 +7,7 @@ const { broadcastRefresh, pingSite } = require('../services/partnerSync');
 const { refreshBacklinks, valueReport } = require('../services/backlinks');
 const authority = require('../services/authority');
 const linkRepair = require('../services/linkRepair');
+const plan = require('../services/plan');
 
 // Firestore helpers (kept local, matching the pattern used by the other route files)
 const getWebsiteById = async (id) => {
@@ -423,9 +424,10 @@ module.exports = app => {
       let nextVerifyAt = null;
 
       if ('1' === String(verify)) {
+        const { pro } = await plan.planFor(site.ownerId);
         const lastAt = site.linksVerifiedAt;
         const lastMs = lastAt ? new Date(lastAt.toDate ? lastAt.toDate() : lastAt).getTime() : 0;
-        const dueAt = lastMs + LINK_VERIFY_MS;
+        const dueAt = lastMs + (pro ? LINK_VERIFY_MS : plan.verifyIntervalMs(false));
 
         if (Date.now() >= dueAt) {
           await linkRepair.verifySite(site, 25);

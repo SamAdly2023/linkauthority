@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, CheckCircle, Zap, Globe, Code, AlertTriangle, RefreshCw, Share2, Trash2 } from 'lucide-react';
+import { BookOpen, CheckCircle, Zap, Globe, Code, AlertTriangle, RefreshCw, Share2, Trash2, Wrench, Download } from 'lucide-react';
 
 const UserGuide: React.FC = () => {
   return (
@@ -8,10 +8,16 @@ const UserGuide: React.FC = () => {
         <div className="relative z-10 max-w-2xl">
           <h1 className="text-4xl font-bold text-white mb-4">LinkAuthority User Guide</h1>
           <p className="text-blue-200 text-lg">
-            Add a website, activate it, and you are automatically featured on the Business Partners page
-            of every other active site in the network &mdash; with a real dofollow link back to you.
-            Free while we grow.
+            Two things, both free. Link Repair finds the links other sites are sending to pages of yours
+            that no longer exist, and fixes them. The network lists you on every other member&rsquo;s site
+            with a dofollow link back.
           </p>
+          <a
+            href="/api/wp/plugin"
+            className="inline-flex items-center gap-2 mt-6 bg-white text-slate-900 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+          >
+            <Download size={16} /> Download the WordPress plugin
+          </a>
         </div>
         <BookOpen className="absolute -right-10 -bottom-10 text-white/5 w-64 h-64" />
       </div>
@@ -26,6 +32,67 @@ const UserGuide: React.FC = () => {
             of notice before that ever changes.
           </p>
         </div>
+      </div>
+
+      <div id="link-repair" className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <Wrench className="text-pink-400" /> Link Repair &mdash; the part most people need first
+        </h2>
+
+        <p className="text-slate-300 text-sm leading-relaxed mb-4">
+          When you rename a page, trash a post, or move a site, WordPress does not leave a forwarding
+          address. Every link another site ever built to the old URL starts returning 404. The link is
+          still on their page; it just stops counting for you, and nothing anywhere tells you it happened.
+        </p>
+
+        <h3 className="text-white font-bold text-sm mb-2">How it finds them</h3>
+        <ol className="space-y-3 text-slate-300 text-sm mb-5">
+          <li className="flex gap-2">
+            <span className="font-bold text-white shrink-0">1.</span>
+            <span>Install the plugin and save your site token. Link repair is on by default; you can switch it off under <strong className="text-white">LinkAuthority &rarr; Settings</strong>.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="font-bold text-white shrink-0">2.</span>
+            <span>When a visitor arrives from another site, the plugin notes two URLs: the page they came from, and the address on your site they asked for. Nothing about the visitor is collected, so nothing about them can be sent.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="font-bold text-white shrink-0">3.</span>
+            <span>If that address is a 404, the link is flagged straight away &mdash; a broken backlink caught the moment somebody follows it.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="font-bold text-white shrink-0">4.</span>
+            <span>We then check it ourselves: we fetch their page to confirm the link is really there and read its <code className="bg-slate-950 px-1.5 py-0.5 rounded text-blue-300 text-xs">rel</code> attribute, and fetch yours to record the status code it actually returns.</span>
+          </li>
+        </ol>
+
+        <h3 className="text-white font-bold text-sm mb-2">How you fix them</h3>
+        <p className="text-slate-300 text-sm leading-relaxed mb-4">
+          Open <strong className="text-white">LinkAuthority &rarr; Link Repair</strong> in wp-admin. Each
+          broken link shows who is linking, the anchor text they used, and how many visitors have already
+          arrived and found nothing. Type the page that replaced the old one, press Redirect, and the
+          plugin writes the 301. The same list is on the <strong className="text-white">Link Repair</strong>
+          tab here, so you can see every site you own in one place.
+        </p>
+
+        <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-4 mb-4">
+          <p className="text-white font-bold text-sm mb-1">The guard: it stops happening again</p>
+          <p className="text-slate-400 text-sm leading-relaxed">
+            Once we know that other sites link to one of your URLs, renaming that page no longer costs you
+            anything. The plugin writes the redirect as you save and tells you how many links from how many
+            domains it just kept alive. Trashing such a page warns you instead of redirecting &mdash; only
+            you know which page should inherit those visitors, and sending them all to the home page is the
+            mistake this exists to prevent.
+          </p>
+        </div>
+
+        <p className="text-slate-400 text-xs leading-relaxed">
+          Two honest limits. This covers links we can verify by fetching the page, not a crawl of the whole
+          web &mdash; a complete backlink index needs a commercial data source, and we do not estimate to
+          fill that gap. And a link is only discovered once somebody follows it or you add it yourself, so
+          a brand new install starts quiet and fills in as traffic arrives. You can paste in links you
+          already know about &mdash; a paid placement, a press mention, a row from a Search Console export
+          &mdash; at the bottom of the Link Repair tab.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
